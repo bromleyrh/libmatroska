@@ -1,0 +1,68 @@
+#!/usr/bin/env perl
+
+#
+# mkpath
+#
+
+use strict;
+use warnings;
+
+use File::Path qw(make_path);
+
+sub print_error;
+
+sub print_usage;
+sub parse_cmdline;
+
+sub print_error {
+    my ($msg) = @_;
+
+    warn("$0: $msg\n");
+}
+
+sub print_usage {
+    print("Usage: $0 [MODE] PATH\n");
+}
+
+sub parse_cmdline {
+    my $first_path = 0;
+    my $mode = 0777;
+
+    if (@ARGV == 0) {
+        print_usage();
+        exit(1);
+    }
+
+    if ((@ARGV > 1) and ($ARGV[0] eq "-m")) {
+        $mode = oct($ARGV[1]);
+        shift @ARGV;
+        shift @ARGV;
+    }
+
+    return ($mode, \@ARGV);
+}
+
+my $err;
+my $path;
+
+(my $mode, my $paths) = parse_cmdline();
+
+for $path (@$paths) {
+    make_path($path, {mode => $mode, error => \$err});
+    if ($err && @$err) {
+        my $diag;
+
+        for $diag (@$err) {
+            my ($file, $msg) = %$diag;
+
+            if ($file eq '') {
+                print_error("Error: $msg");
+            } else {
+                print_error("Error creating $file: $msg");
+            }
+            exit(1);
+        }
+    }
+}
+
+# vi: set expandtab sw=4 ts=4:

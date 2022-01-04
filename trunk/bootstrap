@@ -1,0 +1,5 @@
+#!/bin/sh
+
+exec autoreconf -v
+
+# vi: set noexpandtab sw=4 ts=4:

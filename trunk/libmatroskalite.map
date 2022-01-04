@@ -1,0 +1,4 @@
+LIBMATROSKALITE_1 {
+    local:
+        *;
+};
