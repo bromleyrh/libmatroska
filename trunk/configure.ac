@@ -58,6 +58,11 @@ AC_ARG_ENABLE([debugging],
               [debug=false])
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
+AC_CHECK_FUNCS_ONCE([fls])
+
+AC_SUBST([libmatroskalite_cppflags], [""])
+AC_SUBST([libmatroskalite_link_dep], [""])
+
 AC_ARG_WITH([pkgconfigdir],
             [  --with-pkgconfigdir=DIR install pkg-config data in DIR],
             [pkgconfigdir="$withval"],

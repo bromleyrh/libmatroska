@@ -37,7 +37,7 @@ pkgconfig_DATA = libmatroskalite.pc
 
 $(pkgconfig_DATA): config.status
 
-noinst_HEADERS = vint.h
+noinst_HEADERS = common.h element.h util.h vint.h
 
 BUILT_SOURCES = version.c
 
@@ -47,22 +47,32 @@ build_date_str = "build_date=$(build_date)"
 build_vers_str = "build_git_commit_id=$(build_vers)"
 
 version.c:
-	echo "const char build_date[] = \"$(build_date_str)\";" >| $@
-	echo "const char build_git_commit_id[] = \"$(build_vers_str)\";" >> $@
+	echo "const char build_date[] = \"$(build_date_str)\";" >|$@
+	echo "const char build_git_commit_id[] = \"$(build_vers_str)\";" >>$@
 
 lib_LTLIBRARIES = libmatroskalite.la
 
 matroskalite_link = $(abs_builddir)/.libs/libmatroskalite.$(sosuf)
+matroskalite_link_dep = @libmatroskalite_link_dep@
 
 if LD_VERSION_SCRIPT
 version_script = -Wl,--version-script=libmatroskalite.map
 endif
 
-libmatroskalite_la_SOURCES = matroska.c vint.c
+libmatroskalite_la_SOURCES = element.c matroska.c util.c vint.c
 libmatroskalite_la_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
 libmatroskalite_la_CFLAGS = $(AM_CFLAGS)
 libmatroskalite_la_LDFLAGS = -version-info @lm_cur@:@lm_rev@:@lm_age@ \
 	$(version_script)
+
+check_PROGRAMS = vint_test
+
+vint_test_SOURCES = vint_test.c
+vint_test_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
+vint_test_CFLAGS = $(AM_CFLAGS)
+vint_test_LDADD = $(matroskalite_link) $(matroskalite_link_dep)
+vint_test_LDFLAGS = -rpath @abs_top_builddir@/.libs
+vint_test_DEPENDENCIES = libmatroskalite.la
 
 install-exec-hook:
 	@if ldc=`which ldconfig 2>/dev/null` && test -x ${ldc}; then \

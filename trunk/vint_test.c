@@ -1,0 +1,66 @@
+/*
+ * vint_test.c
+ */
+
+#include "common.h"
+#include "vint.h"
+
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int
+main(int argc, char **argv)
+{
+    int err;
+    size_t i;
+
+    static const struct test {
+        uint64_t    src;
+        int         len;
+        uint64_t    dst;
+    } tests[] = {
+        {2, -1, 0x82},
+        {2,  2, 0x240},
+        {2,  3, 0x20020},
+        {2,  4, 0x2000010}
+    };
+
+    (void)argc;
+    (void)argv;
+
+    i = 0;
+    while (i < ARRAY_SIZE(tests)) {
+        const char *func;
+        const struct test *t = &tests[i];
+        union {
+            char        buf[4];
+            uint64_t    n;
+        } res;
+
+        memset(&res, 0, sizeof(res));
+        if (t->len < 0) {
+            err = u64_to_vint(t->src, res.buf, sizeof(res.buf));
+            func = "u64_to_vint";
+        } else {
+            err = u64_to_vint_l(t->src, res.buf, t->len);
+            func = "u64_to_vint_l";
+        }
+        if (err) {
+            fprintf(stderr, "%s() returned \"%s\"\n", func, strerror(-err));
+            return EXIT_FAILURE;
+        }
+
+        if (res.n != t->dst) {
+            fprintf(stderr, "%s() returned incorrect result\n", func);
+            return EXIT_FAILURE;
+        }
+
+        fprintf(stderr, "Test %zu\n", ++i);
+    }
+
+    return EXIT_SUCCESS;
+}
+
+/* vi: set expandtab sw=4 ts=4: */

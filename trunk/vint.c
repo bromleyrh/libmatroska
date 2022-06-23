@@ -2,16 +2,41 @@
  * vint.c
  */
 
+#include "common.h"
+#include "util.h"
 #include "vint.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <strings.h>
 
-#include <sys/param.h>
+static int _u64_to_vint(uint64_t, char *, size_t);
 
-int
+static int
+_u64_to_vint(uint64_t x, char *y, size_t bufsz)
+{
+    size_t i;
+    uint64_t b, m;
+
+    /* output VINT_MARKER and first octet of VINT_DATA */
+    i = bufsz;
+    m = 1 << (CHAR_BIT - i);
+    --i;
+    b = (x & 0xff << i * CHAR_BIT) >> i * CHAR_BIT;
+    if (b >= m)
+        return -ERANGE;
+    y[0] = m | b;
+    --bufsz;
+    while (i > 0) {
+        --i;
+        y[bufsz-i] = (x & 0xff << i * CHAR_BIT) >> i * CHAR_BIT;
+    }
+
+    return 0;
+}
+
+EXPORTED int
 vint_to_u64(const char *x, uint64_t *y)
 {
     size_t i, len;
@@ -22,56 +47,47 @@ vint_to_u64(const char *x, uint64_t *y)
         return -EINVAL;
 
     /* determine VINT_WIDTH */
-    len = NBBY + 1 - fls(*x);
+    len = CHAR_BIT + 1 - fls(*x);
 
     /* scan VINT_DATA */
-    ret = *x & (0xff >> len);
-    ret <<= (--len * NBBY);
+    ret = *x & 0xff >> len;
+    ret <<= --len * CHAR_BIT;
     for (i = len - 1; i > 0; i--) {
         ++x;
-        ret |= *x << (i * NBBY);
+        ret |= *x << i * CHAR_BIT;
     }
 
     *y = ret;
     return 0;
 }
 
-int
+EXPORTED int
 u64_to_vint(uint64_t x, char *y, size_t bufsz)
 {
-    char b, m;
-    size_t i, len;
+    size_t len;
     uint64_t bnd;
 
     /* determine VINT_WIDTH */
-    bnd = (1 << NBBY);
+    bnd = 1 << CHAR_BIT;
     len = 1;
     for (;;) {
         if (x < bnd)
             break;
         ++len;
-        if (bnd == (1ull << (sizeof(x) - 1) * NBBY))
+        if (bnd == 1ull << (sizeof(x) - 1) * CHAR_BIT)
             break;
-        bnd <<= NBBY;
+        bnd <<= CHAR_BIT;
     }
     if (bufsz < len)
         return -EINVAL;
 
-    /* output VINT_MARKER and first octet of VINT_DATA */
-    i = len;
-    m = 1 << (NBBY - i);
-    --i;
-    b = x & (0xff << (i * NBBY));
-    if (b >= m)
-        return -ERANGE;
-    y[0] = (m << (i * NBBY)) | b;
-    --len;
-    while (i > 0) {
-        --i;
-        y[len-i] = x & (0xff << (i * NBBY));
-    }
+    return _u64_to_vint(x, y, len);
+}
 
-    return 0;
+EXPORTED int
+u64_to_vint_l(uint64_t x, char *y, size_t bufsz)
+{
+    return _u64_to_vint(x, y, bufsz);
 }
 
 /* vi: set expandtab sw=4 ts=4: */

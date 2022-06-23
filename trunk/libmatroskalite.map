@@ -1,4 +1,8 @@
 LIBMATROSKALITE_1 {
+    global:
+        u64_to_vint;
+        u64_to_vint_l;
+        vint_to_u64;
     local:
         *;
 };
