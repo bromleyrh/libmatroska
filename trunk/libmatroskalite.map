@@ -1,5 +1,7 @@
 LIBMATROSKALITE_1 {
     global:
+        eid_to_u64;
+        u64_to_eid;
         u64_to_vint;
         u64_to_vint_l;
         vint_to_u64;

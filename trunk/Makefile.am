@@ -65,7 +65,14 @@ libmatroskalite_la_CFLAGS = $(AM_CFLAGS)
 libmatroskalite_la_LDFLAGS = -version-info @lm_cur@:@lm_rev@:@lm_age@ \
 	$(version_script)
 
-check_PROGRAMS = vint_test
+check_PROGRAMS = element_test vint_test
+
+element_test_SOURCES = element_test.c
+element_test_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
+element_test_CFLAGS = $(AM_CFLAGS)
+element_test_LDADD = $(matroskalite_link) $(matroskalite_link_dep)
+element_test_LDFLAGS = -rpath @abs_top_builddir@/.libs
+element_test_DEPENDENCIES = libmatroskalite.la
 
 vint_test_SOURCES = vint_test.c
 vint_test_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude

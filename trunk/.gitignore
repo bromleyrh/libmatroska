@@ -32,6 +32,11 @@ version.c
 *.o
 *.so
 
+/element_test
 /vint_test
 
 .gdbinit
+
+\#*\#
+.\#*\#
+*.sw[a-z]

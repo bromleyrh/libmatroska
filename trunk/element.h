@@ -8,9 +8,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-int eid_to_u64(const char *x, uint64_t *y);
+int eid_to_u64(const char *x, uint64_t *y, size_t *sz);
 
-int u64_to_eid(uint64_t x, char *y, size_t bufsz);
+int u64_to_eid(uint64_t x, char *y, size_t *bufsz);
 
 #endif
 

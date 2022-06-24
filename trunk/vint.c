@@ -37,7 +37,7 @@ _u64_to_vint(uint64_t x, char *y, size_t bufsz)
 }
 
 EXPORTED int
-vint_to_u64(const char *x, uint64_t *y)
+vint_to_u64(const char *x, uint64_t *y, size_t *sz)
 {
     size_t i, len;
     uint64_t ret;
@@ -47,14 +47,17 @@ vint_to_u64(const char *x, uint64_t *y)
         return -EINVAL;
 
     /* determine VINT_WIDTH */
-    len = CHAR_BIT + 1 - fls(*x);
+    len = CHAR_BIT + 1 - fls((unsigned char)*x);
+    if (sz != NULL)
+        *sz = len;
 
     /* scan VINT_DATA */
     ret = *x & 0xff >> len;
     ret <<= --len * CHAR_BIT;
-    for (i = len - 1; i > 0; i--) {
+    i = len;
+    while (i > 0) {
         ++x;
-        ret |= *x << i * CHAR_BIT;
+        ret |= *x << --i * CHAR_BIT;
     }
 
     *y = ret;
@@ -62,7 +65,7 @@ vint_to_u64(const char *x, uint64_t *y)
 }
 
 EXPORTED int
-u64_to_vint(uint64_t x, char *y, size_t bufsz)
+u64_to_vint(uint64_t x, char *y, size_t *bufsz)
 {
     size_t len;
     uint64_t bnd;
@@ -78,10 +81,11 @@ u64_to_vint(uint64_t x, char *y, size_t bufsz)
             break;
         bnd <<= CHAR_BIT;
     }
-    if (bufsz < len)
+    if (*bufsz < len)
         return -EINVAL;
+    *bufsz = len;
 
-    return _u64_to_vint(x, y, len);
+    return y == NULL ? 0 : _u64_to_vint(x, y, len);
 }
 
 EXPORTED int
