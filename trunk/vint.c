@@ -41,23 +41,26 @@ vint_to_u64(const char *x, uint64_t *y, size_t *sz)
 {
     size_t i, len;
     uint64_t ret;
+    unsigned char d;
 
     /* find VINT_MARKER */
     if (*x == 0)
         return -EINVAL;
 
+    d = (unsigned char)*x;
+
     /* determine VINT_WIDTH */
-    len = CHAR_BIT + 1 - fls((unsigned char)*x);
+    len = CHAR_BIT + 1 - fls(d);
     if (sz != NULL)
         *sz = len;
 
     /* scan VINT_DATA */
-    ret = *x & 0xff >> len;
+    ret = d & 0xff >> len;
     ret <<= --len * CHAR_BIT;
     i = len;
     while (i > 0) {
         ++x;
-        ret |= *x << --i * CHAR_BIT;
+        ret |= (unsigned char)*x << --i * CHAR_BIT;
     }
 
     *y = ret;
