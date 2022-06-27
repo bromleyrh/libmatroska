@@ -9,7 +9,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = include
 
 EXTRA_DIST = bootstrap build-aux libmatroskalite.map libmatroskalite.pc.in \
-	.version
+	matroska_schema.xml .version
 
 build_date = "$(shell date)"
 build_vers = "$(shell git rev-parse HEAD)"
