@@ -355,304 +355,864 @@ Include the full name of the application followed by the version number.
         </documentation>
         <extension type="webmproject.org" webm="1"/>
     </element>
-  <element name="Cluster" path="\Segment\Cluster" id="0x1F43B675" type="master" unknownsizeallowed="1">
-    <documentation lang="en" purpose="definition">The Top-Level Element containing the (monolithic) Block structure.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="Timestamp" path="\Segment\Cluster\Timestamp" id="0xE7" type="uinteger" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Absolute timestamp of the cluster, expressed in Segment Ticks which is based on TimestampScale; see (#timestamp-ticks).</documentation>
-    <documentation lang="en" purpose="usage notes">This element **SHOULD** be the first child element of the Cluster it belongs to,
-or the second if that Cluster contains a CRC-32 element ((#crc-32)).</documentation>
-    <extension type="libmatroska" cppname="ClusterTimecode"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="SilentTracks" path="\Segment\Cluster\SilentTracks" id="0x5854" type="master" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The list of tracks that are not used in that part of the stream.
-It is useful when using overlay tracks on seeking or to decide what track to use.</documentation>
-    <extension type="libmatroska" cppname="ClusterSilentTracks"/>
-  </element>
-  <element name="SilentTrackNumber" path="\Segment\Cluster\SilentTracks\SilentTrackNumber" id="0x58D7" type="uinteger" minver="0" maxver="0">
-    <documentation lang="en" purpose="definition">One of the track number that are not used from now on in the stream.
-It could change later if not specified as silent in a further Cluster.</documentation>
-    <extension type="libmatroska" cppname="ClusterSilentTrackNumber"/>
-  </element>
-  <element name="Position" path="\Segment\Cluster\Position" id="0xA7" type="uinteger" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The Segment Position of the Cluster in the Segment (0 in live streams).
-It might help to resynchronise offset on damaged streams.</documentation>
-    <extension type="libmatroska" cppname="ClusterPosition"/>
-  </element>
-  <element name="PrevSize" path="\Segment\Cluster\PrevSize" id="0xAB" type="uinteger" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Size of the previous Cluster, in octets. Can be useful for backward playing.</documentation>
-    <extension type="libmatroska" cppname="ClusterPrevSize"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="SimpleBlock" path="\Segment\Cluster\SimpleBlock" id="0xA3" type="binary" minver="2">
-    <documentation lang="en" purpose="definition">Similar to Block, see (#block-structure), but without all the extra information,
-mostly used to reduced overhead when no extra feature is needed; see (#simpleblock-structure) on SimpleBlock Structure.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="BlockGroup" path="\Segment\Cluster\BlockGroup" id="0xA0" type="master">
-    <documentation lang="en" purpose="definition">Basic container of information containing a single Block and information specific to that Block.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="Block" path="\Segment\Cluster\BlockGroup\Block" id="0xA1" type="binary" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Block containing the actual data to be rendered and a timestamp relative to the Cluster Timestamp;
-see (#block-structure) on Block Structure.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="BlockVirtual" path="\Segment\Cluster\BlockGroup\BlockVirtual" id="0xA2" type="binary" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A Block with no data. It **MUST** be stored in the stream at the place the real Block would be in display order.
-</documentation>
-  </element>
-  <element name="BlockAdditions" path="\Segment\Cluster\BlockGroup\BlockAdditions" id="0x75A1" type="master" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Contain additional blocks to complete the main one.
-An EBML parser that has no knowledge of the Block structure could still see and use/skip these data.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="BlockMore" path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore" id="0xA6" type="master" minOccurs="1">
-    <documentation lang="en" purpose="definition">Contain the BlockAdditional and some parameters.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="BlockAddID" path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAddID" id="0xEE" type="uinteger" range="not 0" default="1" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">An ID to identify the BlockAdditional level.
-If BlockAddIDType of the corresponding block is 0, this value is also the value of BlockAddIDType for the meaning of the content of BlockAdditional.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="BlockAdditional" path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAdditional" id="0xA5" type="binary" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Interpreted by the codec as it wishes (using the BlockAddID).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="BlockDuration" path="\Segment\Cluster\BlockGroup\BlockDuration" id="0x9B" type="uinteger" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The duration of the Block, expressed in Track Ticks; see (#timestamp-ticks).
-The BlockDuration Element can be useful at the end of a Track to define the duration of the last frame (as there is no subsequent Block available),
-or when there is a break in a track like for subtitle tracks.</documentation>
-    <implementation_note note_attribute="minOccurs">BlockDuration **MUST** be set (minOccurs=1) if the associated TrackEntry stores a DefaultDuration value.</implementation_note>
-    <implementation_note note_attribute="default">When not written and with no DefaultDuration, the value is assumed to be the difference between the timestamp
-of this Block and the timestamp of the next Block in "display" order (not coding order).</implementation_note>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="ReferencePriority" path="\Segment\Cluster\BlockGroup\ReferencePriority" id="0xFA" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">This frame is referenced and has the specified cache priority.
-In cache only a frame of the same or higher priority can replace this frame. A value of 0 means the frame is not referenced.</documentation>
-  </element>
-  <element name="ReferenceBlock" path="\Segment\Cluster\BlockGroup\ReferenceBlock" id="0xFB" type="integer">
-    <documentation lang="en" purpose="definition">A timestamp value, relative to the timestamp of the Block in this BlockGroup, expressed in Track Ticks; see (#timestamp-ticks).
-This is used to reference other frames necessary to decode this frame.
-The relative value **SHOULD** correspond to a valid `Block` this `Block` depends on.
-Historically Matroska Writer didn't write the actual `Block(s)` this `Block` depends on, but *some* `Block` in the past.
+    <!-- \Segment\Cluster -->
+    <element
+                      name="Cluster"
+                      path="\Segment\Cluster"
+                        id="0x1F43B675"
+                      type="master"
+        unknownsizeallowed="1">
+        <documentation lang="en" purpose="definition">
+The Top-Level Element containing the (monolithic) Block structure.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\Timestamp -->
+    <element
+             name="Timestamp"
+             path="\Segment\Cluster\Timestamp"
+               id="0xE7"
+             type="uinteger"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Absolute timestamp of the cluster, expressed in Segment Ticks which is based on
+TimestampScale; see (#timestamp-ticks).
+        </documentation>
+        <documentation lang="en" purpose="usage notes">
+This element **SHOULD** be the first child element of the Cluster it belongs to,
+or the second if that Cluster contains a CRC-32 element ((#crc-32)).
+        </documentation>
+        <extension type="libmatroska" cppname="ClusterTimecode"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\SilentTracks -->
+    <element
+             name="SilentTracks"
+             path="\Segment\Cluster\SilentTracks"
+               id="0x5854"
+             type="master"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The list of tracks that are not used in that part of the stream. It is useful
+when using overlay tracks on seeking or to decide what track to use.
+        </documentation>
+        <extension type="libmatroska" cppname="ClusterSilentTracks"/>
+    </element>
+    <!-- \Segment\Cluster\SilentTracks\SilentTrackNumber -->
+    <element
+          name="SilentTrackNumber"
+          path="\Segment\Cluster\SilentTracks\SilentTrackNumber"
+            id="0x58D7"
+          type="uinteger"
+        minver="0" maxver="0">
+        <documentation lang="en" purpose="definition">
+One of the track number that are not used from now on in the stream. It could
+change later if not specified as silent in a further Cluster.
+        </documentation>
+        <extension type="libmatroska" cppname="ClusterSilentTrackNumber"/>
+    </element>
+    <!-- \Segment\Cluster\Position -->
+    <element
+             name="Position"
+             path="\Segment\Cluster\Position"
+               id="0xA7"
+             type="uinteger"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The Segment Position of the Cluster in the Segment (0 in live streams). It might
+help to resynchronise offset on damaged streams.
+        </documentation>
+        <extension type="libmatroska" cppname="ClusterPosition"/>
+    </element>
+    <!-- \Segment\Cluster\PrevSize -->
+    <element
+             name="PrevSize"
+             path="\Segment\Cluster\PrevSize"
+               id="0xAB"
+             type="uinteger"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Size of the previous Cluster, in octets. Can be useful for backward playing.
+        </documentation>
+        <extension type="libmatroska" cppname="ClusterPrevSize"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\SimpleBlock -->
+    <element
+          name="SimpleBlock"
+          path="\Segment\Cluster\SimpleBlock"
+            id="0xA3"
+          type="binary"
+        minver="2">
+        <documentation lang="en" purpose="definition">
+Similar to Block, see (#block-structure), but without all the extra information,
+mostly used to reduce overhead when no extra feature is needed; see
+(#simpleblock-structure) on SimpleBlock Structure.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup -->
+    <element
+        name="BlockGroup"
+        path="\Segment\Cluster\BlockGroup"
+          id="0xA0"
+        type="master">
+        <documentation lang="en" purpose="definition">
+Basic container of information containing a single Block and information
+specific to that Block.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\Block -->
+    <element
+             name="Block"
+             path="\Segment\Cluster\BlockGroup\Block"
+               id="0xA1"
+             type="binary"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Block containing the actual data to be rendered and a timestamp relative to the
+Cluster Timestamp; see (#block-structure) on Block Structure.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\BlockVirtual -->
+    <element
+             name="BlockVirtual"
+             path="\Segment\Cluster\BlockGroup\BlockVirtual"
+               id="0xA2"
+             type="binary"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A Block with no data. It **MUST** be stored in the stream at the place the real
+Block would be in display order.
+        </documentation>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\BlockAdditions -->
+    <element
+             name="BlockAdditions"
+             path="\Segment\Cluster\BlockGroup\BlockAdditions"
+               id="0x75A1"
+             type="master"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contain additional blocks to complete the main one. An EBML parser that has no
+knowledge of the Block structure could still see and use/skip these data.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore -->
+    <element
+             name="BlockMore"
+             path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore"
+               id="0xA6"
+             type="master"
+        minOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contain the BlockAdditional and some parameters.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAddID -->
+    <element
+             name="BlockAddID"
+             path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAddID"
+               id="0xEE"
+             type="uinteger" range="not 0"
+          default="1"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+An ID to identify the BlockAdditional level. If BlockAddIDType of the
+corresponding block is 0, this value is also the value of BlockAddIDType for the
+meaning of the content of BlockAdditional.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAdditional -->
+    <element
+             name="BlockAdditional"
+             path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAdditional"
+               id="0xA5"
+             type="binary"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Interpreted by the codec as it wishes (using the BlockAddID).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\BlockDuration -->
+    <element
+             name="BlockDuration"
+             path="\Segment\Cluster\BlockGroup\BlockDuration"
+               id="0x9B"
+             type="uinteger"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The duration of the Block, expressed in Track Ticks; see (#timestamp-ticks). The
+BlockDuration Element can be useful at the end of a Track to define the duration
+of the last frame (as there is no subsequent Block available), or when there is
+a break in a track like for subtitle tracks.
+        </documentation>
+        <implementation_note note_attribute="minOccurs">
+BlockDuration **MUST** be set (minOccurs=1) if the associated TrackEntry stores
+a DefaultDuration value.
+        </implementation_note>
+        <implementation_note note_attribute="default">
+When not written and with no DefaultDuration, the value is assumed to be the
+difference between the timestamp of this Block and the timestamp of the next
+Block in "display" order (not coding order).
+        </implementation_note>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\ReferencePriority -->
+    <element
+             name="ReferencePriority"
+             path="\Segment\Cluster\BlockGroup\ReferencePriority"
+               id="0xFA"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+This frame is referenced and has the specified cache priority. In cache only a
+frame of the same or higher priority can replace this frame. A value of 0 means
+the frame is not referenced.
+        </documentation>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\ReferenceBlock -->
+    <element
+        name="ReferenceBlock"
+        path="\Segment\Cluster\BlockGroup\ReferenceBlock"
+          id="0xFB"
+        type="integer">
+        <documentation lang="en" purpose="definition">
+A timestamp value, relative to the timestamp of the Block in this BlockGroup,
+expressed in Track Ticks; see (#timestamp-ticks). This is used to reference
+other frames necessary to decode this frame. The relative value **SHOULD**
+correspond to a valid `Block` this `Block` depends on. Historically Matroska
+Writer didn't write the actual `Block(s)` this `Block` depends on, but *some*
+`Block` in the past.
 
-The value "0" **MAY** also be used to signify this `Block` cannot be decoded on its own, but without knownledge of which `Block` is necessary. In this case, other `ReferenceBlock` **MUST NOT** be found in the same `BlockGroup`.
+The value "0" **MAY** also be used to signify this `Block` cannot be decoded on
+its own, but without knownledge of which `Block` is necessary. In this case,
+other `ReferenceBlock` **MUST NOT** be found in the same `BlockGroup`.
 
-If the `BlockGroup` doesn't have any `ReferenceBlock` element, then the `Block` it contains can be decoded without using any other `Block` data.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="ReferenceVirtual" path="\Segment\Cluster\BlockGroup\ReferenceVirtual" id="0xFD" type="integer" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The Segment Position of the data that would otherwise be in position of the virtual block.</documentation>
-  </element>
-  <element name="CodecState" path="\Segment\Cluster\BlockGroup\CodecState" id="0xA4" type="binary" minver="2" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The new codec state to use. Data interpretation is private to the codec.
-This information **SHOULD** always be referenced by a seek entry.</documentation>
-  </element>
-  <element name="DiscardPadding" path="\Segment\Cluster\BlockGroup\DiscardPadding" id="0x75A2" type="integer" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Duration of the silent data added to the Block, expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks)
-(padding at the end of the Block for positive value, at the beginning of the Block for negative value).
-The duration of DiscardPadding is not calculated in the duration of the TrackEntry and **SHOULD** be discarded during playback.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="Slices" path="\Segment\Cluster\BlockGroup\Slices" id="0x8E" type="master"  minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Contains slices description.</documentation>
-  </element>
-  <element name="TimeSlice" path="\Segment\Cluster\BlockGroup\Slices\TimeSlice" id="0xE8" type="master" minver="0" maxver="0">
-    <documentation lang="en" purpose="definition">Contains extra time information about the data contained in the Block.
-Being able to interpret this Element is not **REQUIRED** for playback.</documentation>
-  </element>
-  <element name="LaceNumber" path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\LaceNumber" id="0xCC" type="uinteger"  minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The reverse number of the frame in the lace (0 is the last frame, 1 is the next to last, etc).
-Being able to interpret this Element is not **REQUIRED** for playback.</documentation>
-    <extension type="libmatroska" cppname="SliceLaceNumber"/>
-  </element>
-  <element name="FrameNumber" path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\FrameNumber" id="0xCD" type="uinteger" minver="0" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The number of the frame to generate from this lace with this delay
-(allow you to generate many frames from the same Block/Frame).</documentation>
-    <extension type="libmatroska" cppname="SliceFrameNumber"/>
-  </element>
-  <element name="BlockAdditionID" path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\BlockAdditionID" id="0xCB" type="uinteger" minver="0" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The ID of the BlockAdditional Element (0 is the main Block).</documentation>
-    <extension type="libmatroska" cppname="SliceBlockAddID"/>
-  </element>
-  <element name="Delay" path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\Delay" id="0xCE" type="uinteger" minver="0" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The delay to apply to the Element, expressed in Track Ticks; see (#timestamp-ticks).</documentation>
-    <extension type="libmatroska" cppname="SliceDelay"/>
-  </element>
-  <element name="SliceDuration" path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\SliceDuration" id="0xCF" type="uinteger" minver="0" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The duration to apply to the Element, expressed in Track Ticks; see (#timestamp-ticks).</documentation>
-  </element>
-  <element name="ReferenceFrame" path="\Segment\Cluster\BlockGroup\ReferenceFrame" id="0xC8" type="master" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Contains information about the last reference frame. See [@?DivXTrickTrack].</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="ReferenceOffset" path="\Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceOffset" id="0xC9" type="uinteger" minver="0" maxver="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The relative offset, in bytes, from the previous BlockGroup element for this Smooth FF/RW video track to the containing BlockGroup element. See [@?DivXTrickTrack].</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="ReferenceTimestamp" path="\Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceTimestamp" id="0xCA" type="uinteger" minver="0" maxver="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The timestamp of the BlockGroup pointed to by ReferenceOffset, expressed in Track Ticks; see (#timestamp-ticks). See [@?DivXTrickTrack].</documentation>
-    <extension type="libmatroska" cppname="ReferenceTimeCode"/>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="EncryptedBlock" path="\Segment\Cluster\EncryptedBlock" id="0xAF" type="binary" minver="0" maxver="0">
-    <documentation lang="en" purpose="definition">Similar to SimpleBlock, see (#simpleblock-structure),
-but the data inside the Block are Transformed (encrypt and/or signed).</documentation>
-  </element>
-  <element name="Tracks" path="\Segment\Tracks" id="0x1654AE6B" type="master" maxOccurs="1" recurring="1">
-    <documentation lang="en" purpose="definition">A Top-Level Element of information with many tracks described.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="TrackEntry" path="\Segment\Tracks\TrackEntry" id="0xAE" type="master" minOccurs="1">
-    <documentation lang="en" purpose="definition">Describes a track with all Elements.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="TrackNumber" path="\Segment\Tracks\TrackEntry\TrackNumber" id="0xD7" type="uinteger" range="not 0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The track number as used in the Block Header (using more than 127 tracks is not encouraged,
-though the design allows an unlimited number).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="TrackUID" path="\Segment\Tracks\TrackEntry\TrackUID" id="0x73C5" type="uinteger" range="not 0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A unique ID to identify the Track.</documentation>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="TrackType" path="\Segment\Tracks\TrackEntry\TrackType" id="0x83" type="uinteger" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The `TrackType` defines the type of each frame found in the Track.
-The value **SHOULD** be stored on 1 octet.</documentation>
-    <restriction>
-      <enum value="1" label="video">
-        <documentation lang="en" purpose="definition">An image.</documentation>
-      </enum>
-      <enum value="2" label="audio">
-        <documentation lang="en" purpose="definition">Audio samples.</documentation>
-      </enum>
-      <enum value="3" label="complex">
-        <documentation lang="en" purpose="definition">A mix of different other TrackType. The codec needs to define how the `Matroska Player` should interpret such data.</documentation>
-      </enum>
-      <enum value="16" label="logo">
-        <documentation lang="en" purpose="definition">An image to be rendered over the video track(s).</documentation>
-      </enum>
-      <enum value="17" label="subtitle">
-        <documentation lang="en" purpose="definition">Subtitle or closed caption data to be rendered over the video track(s).</documentation>
-      </enum>
-      <enum value="18" label="buttons">
-        <documentation lang="en" purpose="definition">Interactive button(s) to be rendered over the video track(s).</documentation>
-      </enum>
-      <enum value="32" label="control">
-        <documentation lang="en" purpose="definition">Metadata used to control the player of the `Matroska Player`.</documentation>
-      </enum>
-      <enum value="33" label="metadata">
-        <documentation lang="en" purpose="definition">Timed metadata that can be passed on to the `Matroska Player`.</documentation>
-      </enum>
-    </restriction>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="FlagEnabled" path="\Segment\Tracks\TrackEntry\FlagEnabled" id="0xB9" type="uinteger" minver="2" range="0-1" default="1" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if the track is usable. It is possible to turn a not usable track into a usable track using chapter codecs or control tracks.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="TrackFlagEnabled"/>
-  </element>
-  <element name="FlagDefault" path="\Segment\Tracks\TrackEntry\FlagDefault" id="0x88" type="uinteger" range="0-1" default="1" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set if that track (audio, video or subs) **SHOULD** be eligible for automatic selection by the player; see (#default-track-selection) for more details.</documentation>
-    <extension type="libmatroska" cppname="TrackFlagDefault"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="FlagForced" path="\Segment\Tracks\TrackEntry\FlagForced" id="0x55AA" type="uinteger" range="0-1" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Applies only to subtitles. Set if that track **SHOULD** be eligible for automatic selection by the player if it matches the user's language preference,
-even if the user's preferences would normally not enable subtitles with the selected audio track;
-this can be used for tracks containing only translations of foreign-language audio or onscreen text.
-See (#default-track-selection) for more details.</documentation>
-    <extension type="libmatroska" cppname="TrackFlagForced"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="FlagHearingImpaired" path="\Segment\Tracks\TrackEntry\FlagHearingImpaired" id="0x55AB" type="uinteger" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if that track is suitable for users with hearing impairments, set to 0 if it is unsuitable for users with hearing impairments.</documentation>
-  </element>
-  <element name="FlagVisualImpaired" path="\Segment\Tracks\TrackEntry\FlagVisualImpaired" id="0x55AC" type="uinteger" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if that track is suitable for users with visual impairments, set to 0 if it is unsuitable for users with visual impairments.</documentation>
-  </element>
-  <element name="FlagTextDescriptions" path="\Segment\Tracks\TrackEntry\FlagTextDescriptions" id="0x55AD" type="uinteger" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if that track contains textual descriptions of video content, set to 0 if that track does not contain textual descriptions of video content.</documentation>
-  </element>
-  <element name="FlagOriginal" path="\Segment\Tracks\TrackEntry\FlagOriginal" id="0x55AE" type="uinteger" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if that track is in the content's original language, set to 0 if it is a translation.</documentation>
-  </element>
-  <element name="FlagCommentary" path="\Segment\Tracks\TrackEntry\FlagCommentary" id="0x55AF" type="uinteger" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if that track contains commentary, set to 0 if it does not contain commentary.</documentation>
-  </element>
-  <element name="FlagLacing" path="\Segment\Tracks\TrackEntry\FlagLacing" id="0x9C" type="uinteger" range="0-1" default="1" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if the track **MAY** contain blocks using lacing. When set to 0 all blocks **MUST** have their lacing flags set to No lacing; see (#block-lacing) on Block Lacing.</documentation>
-    <extension type="libmatroska" cppname="TrackFlagLacing"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="MinCache" path="\Segment\Tracks\TrackEntry\MinCache" id="0x6DE7" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The minimum number of frames a player **SHOULD** be able to cache during playback.
-If set to 0, the reference pseudo-cache system is not used.</documentation>
-    <extension type="libmatroska" cppname="TrackMinCache"/>
-  </element>
-  <element name="MaxCache" path="\Segment\Tracks\TrackEntry\MaxCache" id="0x6DF8" type="uinteger" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The maximum cache size necessary to store referenced frames in and the current frame.
-0 means no cache is needed.</documentation>
-    <extension type="libmatroska" cppname="TrackMaxCache"/>
-  </element>
-  <element name="DefaultDuration" path="\Segment\Tracks\TrackEntry\DefaultDuration" id="0x23E383" type="uinteger" range="not 0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Number of nanoseconds per frame, expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks)
-(frame in the Matroska sense -- one Element put into a (Simple)Block).</documentation>
-    <extension type="libmatroska" cppname="TrackDefaultDuration"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="DefaultDecodedFieldDuration" path="\Segment\Tracks\TrackEntry\DefaultDecodedFieldDuration" id="0x234E7A" type="uinteger" minver="4" range="not 0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The period between two successive fields at the output of the decoding process, expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks).
-see (#defaultdecodedfieldduration) for more information</documentation>
-    <extension type="libmatroska" cppname="TrackDefaultDecodedFieldDuration"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackTimestampScale" path="\Segment\Tracks\TrackEntry\TrackTimestampScale" id="0x23314F" type="float" maxver="3" range="&gt; 0x0p+0" default="0x1p+0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">DEPRECATED, DO NOT USE. The scale to apply on this track to work at normal speed in relation with other tracks
-(mostly used to adjust video speed when the audio length differs).</documentation>
-    <extension type="libmatroska" cppname="TrackTimecodeScale"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackOffset" path="\Segment\Tracks\TrackEntry\TrackOffset" id="0x537F" type="integer" minver="0" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A value to add to the Block's Timestamp, expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks).
-This can be used to adjust the playback offset of a track.</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="MaxBlockAdditionID" path="\Segment\Tracks\TrackEntry\MaxBlockAdditionID" id="0x55EE" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The maximum value of BlockAddID ((#blockaddid-element)).
-A value 0 means there is no BlockAdditions ((#blockadditions-element)) for this track.</documentation>
-  </element>
-  <element name="BlockAdditionMapping" path="\Segment\Tracks\TrackEntry\BlockAdditionMapping" id="0x41E4" type="master" minver="4">
-    <documentation lang="en" purpose="definition">Contains elements that extend the track format, by adding content either to each frame,
-with BlockAddID ((#blockaddid-element)), or to the track as a whole
-with BlockAddIDExtraData.</documentation>
-  </element>
-  <element name="BlockAddIDValue" path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDValue" id="0x41F0" type="uinteger" minver="4" range=">=2" maxOccurs="1">
-    <documentation lang="en" purpose="definition">If the track format extension needs content beside frames,
-the value refers to the BlockAddID ((#blockaddid-element)), value being described.
-To keep MaxBlockAdditionID as low as possible, small values **SHOULD** be used.</documentation>
-  </element>
-  <element name="BlockAddIDName" path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDName" id="0x41A4" type="string" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A human-friendly name describing the type of BlockAdditional data,
-as defined by the associated Block Additional Mapping.</documentation>
-  </element>
-  <element name="BlockAddIDType" path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDType" id="0x41E7" type="uinteger" minver="4" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Stores the registered identifier of the Block Additional Mapping
-to define how the BlockAdditional data should be handled.</documentation>
-  </element>
-  <element name="BlockAddIDExtraData" path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDExtraData" id="0x41ED" type="binary" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Extra binary data that the BlockAddIDType can use to interpret the BlockAdditional data.
-The interpretation of the binary data depends on the BlockAddIDType value and the corresponding Block Additional Mapping.</documentation>
-  </element>
+If the `BlockGroup` doesn't have any `ReferenceBlock` element, then the `Block`
+it contains can be decoded without using any other `Block` data.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\ReferenceVirtual -->
+    <element
+             name="ReferenceVirtual"
+             path="\Segment\Cluster\BlockGroup\ReferenceVirtual"
+               id="0xFD"
+             type="integer"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The Segment Position of the data that would otherwise be in position of the
+virtual block.
+        </documentation>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\CodecState -->
+    <element
+             name="CodecState"
+             path="\Segment\Cluster\BlockGroup\CodecState"
+               id="0xA4"
+             type="binary"
+           minver="2"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The new codec state to use. Data interpretation is private to the codec. This
+information **SHOULD** always be referenced by a seek entry.
+        </documentation>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\DiscardPadding -->
+    <element
+             name="DiscardPadding"
+             path="\Segment\Cluster\BlockGroup\DiscardPadding"
+               id="0x75A2"
+             type="integer"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Duration of the silent data added to the Block, expressed in Matroska Ticks --
+ie in nanoseconds; see (#timestamp-ticks) (padding at the end of the Block for
+positive value, at the beginning of the Block for negative value). The duration
+of DiscardPadding is not calculated in the duration of the TrackEntry and
+**SHOULD** be discarded during playback.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\Slices -->
+    <element
+             name="Slices"
+             path="\Segment\Cluster\BlockGroup\Slices"
+               id="0x8E"
+             type="master"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contains slices description.
+        </documentation>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice -->
+    <element
+          name="TimeSlice"
+          path="\Segment\Cluster\BlockGroup\Slices\TimeSlice"
+            id="0xE8"
+          type="master"
+        minver="0" maxver="0">
+        <documentation lang="en" purpose="definition">
+Contains extra time information about the data contained in the Block. Being
+able to interpret this Element is not **REQUIRED** for playback.
+        </documentation>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\LaceNumber -->
+    <element
+             name="LaceNumber"
+             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\LaceNumber"
+               id="0xCC"
+             type="uinteger"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The reverse number of the frame in the lace (0 is the last frame, 1 is the next
+to last, etc). Being able to interpret this Element is not **REQUIRED** for
+playback.
+        </documentation>
+        <extension type="libmatroska" cppname="SliceLaceNumber"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\FrameNumber -->
+    <element
+             name="FrameNumber"
+             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\FrameNumber"
+               id="0xCD"
+             type="uinteger"
+           minver="0" maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The number of the frame to generate from this lace with this delay (allow you to
+generate many frames from the same Block/Frame).
+        </documentation>
+        <extension type="libmatroska" cppname="SliceFrameNumber"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\BlockAdditionID -->
+    <element
+             name="BlockAdditionID"
+             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\BlockAdditionID"
+               id="0xCB"
+             type="uinteger"
+           minver="0" maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The ID of the BlockAdditional Element (0 is the main Block).
+        </documentation>
+        <extension type="libmatroska" cppname="SliceBlockAddID"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\Delay -->
+    <element
+             name="Delay"
+             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\Delay"
+               id="0xCE"
+             type="uinteger"
+           minver="0" maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The delay to apply to the Element, expressed in Track Ticks; see
+(#timestamp-ticks).
+        </documentation>
+        <extension type="libmatroska" cppname="SliceDelay"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\SliceDuration -->
+    <element
+             name="SliceDuration"
+             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\SliceDuration"
+               id="0xCF"
+             type="uinteger"
+           minver="0" maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The duration to apply to the Element, expressed in Track Ticks; see
+(#timestamp-ticks).
+        </documentation>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\ReferenceFrame -->
+    <element
+             name="ReferenceFrame"
+             path="\Segment\Cluster\BlockGroup\ReferenceFrame"
+               id="0xC8"
+             type="master"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contains information about the last reference frame. See [@?DivXTrickTrack].
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceOffset -->
+    <element
+             name="ReferenceOffset"
+             path="\Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceOffset"
+               id="0xC9"
+             type="uinteger"
+           minver="0" maxver="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The relative offset, in bytes, from the previous BlockGroup element for this
+Smooth FF/RW video track to the containing BlockGroup element. See
+[@?DivXTrickTrack].
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceTimestamp -->
+    <element
+             name="ReferenceTimestamp"
+             path="\Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceTimestamp"
+               id="0xCA"
+             type="uinteger"
+           minver="0" maxver="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The timestamp of the BlockGroup pointed to by ReferenceOffset, expressed in
+Track Ticks; see (#timestamp-ticks). See [@?DivXTrickTrack].
+        </documentation>
+        <extension type="libmatroska" cppname="ReferenceTimeCode"/>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Cluster\EncryptedBlock -->
+    <element
+          name="EncryptedBlock"
+          path="\Segment\Cluster\EncryptedBlock"
+            id="0xAF"
+          type="binary"
+        minver="0" maxver="0">
+        <documentation lang="en" purpose="definition">
+Similar to SimpleBlock, see (#simpleblock-structure), but the data inside the
+Block are Transformed (encrypt and/or signed).
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks -->
+    <element
+             name="Tracks"
+             path="\Segment\Tracks"
+               id="0x1654AE6B"
+             type="master"
+        maxOccurs="1"
+        recurring="1">
+        <documentation lang="en" purpose="definition">
+A Top-Level Element of information with many tracks described.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry -->
+    <element
+             name="TrackEntry"
+             path="\Segment\Tracks\TrackEntry"
+               id="0xAE"
+             type="master"
+        minOccurs="1">
+        <documentation lang="en" purpose="definition">
+Describes a track with all Elements.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackNumber -->
+    <element
+             name="TrackNumber"
+             path="\Segment\Tracks\TrackEntry\TrackNumber"
+               id="0xD7"
+             type="uinteger" range="not 0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The track number as used in the Block Header (using more than 127 tracks is not
+encouraged, though the design allows an unlimited number).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackUID -->
+    <element
+             name="TrackUID"
+             path="\Segment\Tracks\TrackEntry\TrackUID"
+               id="0x73C5"
+             type="uinteger" range="not 0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A unique ID to identify the Track.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackType -->
+    <element
+             name="TrackType"
+             path="\Segment\Tracks\TrackEntry\TrackType"
+               id="0x83"
+             type="uinteger"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The `TrackType` defines the type of each frame found in the Track. The value
+**SHOULD** be stored on 1 octet.
+        </documentation>
+        <restriction>
+            <enum value="1" label="video">
+                <documentation lang="en" purpose="definition">
+An image.
+                </documentation>
+            </enum>
+            <enum value="2" label="audio">
+                <documentation lang="en" purpose="definition">
+Audio samples.
+                </documentation>
+            </enum>
+            <enum value="3" label="complex">
+                <documentation lang="en" purpose="definition">
+A mix of different other TrackType. The codec needs to define how the `Matroska
+Player` should interpret such data.
+                </documentation>
+            </enum>
+            <enum value="16" label="logo">
+                <documentation lang="en" purpose="definition">
+An image to be rendered over the video track(s).
+                </documentation>
+            </enum>
+            <enum value="17" label="subtitle">
+                <documentation lang="en" purpose="definition">
+Subtitle or closed caption data to be rendered over the video track(s).
+                </documentation>
+            </enum>
+            <enum value="18" label="buttons">
+                <documentation lang="en" purpose="definition">
+Interactive button(s) to be rendered over the video track(s).
+                </documentation>
+            </enum>
+            <enum value="32" label="control">
+                <documentation lang="en" purpose="definition">
+Metadata used to control the player of the `Matroska Player`.
+                </documentation>
+            </enum>
+            <enum value="33" label="metadata">
+                <documentation lang="en" purpose="definition">
+Timed metadata that can be passed on to the `Matroska Player`.
+                </documentation>
+            </enum>
+        </restriction>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagEnabled -->
+    <element
+             name="FlagEnabled"
+             path="\Segment\Tracks\TrackEntry\FlagEnabled"
+               id="0xB9"
+             type="uinteger" range="0-1"
+           minver="2"
+          default="1"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if the track is usable. It is possible to turn a not usable track into
+a usable track using chapter codecs or control tracks.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="TrackFlagEnabled"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagDefault -->
+    <element
+             name="FlagDefault"
+             path="\Segment\Tracks\TrackEntry\FlagDefault"
+               id="0x88"
+             type="uinteger" range="0-1"
+          default="1"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set if that track (audio, video or subs) **SHOULD** be eligible for automatic
+selection by the player; see (#default-track-selection) for more details.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackFlagDefault"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagForced -->
+    <element
+             name="FlagForced"
+             path="\Segment\Tracks\TrackEntry\FlagForced"
+               id="0x55AA"
+             type="uinteger" range="0-1"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Applies only to subtitles. Set if that track **SHOULD** be eligible for
+automatic selection by the player if it matches the user's language preference,
+even if the user's preferences would normally not enable subtitles with the
+selected audio track; this can be used for tracks containing only translations
+of foreign-language audio or onscreen text. See (#default-track-selection) for
+more details.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackFlagForced"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagHearingImpaired -->
+    <element
+             name="FlagHearingImpaired"
+             path="\Segment\Tracks\TrackEntry\FlagHearingImpaired"
+               id="0x55AB"
+             type="uinteger" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if that track is suitable for users with hearing impairments, set to 0
+if it is unsuitable for users with hearing impairments.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagVisualImpaired -->
+    <element
+             name="FlagVisualImpaired"
+             path="\Segment\Tracks\TrackEntry\FlagVisualImpaired"
+               id="0x55AC"
+             type="uinteger" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if that track is suitable for users with visual impairments, set to 0
+if it is unsuitable for users with visual impairments.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagTextDescriptions -->
+    <element
+             name="FlagTextDescriptions"
+             path="\Segment\Tracks\TrackEntry\FlagTextDescriptions"
+               id="0x55AD"
+             type="uinteger" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if that track contains textual descriptions of video content, set to 0
+if that track does not contain textual descriptions of video content.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagOriginal -->
+    <element
+             name="FlagOriginal"
+             path="\Segment\Tracks\TrackEntry\FlagOriginal"
+               id="0x55AE"
+             type="uinteger" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if that track is in the content's original language, set to 0 if it is
+a translation.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagCommentary -->
+    <element
+             name="FlagCommentary"
+             path="\Segment\Tracks\TrackEntry\FlagCommentary"
+               id="0x55AF"
+             type="uinteger" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if that track contains commentary, set to 0 if it does not contain
+commentary.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\FlagLacing -->
+    <element
+             name="FlagLacing"
+             path="\Segment\Tracks\TrackEntry\FlagLacing"
+               id="0x9C"
+             type="uinteger" range="0-1"
+          default="1"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if the track **MAY** contain blocks using lacing. When set to 0 all
+blocks **MUST** have their lacing flags set to No lacing; see (#block-lacing) on
+Block Lacing.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackFlagLacing"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\MinCache -->
+    <element
+             name="MinCache"
+             path="\Segment\Tracks\TrackEntry\MinCache"
+               id="0x6DE7"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The minimum number of frames a player **SHOULD** be able to cache during
+playback. If set to 0, the reference pseudo-cache system is not used.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackMinCache"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\MaxCache -->
+    <element
+             name="MaxCache"
+             path="\Segment\Tracks\TrackEntry\MaxCache"
+               id="0x6DF8"
+             type="uinteger"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The maximum cache size necessary to store referenced frames in and the current
+frame. 0 means no cache is needed.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackMaxCache"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\DefaultDuration -->
+    <element
+             name="DefaultDuration"
+             path="\Segment\Tracks\TrackEntry\DefaultDuration"
+               id="0x23E383"
+             type="uinteger" range="not 0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Number of nanoseconds per frame, expressed in Matroska Ticks -- ie in
+nanoseconds; see (#timestamp-ticks) (frame in the Matroska sense -- one Element
+put into a (Simple)Block).
+        </documentation>
+        <extension type="libmatroska" cppname="TrackDefaultDuration"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\DefaultDecodedFieldDuration -->
+    <element
+             name="DefaultDecodedFieldDuration"
+             path="\Segment\Tracks\TrackEntry\DefaultDecodedFieldDuration"
+               id="0x234E7A"
+             type="uinteger" range="not 0"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The period between two successive fields at the output of the decoding process,
+expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks). see
+(#defaultdecodedfieldduration) for more information
+        </documentation>
+        <extension
+            type="libmatroska"
+            cppname="TrackDefaultDecodedFieldDuration"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackTimestampScale -->
+    <element
+             name="TrackTimestampScale"
+             path="\Segment\Tracks\TrackEntry\TrackTimestampScale"
+               id="0x23314F"
+             type="float" range="&gt; 0x0p+0"
+           maxver="3"
+          default="0x1p+0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+DEPRECATED, DO NOT USE. The scale to apply on this track to work at normal speed
+in relation with other tracks (mostly used to adjust video speed when the audio
+length differs).
+        </documentation>
+        <extension type="libmatroska" cppname="TrackTimecodeScale"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOffset -->
+    <element
+             name="TrackOffset"
+             path="\Segment\Tracks\TrackEntry\TrackOffset"
+               id="0x537F"
+             type="integer"
+           minver="0" maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A value to add to the Block's Timestamp, expressed in Matroska Ticks -- ie in
+nanoseconds; see (#timestamp-ticks). This can be used to adjust the playback
+offset of a track.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\MaxBlockAdditionID -->
+    <element
+             name="MaxBlockAdditionID"
+             path="\Segment\Tracks\TrackEntry\MaxBlockAdditionID"
+               id="0x55EE"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The maximum value of BlockAddID ((#blockaddid-element)). A value 0 means there
+is no BlockAdditions ((#blockadditions-element)) for this track.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping -->
+    <element
+          name="BlockAdditionMapping"
+          path="\Segment\Tracks\TrackEntry\BlockAdditionMapping"
+            id="0x41E4"
+          type="master"
+        minver="4">
+        <documentation lang="en" purpose="definition">
+Contains elements that extend the track format, by adding content either to each
+frame, with BlockAddID ((#blockaddid-element)), or to the track as a whole with
+BlockAddIDExtraData.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDValue -->
+    <element
+             name="BlockAddIDValue"
+             path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDValue"
+               id="0x41F0"
+             type="uinteger" range=">=2"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+If the track format extension needs content beside frames, the value refers to
+the BlockAddID ((#blockaddid-element)), value being described. To keep
+MaxBlockAdditionID as low as possible, small values **SHOULD** be used.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDName -->
+    <element
+             name="BlockAddIDName"
+             path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDName"
+               id="0x41A4"
+             type="string"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A human-friendly name describing the type of BlockAdditional data, as defined by
+the associated Block Additional Mapping.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDType -->
+    <element
+             name="BlockAddIDType"
+             path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDType"
+               id="0x41E7"
+             type="uinteger"
+           minver="4"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Stores the registered identifier of the Block Additional Mapping to define how
+the BlockAdditional data should be handled.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDExtraData -->
+    <element
+             name="BlockAddIDExtraData"
+             path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDExtraData"
+               id="0x41ED"
+             type="binary"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Extra binary data that the BlockAddIDType can use to interpret the
+BlockAdditional data. The interpretation of the binary data depends on the
+BlockAddIDType value and the corresponding Block Additional Mapping.
+        </documentation>
+    </element>
   <element name="Name" path="\Segment\Tracks\TrackEntry\Name" id="0x536E" type="utf-8" maxOccurs="1">
     <documentation lang="en" purpose="definition">A human-readable track name.</documentation>
     <extension type="libmatroska" cppname="TrackName"/>
