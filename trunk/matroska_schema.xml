@@ -1213,520 +1213,1159 @@ BlockAdditional data. The interpretation of the binary data depends on the
 BlockAddIDType value and the corresponding Block Additional Mapping.
         </documentation>
     </element>
-  <element name="Name" path="\Segment\Tracks\TrackEntry\Name" id="0x536E" type="utf-8" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A human-readable track name.</documentation>
-    <extension type="libmatroska" cppname="TrackName"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="Language" path="\Segment\Tracks\TrackEntry\Language" id="0x22B59C" type="string" default="eng" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specifies the language of the track in the Matroska languages form;
-see (#language-codes) on language codes.
-This Element **MUST** be ignored if the LanguageIETF Element is used in the same TrackEntry.</documentation>
-    <extension type="libmatroska" cppname="TrackLanguage"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="LanguageIETF" path="\Segment\Tracks\TrackEntry\LanguageIETF" id="0x22B59D" type="string" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specifies the language of the track according to [@!BCP47]
-and using the IANA Language Subtag Registry [@!IANALangRegistry].
-If this Element is used, then any Language Elements used in the same TrackEntry **MUST** be ignored.</documentation>
-  </element>
-  <element name="CodecID" path="\Segment\Tracks\TrackEntry\CodecID" id="0x86" type="string" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">An ID corresponding to the codec,
-see [@!MatroskaCodec] for more info.</documentation>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CodecPrivate" path="\Segment\Tracks\TrackEntry\CodecPrivate" id="0x63A2" type="binary" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Private data only known to the codec.</documentation>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CodecName" path="\Segment\Tracks\TrackEntry\CodecName" id="0x258688" type="utf-8" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A human-readable string specifying the codec.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="AttachmentLink" path="\Segment\Tracks\TrackEntry\AttachmentLink" id="0x7446" type="uinteger" maxver="3" range="not 0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The UID of an attachment that is used by this codec.</documentation>
-    <documentation lang="en" purpose="usage notes">The value **MUST** match the `FileUID` value of an attachment found in this Segment.</documentation>
-    <extension type="libmatroska" cppname="TrackAttachmentLink"/>
-  </element>
-  <element name="CodecSettings" path="\Segment\Tracks\TrackEntry\CodecSettings" id="0x3A9697" type="utf-8" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A string describing the encoding setting used.</documentation>
-  </element>
-  <element name="CodecInfoURL" path="\Segment\Tracks\TrackEntry\CodecInfoURL" id="0x3B4040" type="string" minver="0" maxver="0">
-    <documentation lang="en" purpose="definition">A URL to find information about the codec used.</documentation>
-  </element>
-  <element name="CodecDownloadURL" path="\Segment\Tracks\TrackEntry\CodecDownloadURL" id="0x26B240" type="string" minver="0" maxver="0">
-    <documentation lang="en" purpose="definition">A URL to download about the codec used.</documentation>
-  </element>
-  <element name="CodecDecodeAll" path="\Segment\Tracks\TrackEntry\CodecDecodeAll" id="0xAA" type="uinteger" maxver="0" range="0-1" default="1" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if the codec can decode potentially damaged data.</documentation>
-  </element>
-  <element name="TrackOverlay" path="\Segment\Tracks\TrackEntry\TrackOverlay" id="0x6FAB" type="uinteger">
-    <documentation lang="en" purpose="definition">Specify that this track is an overlay track for the Track specified (in the u-integer).
-That means when this track has a gap, see (#silenttracks-element) on SilentTracks,
-the overlay track **SHOULD** be used instead. The order of multiple TrackOverlay matters, the first one is the one that **SHOULD** be used.
-If not found it **SHOULD** be the second, etc.</documentation>
-  </element>
-  <element name="CodecDelay" path="\Segment\Tracks\TrackEntry\CodecDelay" id="0x56AA" type="uinteger" minver="4" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">CodecDelay is The codec-built-in delay, expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks).
-It represents the amount of codec samples that will be discarded by the decoder during playback.
-This timestamp value **MUST** be subtracted from each frame timestamp in order to get the timestamp that will be actually played.
-The value **SHOULD** be small so the muxing of tracks with the same actual timestamp are in the same Cluster.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="SeekPreRoll" path="\Segment\Tracks\TrackEntry\SeekPreRoll" id="0x56BB" type="uinteger" minver="4" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">After a discontinuity, SeekPreRoll is the duration of the data
-the decoder **MUST** decode before the decoded data is valid, expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackTranslate" path="\Segment\Tracks\TrackEntry\TrackTranslate" id="0x6624" type="master">
-    <documentation lang="en" purpose="definition">The mapping between this `TrackEntry` and a track value in the given Chapter Codec.</documentation>
-    <documentation lang="en" purpose="rationale">Chapter Codec may need to address content in specific track, but they may not know of the way to identify tracks in Matroska.
-This element and its child elements add a way to map the internal tracks known to the Chapter Codec to the track IDs in Matroska.
-This allows remuxing a file with Chapter Codec without changing the content of the codec data, just the track mapping.</documentation>
-  </element>
-  <element name="TrackTranslateTrackID" path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateTrackID" id="0x66A5" type="binary" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The binary value used to represent this `TrackEntry` in the chapter codec data.
-The format depends on the `ChapProcessCodecID` used; see (#chapprocesscodecid-element).</documentation>
-  </element>
-  <element name="TrackTranslateCodec" path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateCodec" id="0x66BF" type="uinteger" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">This `TrackTranslate` applies to this chapter codec of the given chapter edition(s); see (#chapprocesscodecid-element).</documentation>
-    <restriction>
-      <enum value="0" label="Matroska Script">
-        <documentation lang="en" purpose="definition">Chapter commands using the Matroska Script codec.</documentation>
-      </enum>
-      <enum value="1" label="DVD-menu">
-        <documentation lang="en" purpose="definition">Chapter commands using the DVD-like codec.</documentation>
-      </enum>
-    </restriction>
-  </element>
-  <element name="TrackTranslateEditionUID" path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateEditionUID" id="0x66FC" type="uinteger">
-    <documentation lang="en" purpose="definition">Specify a chapter edition UID on which this `TrackTranslate` applies.</documentation>
-    <documentation lang="en" purpose="usage notes">When no `TrackTranslateEditionUID` is specified in the `TrackTranslate`, the `TrackTranslate` applies to all chapter editions found in the Segment using the given `TrackTranslateCodec`.</documentation>
-  </element>
-  <element name="Video" path="\Segment\Tracks\TrackEntry\Video" id="0xE0" type="master" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Video settings.</documentation>
-    <extension type="libmatroska" cppname="TrackVideo"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="FlagInterlaced" path="\Segment\Tracks\TrackEntry\Video\FlagInterlaced" id="0x9A" type="uinteger" minver="2" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specify whether the video frames in this track are interlaced or not.</documentation>
-    <restriction>
-      <enum value="0" label="undetermined">
-        <documentation lang="en" purpose="definition">Unknown status.</documentation>
-        <documentation lang="en" purpose="usage notes">This value **SHOULD** be avoided.</documentation>
-      </enum>
-      <enum value="1" label="interlaced">
-        <documentation lang="en" purpose="definition">Interlaced frames.</documentation>
-      </enum>
-      <enum value="2" label="progressive">
-        <documentation lang="en" purpose="definition">No interlacing.</documentation>
-      </enum>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoFlagInterlaced"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="FieldOrder" path="\Segment\Tracks\TrackEntry\Video\FieldOrder" id="0x9D" type="uinteger" minver="4" default="2" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specify the field ordering of video frames in this track.</documentation>
-    <documentation lang="en" purpose="usage notes">If FlagInterlaced is not set to 1, this Element **MUST** be ignored.</documentation>
-    <restriction>
-      <enum value="0" label="progressive">
-        <documentation lang="en" purpose="definition">Interlaced frames.</documentation>
-        <documentation lang="en" purpose="usage notes">This value **SHOULD** be avoided, setting FlagInterlaced to 2 is sufficient.</documentation>
-      </enum>
-      <enum value="1" label="tff">
-        <documentation lang="en" purpose="definition">Top field displayed first. Top field stored first.</documentation>
-      </enum>
-      <enum value="2" label="undetermined">
-        <documentation lang="en" purpose="definition">Unknown field order.</documentation>
-        <documentation lang="en" purpose="usage notes">This value **SHOULD** be avoided.</documentation>
-      </enum>
-      <enum value="6" label="bff">
-        <documentation lang="en" purpose="definition">Bottom field displayed first. Bottom field stored first.</documentation>
-      </enum>
-      <enum value="9" label="bff(swapped)">
-        <documentation lang="en" purpose="definition">Top field displayed first. Fields are interleaved in storage
-with the top line of the top field stored first.</documentation>
-      </enum>
-      <enum value="14" label="tff(swapped)">
-        <documentation lang="en" purpose="definition">Bottom field displayed first. Fields are interleaved in storage
-with the top line of the top field stored first.</documentation>
-      </enum>
-    </restriction>
-    <extension type="libmatroska" cppname="VideoFieldOrder"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="StereoMode" path="\Segment\Tracks\TrackEntry\Video\StereoMode" id="0x53B8" type="uinteger" minver="3" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Stereo-3D video mode. There are some more details in (#multi-planar-and-3d-videos).</documentation>
-    <restriction>
-      <enum value="0" label="mono"/>
-      <enum value="1" label="side by side (left eye first)"/>
-      <enum value="2" label="top - bottom (right eye is first)"/>
-      <enum value="3" label="top - bottom (left eye is first)"/>
-      <enum value="4" label="checkboard (right eye is first)"/>
-      <enum value="5" label="checkboard (left eye is first)"/>
-      <enum value="6" label="row interleaved (right eye is first)"/>
-      <enum value="7" label="row interleaved (left eye is first)"/>
-      <enum value="8" label="column interleaved (right eye is first)"/>
-      <enum value="9" label="column interleaved (left eye is first)"/>
-      <enum value="10" label="anaglyph (cyan/red)"/>
-      <enum value="11" label="side by side (right eye first)"/>
-      <enum value="12" label="anaglyph (green/magenta)"/>
-      <enum value="13" label="both eyes laced in one Block (left eye is first)"/>
-      <enum value="14" label="both eyes laced in one Block (right eye is first)"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoStereoMode"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="AlphaMode" path="\Segment\Tracks\TrackEntry\Video\AlphaMode" id="0x53C0" type="uinteger" minver="3" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Indicate whether the BlockAdditional Element with BlockAddID of "1" contains Alpha data, as defined by to the Codec Mapping for the `CodecID`.
-Undefined values **SHOULD NOT** be used as the behavior of known implementations is different (considered either as 0 or 1).</documentation>
-    <restriction>
-      <enum value="0" label="none">
-        <documentation lang="en" purpose="definition">The BlockAdditional Element with BlockAddID of "1" does not exist or **SHOULD NOT** be considered as containing such data.</documentation>
-      </enum>
-      <enum value="1" label="present">
-        <documentation lang="en" purpose="definition">The BlockAdditional Element with BlockAddID of "1" contains alpha channel data.</documentation>
-      </enum>
-    </restriction>
-
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoAlphaMode"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="OldStereoMode" path="\Segment\Tracks\TrackEntry\Video\OldStereoMode" id="0x53B9" type="uinteger" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">DEPRECATED, DO NOT USE. Bogus StereoMode value used in old versions of libmatroska.</documentation>
-    <restriction>
-      <enum value="0" label="mono"/>
-      <enum value="1" label="right eye"/>
-      <enum value="2" label="left eye"/>
-      <enum value="3" label="both eyes"/>
-    </restriction>
-  </element>
-  <element name="PixelWidth" path="\Segment\Tracks\TrackEntry\Video\PixelWidth" id="0xB0" type="uinteger" range="not 0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Width of the encoded video frames in pixels.</documentation>
-    <extension type="libmatroska" cppname="VideoPixelWidth"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="PixelHeight" path="\Segment\Tracks\TrackEntry\Video\PixelHeight" id="0xBA" type="uinteger" range="not 0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Height of the encoded video frames in pixels.</documentation>
-    <extension type="libmatroska" cppname="VideoPixelHeight"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="PixelCropBottom" path="\Segment\Tracks\TrackEntry\Video\PixelCropBottom" id="0x54AA" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The number of video pixels to remove at the bottom of the image.</documentation>
-    <extension type="libmatroska" cppname="VideoPixelCropBottom"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="PixelCropTop" path="\Segment\Tracks\TrackEntry\Video\PixelCropTop" id="0x54BB" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The number of video pixels to remove at the top of the image.</documentation>
-    <extension type="libmatroska" cppname="VideoPixelCropTop"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="PixelCropLeft" path="\Segment\Tracks\TrackEntry\Video\PixelCropLeft" id="0x54CC" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The number of video pixels to remove on the left of the image.</documentation>
-    <extension type="libmatroska" cppname="VideoPixelCropLeft"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="PixelCropRight" path="\Segment\Tracks\TrackEntry\Video\PixelCropRight" id="0x54DD" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The number of video pixels to remove on the right of the image.</documentation>
-    <extension type="libmatroska" cppname="VideoPixelCropRight"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="DisplayWidth" path="\Segment\Tracks\TrackEntry\Video\DisplayWidth" id="0x54B0" type="uinteger" range="not 0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Width of the video frames to display. Applies to the video frame after cropping (PixelCrop* Elements).</documentation>
-    <implementation_note note_attribute="default">If the DisplayUnit of the same TrackEntry is 0, then the default value for DisplayWidth is equal to
-PixelWidth - PixelCropLeft - PixelCropRight, else there is no default value.</implementation_note>
-    <extension type="libmatroska" cppname="VideoDisplayWidth"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="DisplayHeight" path="\Segment\Tracks\TrackEntry\Video\DisplayHeight" id="0x54BA" type="uinteger" range="not 0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Height of the video frames to display. Applies to the video frame after cropping (PixelCrop* Elements).</documentation>
-    <implementation_note note_attribute="default">If the DisplayUnit of the same TrackEntry is 0, then the default value for DisplayHeight is equal to
-PixelHeight - PixelCropTop - PixelCropBottom, else there is no default value.</implementation_note>
-    <extension type="libmatroska" cppname="VideoDisplayHeight"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="DisplayUnit" path="\Segment\Tracks\TrackEntry\Video\DisplayUnit" id="0x54B2" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">How DisplayWidth &amp; DisplayHeight are interpreted.</documentation>
-    <restriction>
-      <enum value="0" label="pixels"/>
-      <enum value="1" label="centimeters"/>
-      <enum value="2" label="inches"/>
-      <enum value="3" label="display aspect ratio"/>
-      <enum value="4" label="unknown"/>
-    </restriction>
-    <extension type="libmatroska" cppname="VideoDisplayUnit"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="AspectRatioType" path="\Segment\Tracks\TrackEntry\Video\AspectRatioType" id="0x54B3" type="uinteger" minver="0" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specify the possible modifications to the aspect ratio.</documentation>
-    <restriction>
-      <enum value="0" label="free resizing"/>
-      <enum value="1" label="keep aspect ratio"/>
-      <enum value="2" label="fixed"/>
-    </restriction>
-    <extension type="libmatroska" cppname="VideoAspectRatio"/>
-  </element>
-  <element name="UncompressedFourCC" path="\Segment\Tracks\TrackEntry\Video\UncompressedFourCC" id="0x2EB524" type="binary" length="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specify the uncompressed pixel format used for the Track's data as a FourCC.
-This value is similar in scope to the biCompression value of AVI's `BITMAPINFO` [@?AVIFormat]. See the YUV video formats [@?FourCC-YUV] and RGB video formats [@?FourCC-RGB] for common values.</documentation>
-    <implementation_note note_attribute="minOccurs">UncompressedFourCC **MUST** be set (minOccurs=1) in TrackEntry, when the CodecID Element of the TrackEntry is set to "V_UNCOMPRESSED".</implementation_note>
-    <documentation lang="en" purpose="usage notes">This Element **MUST NOT** be used if the CodecID Element of the TrackEntry is set to "V_UNCOMPRESSED".</documentation>
-    <extension type="libmatroska" cppname="VideoColourSpace"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="GammaValue" path="\Segment\Tracks\TrackEntry\Video\GammaValue" id="0x2FB523" type="float" minver="0" maxver="0" range="&gt; 0x0p+0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Gamma Value.</documentation>
-    <extension type="libmatroska" cppname="VideoGamma"/>
-  </element>
-  <element name="FrameRate" path="\Segment\Tracks\TrackEntry\Video\FrameRate" id="0x2383E3" type="float" minver="0" maxver="0" range="&gt; 0x0p+0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Number of frames per second. This value is Informational only. It is intended for constant frame rate streams, and **SHOULD NOT** be used for a variable frame rate TrackEntry.</documentation>
-    <extension type="libmatroska" cppname="VideoFrameRate"/>
-  </element>
-  <element name="Colour" path="\Segment\Tracks\TrackEntry\Video\Colour" id="0x55B0" type="master" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Settings describing the colour format.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoColour"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="MatrixCoefficients" path="\Segment\Tracks\TrackEntry\Video\Colour\MatrixCoefficients" id="0x55B1" type="uinteger" minver="4" default="2" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The Matrix Coefficients of the video used to derive luma and chroma values from red, green, and blue color primaries.
-For clarity, the value and meanings for MatrixCoefficients are adopted from Table 4 of ISO/IEC 23001-8:2016 or ITU-T H.273.</documentation>
-    <restriction>
-      <enum value="0" label="Identity"/>
-      <enum value="1" label="ITU-R BT.709"/>
-      <enum value="2" label="unspecified"/>
-      <enum value="3" label="reserved"/>
-      <enum value="4" label="US FCC 73.682"/>
-      <enum value="5" label="ITU-R BT.470BG"/>
-      <enum value="6" label="SMPTE 170M"/>
-      <enum value="7" label="SMPTE 240M"/>
-      <enum value="8" label="YCoCg"/>
-      <enum value="9" label="BT2020 Non-constant Luminance"/>
-      <enum value="10" label="BT2020 Constant Luminance"/>
-      <enum value="11" label="SMPTE ST 2085"/>
-      <enum value="12" label="Chroma-derived Non-constant Luminance"/>
-      <enum value="13" label="Chroma-derived Constant Luminance"/>
-      <enum value="14" label="ITU-R BT.2100-0"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoColourMatrix"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="BitsPerChannel" path="\Segment\Tracks\TrackEntry\Video\Colour\BitsPerChannel" id="0x55B2" type="uinteger" minver="4" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Number of decoded bits per channel. A value of 0 indicates that the BitsPerChannel is unspecified.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoBitsPerChannel"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ChromaSubsamplingHorz" path="\Segment\Tracks\TrackEntry\Video\Colour\ChromaSubsamplingHorz" id="0x55B3" type="uinteger" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The amount of pixels to remove in the Cr and Cb channels for every pixel not removed horizontally.
-Example: For video with 4:2:0 chroma subsampling, the ChromaSubsamplingHorz **SHOULD** be set to 1.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoChromaSubsampHorz"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ChromaSubsamplingVert" path="\Segment\Tracks\TrackEntry\Video\Colour\ChromaSubsamplingVert" id="0x55B4" type="uinteger" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The amount of pixels to remove in the Cr and Cb channels for every pixel not removed vertically.
-Example: For video with 4:2:0 chroma subsampling, the ChromaSubsamplingVert **SHOULD** be set to 1.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoChromaSubsampVert"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="CbSubsamplingHorz" path="\Segment\Tracks\TrackEntry\Video\Colour\CbSubsamplingHorz" id="0x55B5" type="uinteger" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The amount of pixels to remove in the Cb channel for every pixel not removed horizontally.
-This is additive with ChromaSubsamplingHorz. Example: For video with 4:2:1 chroma subsampling,
-the ChromaSubsamplingHorz **SHOULD** be set to 1 and CbSubsamplingHorz **SHOULD** be set to 1.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoCbSubsampHorz"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="CbSubsamplingVert" path="\Segment\Tracks\TrackEntry\Video\Colour\CbSubsamplingVert" id="0x55B6" type="uinteger" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The amount of pixels to remove in the Cb channel for every pixel not removed vertically.
-This is additive with ChromaSubsamplingVert.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoCbSubsampVert"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ChromaSitingHorz" path="\Segment\Tracks\TrackEntry\Video\Colour\ChromaSitingHorz" id="0x55B7" type="uinteger" minver="4" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">How chroma is subsampled horizontally.</documentation>
-    <restriction>
-      <enum value="0" label="unspecified"/>
-      <enum value="1" label="left collocated"/>
-      <enum value="2" label="half"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoChromaSitHorz"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ChromaSitingVert" path="\Segment\Tracks\TrackEntry\Video\Colour\ChromaSitingVert" id="0x55B8" type="uinteger" minver="4" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">How chroma is subsampled vertically.</documentation>
-    <restriction>
-      <enum value="0" label="unspecified"/>
-      <enum value="1" label="top collocated"/>
-      <enum value="2" label="half"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoChromaSitVert"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="Range" path="\Segment\Tracks\TrackEntry\Video\Colour\Range" id="0x55B9" type="uinteger" minver="4" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Clipping of the color ranges.</documentation>
-    <restriction>
-      <enum value="0" label="unspecified"/>
-      <enum value="1" label="broadcast range"/>
-      <enum value="2" label="full range (no clipping)"/>
-      <enum value="3" label="defined by MatrixCoefficients / TransferCharacteristics"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoColourRange"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TransferCharacteristics" path="\Segment\Tracks\TrackEntry\Video\Colour\TransferCharacteristics" id="0x55BA" type="uinteger" minver="4" default="2" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The transfer characteristics of the video. For clarity,
-the value and meanings for TransferCharacteristics are adopted from Table 3 of ISO/IEC 23091-4 or ITU-T H.273.</documentation>
-    <restriction>
-      <enum value="0" label="reserved"/>
-      <enum value="1" label="ITU-R BT.709"/>
-      <enum value="2" label="unspecified"/>
-      <enum value="3" label="reserved"/>
-      <enum value="4" label="Gamma 2.2 curve - BT.470M"/>
-      <enum value="5" label="Gamma 2.8 curve - BT.470BG"/>
-      <enum value="6" label="SMPTE 170M"/>
-      <enum value="7" label="SMPTE 240M"/>
-      <enum value="8" label="Linear"/>
-      <enum value="9" label="Log"/>
-      <enum value="10" label="Log Sqrt"/>
-      <enum value="11" label="IEC 61966-2-4"/>
-      <enum value="12" label="ITU-R BT.1361 Extended Colour Gamut"/>
-      <enum value="13" label="IEC 61966-2-1"/>
-      <enum value="14" label="ITU-R BT.2020 10 bit"/>
-      <enum value="15" label="ITU-R BT.2020 12 bit"/>
-      <enum value="16" label="ITU-R BT.2100 Perceptual Quantization"/>
-      <enum value="17" label="SMPTE ST 428-1"/>
-      <enum value="18" label="ARIB STD-B67 (HLG)"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoColourTransferCharacter"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="Primaries" path="\Segment\Tracks\TrackEntry\Video\Colour\Primaries" id="0x55BB" type="uinteger" minver="4" default="2" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The colour primaries of the video. For clarity,
-the value and meanings for Primaries are adopted from Table 2 of ISO/IEC 23091-4 or ITU-T H.273.</documentation>
-    <restriction>
-      <enum value="0" label="reserved"/>
-      <enum value="1" label="ITU-R BT.709"/>
-      <enum value="2" label="unspecified"/>
-      <enum value="3" label="reserved"/>
-      <enum value="4" label="ITU-R BT.470M"/>
-      <enum value="5" label="ITU-R BT.470BG - BT.601 625"/>
-      <enum value="6" label="ITU-R BT.601 525 - SMPTE 170M"/>
-      <enum value="7" label="SMPTE 240M"/>
-      <enum value="8" label="FILM"/>
-      <enum value="9" label="ITU-R BT.2020"/>
-      <enum value="10" label="SMPTE ST 428-1"/>
-      <enum value="11" label="SMPTE RP 432-2"/>
-      <enum value="12" label="SMPTE EG 432-2"/>
-      <enum value="22" label="EBU Tech. 3213-E - JEDEC P22 phosphors"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoColourPrimaries"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="MaxCLL" path="\Segment\Tracks\TrackEntry\Video\Colour\MaxCLL" id="0x55BC" type="uinteger" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Maximum brightness of a single pixel (Maximum Content Light Level)
-in candelas per square meter (cd/m^2^).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoColourMaxCLL"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="MaxFALL" path="\Segment\Tracks\TrackEntry\Video\Colour\MaxFALL" id="0x55BD" type="uinteger" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Maximum brightness of a single full frame (Maximum Frame-Average Light Level)
-in candelas per square meter (cd/m^2^).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoColourMaxFALL"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="MasteringMetadata" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata" id="0x55D0" type="master" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">SMPTE 2086 mastering data.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoColourMasterMeta"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="PrimaryRChromaticityX" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryRChromaticityX" id="0x55D1" type="float" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Red X chromaticity coordinate, as defined by CIE 1931.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoRChromaX"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="PrimaryRChromaticityY" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryRChromaticityY" id="0x55D2" type="float" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Red Y chromaticity coordinate, as defined by CIE 1931.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoRChromaY"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="PrimaryGChromaticityX" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryGChromaticityX" id="0x55D3" type="float" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Green X chromaticity coordinate, as defined by CIE 1931.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoGChromaX"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="PrimaryGChromaticityY" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryGChromaticityY" id="0x55D4" type="float" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Green Y chromaticity coordinate, as defined by CIE 1931.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoGChromaY"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="PrimaryBChromaticityX" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryBChromaticityX" id="0x55D5" type="float" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Blue X chromaticity coordinate, as defined by CIE 1931.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoBChromaX"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="PrimaryBChromaticityY" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryBChromaticityY" id="0x55D6" type="float" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Blue Y chromaticity coordinate, as defined by CIE 1931.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoBChromaY"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="WhitePointChromaticityX" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\WhitePointChromaticityX" id="0x55D7" type="float" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">White X chromaticity coordinate, as defined by CIE 1931.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoWhitePointChromaX"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="WhitePointChromaticityY" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\WhitePointChromaticityY" id="0x55D8" type="float" minver="4" range="0-1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">White Y chromaticity coordinate, as defined by CIE 1931.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoWhitePointChromaY"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="LuminanceMax" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\LuminanceMax" id="0x55D9" type="float" minver="4" range="&gt;= 0x0p+0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Maximum luminance. Represented in candelas per square meter (cd/m^2^).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoLuminanceMax"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="LuminanceMin" path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\LuminanceMin" id="0x55DA" type="float" minver="4" range="&gt;= 0x0p+0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Minimum luminance. Represented in candelas per square meter (cd/m^2^).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoLuminanceMin"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
+    <!-- \Segment\Tracks\TrackEntry\Name -->
+    <element
+             name="Name"
+             path="\Segment\Tracks\TrackEntry\Name"
+               id="0x536E"
+             type="utf-8"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A human-readable track name.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackName"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Language -->
+    <element
+             name="Language"
+             path="\Segment\Tracks\TrackEntry\Language"
+               id="0x22B59C"
+             type="string"
+          default="eng"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specifies the language of the track in the Matroska languages form; see
+(#language-codes) on language codes. This Element **MUST** be ignored if the
+LanguageIETF Element is used in the same TrackEntry.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackLanguage"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\LanguageIETF -->
+    <element
+             name="LanguageIETF"
+             path="\Segment\Tracks\TrackEntry\LanguageIETF"
+               id="0x22B59D"
+             type="string"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specifies the language of the track according to [@!BCP47] and using the IANA
+Language Subtag Registry [@!IANALangRegistry]. If this Element is used, then any
+Language Elements used in the same TrackEntry **MUST** be ignored.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\CodecID -->
+    <element
+             name="CodecID"
+             path="\Segment\Tracks\TrackEntry\CodecID"
+               id="0x86"
+             type="string"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+An ID corresponding to the codec, see [@!MatroskaCodec] for more info.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\CodecPrivate -->
+    <element
+             name="CodecPrivate"
+             path="\Segment\Tracks\TrackEntry\CodecPrivate"
+               id="0x63A2"
+             type="binary"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Private data only known to the codec.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\CodecName -->
+    <element
+             name="CodecName"
+             path="\Segment\Tracks\TrackEntry\CodecName"
+               id="0x258688"
+             type="utf-8"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A human-readable string specifying the codec.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\AttachmentLink -->
+    <element
+             name="AttachmentLink"
+             path="\Segment\Tracks\TrackEntry\AttachmentLink"
+               id="0x7446"
+             type="uinteger" range="not 0"
+           maxver="3"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The UID of an attachment that is used by this codec.
+        </documentation>
+        <documentation lang="en" purpose="usage notes">
+The value **MUST** match the `FileUID` value of an attachment found in this
+Segment.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackAttachmentLink"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\CodecSettings -->
+    <element
+             name="CodecSettings"
+             path="\Segment\Tracks\TrackEntry\CodecSettings"
+               id="0x3A9697"
+             type="utf-8"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A string describing the encoding setting used.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\CodecInfoURL -->
+    <element
+          name="CodecInfoURL"
+          path="\Segment\Tracks\TrackEntry\CodecInfoURL"
+            id="0x3B4040"
+          type="string"
+        minver="0" maxver="0">
+        <documentation lang="en" purpose="definition">
+A URL to find information about the codec used.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\CodecDownloadURL -->
+    <element
+          name="CodecDownloadURL"
+          path="\Segment\Tracks\TrackEntry\CodecDownloadURL"
+            id="0x26B240"
+          type="string"
+        minver="0" maxver="0">
+        <documentation lang="en" purpose="definition">
+A URL to download about the codec used.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\CodecDecodeAll -->
+    <element
+             name="CodecDecodeAll"
+             path="\Segment\Tracks\TrackEntry\CodecDecodeAll"
+               id="0xAA"
+             type="uinteger" range="0-1"
+           maxver="0"
+          default="1"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if the codec can decode potentially damaged data.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOverlay -->
+    <element
+        name="TrackOverlay"
+        path="\Segment\Tracks\TrackEntry\TrackOverlay"
+          id="0x6FAB"
+        type="uinteger">
+        <documentation lang="en" purpose="definition">
+Specify that this track is an overlay track for the Track specified (in the
+u-integer). That means when this track has a gap, see (#silenttracks-element)
+on SilentTracks, the overlay track **SHOULD** be used instead. The order of
+multiple TrackOverlay matters, the first one is the one that **SHOULD** be used.
+If not found it **SHOULD** be the second, etc.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\CodecDelay -->
+    <element
+             name="CodecDelay"
+             path="\Segment\Tracks\TrackEntry\CodecDelay"
+               id="0x56AA"
+             type="uinteger"
+           minver="4"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+CodecDelay is The codec-built-in delay, expressed in Matroska Ticks -- ie in
+nanoseconds; see (#timestamp-ticks). It represents the amount of codec samples
+that will be discarded by the decoder during playback. This timestamp value
+**MUST** be subtracted from each frame timestamp in order to get the timestamp
+that will be actually played. The value **SHOULD** be small so the muxing of
+tracks with the same actual timestamp are in the same Cluster.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\SeekPreRoll -->
+    <element
+             name="SeekPreRoll"
+             path="\Segment\Tracks\TrackEntry\SeekPreRoll"
+               id="0x56BB"
+             type="uinteger"
+           minver="4"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+After a discontinuity, SeekPreRoll is the duration of the data the decoder
+**MUST** decode before the decoded data is valid, expressed in Matroska Ticks
+-- ie in nanoseconds; see (#timestamp-ticks).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackTranslate -->
+    <element
+        name="TrackTranslate"
+        path="\Segment\Tracks\TrackEntry\TrackTranslate"
+          id="0x6624"
+        type="master">
+        <documentation lang="en" purpose="definition">
+The mapping between this `TrackEntry` and a track value in the given Chapter
+Codec.
+        </documentation>
+        <documentation lang="en" purpose="rationale">
+Chapter Codec may need to address content in specific track, but they may not
+know of the way to identify tracks in Matroska. This element and its child
+elements add a way to map the internal tracks known to the Chapter Codec to the
+track IDs in Matroska. This allows remuxing a file with Chapter Codec without
+changing the content of the codec data, just the track mapping.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateTrackID -->
+    <element
+             name="TrackTranslateTrackID"
+             path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateTrackID"
+               id="0x66A5"
+             type="binary"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The binary value used to represent this `TrackEntry` in the chapter codec data.
+The format depends on the `ChapProcessCodecID` used; see
+(#chapprocesscodecid-element).
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateCodec -->
+    <element
+             name="TrackTranslateCodec"
+             path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateCodec"
+               id="0x66BF"
+             type="uinteger"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+This `TrackTranslate` applies to this chapter codec of the given chapter
+edition(s); see (#chapprocesscodecid-element).
+        </documentation>
+        <restriction>
+            <enum value="0" label="Matroska Script">
+                <documentation lang="en" purpose="definition">
+Chapter commands using the Matroska Script codec.
+                </documentation>
+            </enum>
+            <enum value="1" label="DVD-menu">
+                <documentation lang="en" purpose="definition">
+Chapter commands using the DVD-like codec.
+                </documentation>
+            </enum>
+        </restriction>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateEditionUID -->
+    <element
+        name="TrackTranslateEditionUID"
+        path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateEditionUID"
+          id="0x66FC"
+        type="uinteger">
+        <documentation lang="en" purpose="definition">
+Specify a chapter edition UID on which this `TrackTranslate` applies.
+        </documentation>
+        <documentation lang="en" purpose="usage notes">
+When no `TrackTranslateEditionUID` is specified in the `TrackTranslate`, the
+`TrackTranslate` applies to all chapter editions found in the Segment using the
+given `TrackTranslateCodec`.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video -->
+    <element
+             name="Video"
+             path="\Segment\Tracks\TrackEntry\Video"
+               id="0xE0"
+             type="master"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Video settings.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackVideo"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\FlagInterlaced -->
+    <element
+             name="FlagInterlaced"
+             path="\Segment\Tracks\TrackEntry\Video\FlagInterlaced"
+               id="0x9A"
+             type="uinteger"
+           minver="2"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specify whether the video frames in this track are interlaced or not.
+        </documentation>
+        <restriction>
+            <enum value="0" label="undetermined">
+                <documentation lang="en" purpose="definition">
+Unknown status.
+                </documentation>
+                <documentation lang="en" purpose="usage notes">
+This value **SHOULD** be avoided.
+                </documentation>
+            </enum>
+            <enum value="1" label="interlaced">
+                <documentation lang="en" purpose="definition">
+Interlaced frames.
+                </documentation>
+            </enum>
+            <enum value="2" label="progressive">
+                <documentation lang="en" purpose="definition">
+No interlacing.
+                </documentation>
+            </enum>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoFlagInterlaced"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\FieldOrder -->
+    <element
+             name="FieldOrder"
+             path="\Segment\Tracks\TrackEntry\Video\FieldOrder"
+               id="0x9D"
+             type="uinteger"
+           minver="4"
+          default="2"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specify the field ordering of video frames in this track.
+        </documentation>
+        <documentation lang="en" purpose="usage notes">
+If FlagInterlaced is not set to 1, this Element **MUST** be ignored.
+        </documentation>
+        <restriction>
+            <enum value="0" label="progressive">
+                <documentation lang="en" purpose="definition">
+Interlaced frames.
+                </documentation>
+                <documentation lang="en" purpose="usage notes">
+This value **SHOULD** be avoided, setting FlagInterlaced to 2 is sufficient.
+                </documentation>
+            </enum>
+            <enum value="1" label="tff">
+                <documentation lang="en" purpose="definition">
+Top field displayed first. Top field stored first.
+                </documentation>
+            </enum>
+            <enum value="2" label="undetermined">
+                <documentation lang="en" purpose="definition">
+Unknown field order.
+                </documentation>
+                <documentation lang="en" purpose="usage notes">
+This value **SHOULD** be avoided.
+                </documentation>
+            </enum>
+            <enum value="6" label="bff">
+                <documentation lang="en" purpose="definition">
+Bottom field displayed first. Bottom field stored first.
+                </documentation>
+            </enum>
+            <enum value="9" label="bff(swapped)">
+                <documentation lang="en" purpose="definition">
+Top field displayed first. Fields are interleaved in storage with the top line
+of the top field stored first.
+                </documentation>
+            </enum>
+            <enum value="14" label="tff(swapped)">
+                <documentation lang="en" purpose="definition">
+Bottom field displayed first. Fields are interleaved in storage with the top
+line of the top field stored first.
+                </documentation>
+            </enum>
+        </restriction>
+        <extension type="libmatroska" cppname="VideoFieldOrder"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\StereoMode -->
+    <element
+             name="StereoMode"
+             path="\Segment\Tracks\TrackEntry\Video\StereoMode"
+               id="0x53B8"
+             type="uinteger"
+           minver="3"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Stereo-3D video mode. There are some more details in
+(#multi-planar-and-3d-videos).
+        </documentation>
+        <restriction>
+            <enum value="0" label="mono"/>
+            <enum value="1" label="side by side (left eye first)"/>
+            <enum value="2" label="top - bottom (right eye is first)"/>
+            <enum value="3" label="top - bottom (left eye is first)"/>
+            <enum value="4" label="checkboard (right eye is first)"/>
+            <enum value="5" label="checkboard (left eye is first)"/>
+            <enum value="6" label="row interleaved (right eye is first)"/>
+            <enum value="7" label="row interleaved (left eye is first)"/>
+            <enum value="8" label="column interleaved (right eye is first)"/>
+            <enum value="9" label="column interleaved (left eye is first)"/>
+            <enum value="10" label="anaglyph (cyan/red)"/>
+            <enum value="11" label="side by side (right eye first)"/>
+            <enum value="12" label="anaglyph (green/magenta)"/>
+            <enum
+                value="13"
+                label="both eyes laced in one Block (left eye is first)"/>
+            <enum
+                value="14"
+                label="both eyes laced in one Block (right eye is first)"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoStereoMode"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\AlphaMode -->
+    <element
+             name="AlphaMode"
+             path="\Segment\Tracks\TrackEntry\Video\AlphaMode"
+               id="0x53C0"
+             type="uinteger"
+           minver="3"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Indicate whether the BlockAdditional Element with BlockAddID of "1" contains
+Alpha data, as defined by to the Codec Mapping for the `CodecID`. Undefined
+values **SHOULD NOT** be used as the behavior of known implementations is
+different (considered either as 0 or 1).
+        </documentation>
+        <restriction>
+            <enum value="0" label="none">
+                <documentation lang="en" purpose="definition">
+The BlockAdditional Element with BlockAddID of "1" does not exist or **SHOULD
+NOT** be considered as containing such data.
+                </documentation>
+            </enum>
+            <enum value="1" label="present">
+                <documentation lang="en" purpose="definition">
+The BlockAdditional Element with BlockAddID of "1" contains alpha channel data.
+                </documentation>
+            </enum>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoAlphaMode"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\OldStereoMode -->
+    <element
+             name="OldStereoMode"
+             path="\Segment\Tracks\TrackEntry\Video\OldStereoMode"
+               id="0x53B9"
+             type="uinteger"
+           maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+DEPRECATED, DO NOT USE. Bogus StereoMode value used in old versions of
+libmatroska.
+        </documentation>
+        <restriction>
+            <enum value="0" label="mono"/>
+            <enum value="1" label="right eye"/>
+            <enum value="2" label="left eye"/>
+            <enum value="3" label="both eyes"/>
+        </restriction>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\PixelWidth -->
+    <element
+             name="PixelWidth"
+             path="\Segment\Tracks\TrackEntry\Video\PixelWidth"
+               id="0xB0"
+             type="uinteger" range="not 0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Width of the encoded video frames in pixels.
+        </documentation>
+        <extension type="libmatroska" cppname="VideoPixelWidth"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\PixelHeight -->
+    <element
+             name="PixelHeight"
+             path="\Segment\Tracks\TrackEntry\Video\PixelHeight"
+               id="0xBA"
+             type="uinteger" range="not 0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Height of the encoded video frames in pixels.
+        </documentation>
+        <extension type="libmatroska" cppname="VideoPixelHeight"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\PixelCropBottom -->
+    <element
+             name="PixelCropBottom"
+             path="\Segment\Tracks\TrackEntry\Video\PixelCropBottom"
+               id="0x54AA"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The number of video pixels to remove at the bottom of the image.
+        </documentation>
+        <extension type="libmatroska" cppname="VideoPixelCropBottom"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\PixelCropTop -->
+    <element
+             name="PixelCropTop"
+             path="\Segment\Tracks\TrackEntry\Video\PixelCropTop"
+               id="0x54BB"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The number of video pixels to remove at the top of the image.
+        </documentation>
+        <extension type="libmatroska" cppname="VideoPixelCropTop"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\PixelCropLeft -->
+    <element
+             name="PixelCropLeft"
+             path="\Segment\Tracks\TrackEntry\Video\PixelCropLeft"
+               id="0x54CC"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The number of video pixels to remove on the left of the image.
+        </documentation>
+        <extension type="libmatroska" cppname="VideoPixelCropLeft"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\PixelCropRight -->
+    <element
+             name="PixelCropRight"
+             path="\Segment\Tracks\TrackEntry\Video\PixelCropRight"
+               id="0x54DD"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The number of video pixels to remove on the right of the image.
+        </documentation>
+        <extension type="libmatroska" cppname="VideoPixelCropRight"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\DisplayWidth -->
+    <element
+             name="DisplayWidth"
+             path="\Segment\Tracks\TrackEntry\Video\DisplayWidth"
+               id="0x54B0"
+             type="uinteger" range="not 0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Width of the video frames to display. Applies to the video frame after cropping
+(PixelCrop* Elements).
+        </documentation>
+        <implementation_note note_attribute="default">
+If the DisplayUnit of the same TrackEntry is 0, then the default value for
+DisplayWidth is equal to PixelWidth - PixelCropLeft - PixelCropRight, else there
+is no default value.
+        </implementation_note>
+        <extension type="libmatroska" cppname="VideoDisplayWidth"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\DisplayHeight -->
+    <element
+             name="DisplayHeight"
+             path="\Segment\Tracks\TrackEntry\Video\DisplayHeight"
+               id="0x54BA"
+             type="uinteger" range="not 0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Height of the video frames to display. Applies to the video frame after cropping
+(PixelCrop* Elements).
+        </documentation>
+        <implementation_note note_attribute="default">
+If the DisplayUnit of the same TrackEntry is 0, then the default value for
+DisplayHeight is equal to PixelHeight - PixelCropTop - PixelCropBottom, else
+there is no default value.
+        </implementation_note>
+        <extension type="libmatroska" cppname="VideoDisplayHeight"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\DisplayUnit -->
+    <element
+             name="DisplayUnit"
+             path="\Segment\Tracks\TrackEntry\Video\DisplayUnit"
+               id="0x54B2"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+How DisplayWidth &amp; DisplayHeight are interpreted.
+        </documentation>
+        <restriction>
+            <enum value="0" label="pixels"/>
+            <enum value="1" label="centimeters"/>
+            <enum value="2" label="inches"/>
+            <enum value="3" label="display aspect ratio"/>
+            <enum value="4" label="unknown"/>
+        </restriction>
+        <extension type="libmatroska" cppname="VideoDisplayUnit"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\AspectRatioType -->
+    <element
+             name="AspectRatioType"
+             path="\Segment\Tracks\TrackEntry\Video\AspectRatioType"
+               id="0x54B3"
+             type="uinteger"
+           minver="0" maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specify the possible modifications to the aspect ratio.
+        </documentation>
+        <restriction>
+            <enum value="0" label="free resizing"/>
+            <enum value="1" label="keep aspect ratio"/>
+            <enum value="2" label="fixed"/>
+        </restriction>
+        <extension type="libmatroska" cppname="VideoAspectRatio"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\UncompressedFourCC -->
+    <element
+             name="UncompressedFourCC"
+             path="\Segment\Tracks\TrackEntry\Video\UncompressedFourCC"
+               id="0x2EB524"
+             type="binary" length="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specify the uncompressed pixel format used for the Track's data as a FourCC.
+This value is similar in scope to the biCompression value of AVI's `BITMAPINFO`
+[@?AVIFormat]. See the YUV video formats [@?FourCC-YUV] and RGB video formats
+[@?FourCC-RGB] for common values.
+        </documentation>
+        <implementation_note note_attribute="minOccurs">
+UncompressedFourCC **MUST** be set (minOccurs=1) in TrackEntry, when the
+CodecID Element of the TrackEntry is set to "V_UNCOMPRESSED".
+        </implementation_note>
+        <documentation lang="en" purpose="usage notes">
+This Element **MUST NOT** be used if the CodecID Element of the TrackEntry is
+set to "V_UNCOMPRESSED".
+        </documentation>
+        <extension type="libmatroska" cppname="VideoColourSpace"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\GammaValue -->
+    <element
+             name="GammaValue"
+             path="\Segment\Tracks\TrackEntry\Video\GammaValue"
+               id="0x2FB523"
+             type="float" range="&gt; 0x0p+0"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Gamma Value.
+        </documentation>
+        <extension type="libmatroska" cppname="VideoGamma"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\FrameRate -->
+    <element
+             name="FrameRate"
+             path="\Segment\Tracks\TrackEntry\Video\FrameRate"
+               id="0x2383E3"
+             type="float" range="&gt; 0x0p+0"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Number of frames per second. This value is Informational only. It is intended
+for constant frame rate streams, and **SHOULD NOT** be used for a variable
+frame rate TrackEntry.
+        </documentation>
+        <extension type="libmatroska" cppname="VideoFrameRate"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour -->
+    <element
+             name="Colour"
+             path="\Segment\Tracks\TrackEntry\Video\Colour"
+               id="0x55B0"
+             type="master"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Settings describing the colour format.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoColour"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MatrixCoefficients -->
+    <element
+             name="MatrixCoefficients"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MatrixCoefficients"
+               id="0x55B1"
+             type="uinteger"
+           minver="4"
+          default="2"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The Matrix Coefficients of the video used to derive luma and chroma values from
+red, green, and blue color primaries. For clarity, the value and meanings for
+MatrixCoefficients are adopted from Table 4 of ISO/IEC 23001-8:2016 or ITU-T
+H.273.
+        </documentation>
+        <restriction>
+            <enum value="0" label="Identity"/>
+            <enum value="1" label="ITU-R BT.709"/>
+            <enum value="2" label="unspecified"/>
+            <enum value="3" label="reserved"/>
+            <enum value="4" label="US FCC 73.682"/>
+            <enum value="5" label="ITU-R BT.470BG"/>
+            <enum value="6" label="SMPTE 170M"/>
+            <enum value="7" label="SMPTE 240M"/>
+            <enum value="8" label="YCoCg"/>
+            <enum value="9" label="BT2020 Non-constant Luminance"/>
+            <enum value="10" label="BT2020 Constant Luminance"/>
+            <enum value="11" label="SMPTE ST 2085"/>
+            <enum value="12" label="Chroma-derived Non-constant Luminance"/>
+            <enum value="13" label="Chroma-derived Constant Luminance"/>
+            <enum value="14" label="ITU-R BT.2100-0"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoColourMatrix"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\BitsPerChannel -->
+    <element
+             name="BitsPerChannel"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\BitsPerChannel"
+               id="0x55B2"
+             type="uinteger"
+           minver="4"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Number of decoded bits per channel. A value of 0 indicates that the
+BitsPerChannel is unspecified.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoBitsPerChannel"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\ChromaSubsamplingHorz -->
+    <element
+             name="ChromaSubsamplingHorz"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\ChromaSubsamplingHorz"
+               id="0x55B3"
+             type="uinteger"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The amount of pixels to remove in the Cr and Cb channels for every pixel not
+removed horizontally. Example: For video with 4:2:0 chroma subsampling, the
+ChromaSubsamplingHorz **SHOULD** be set to 1.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoChromaSubsampHorz"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\ChromaSubsamplingVert -->
+    <element
+             name="ChromaSubsamplingVert"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\ChromaSubsamplingVert"
+               id="0x55B4"
+             type="uinteger"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The amount of pixels to remove in the Cr and Cb channels for every pixel not
+removed vertically. Example: For video with 4:2:0 chroma subsampling, the
+ChromaSubsamplingVert **SHOULD** be set to 1.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoChromaSubsampVert"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\CbSubsamplingHorz -->
+    <element
+             name="CbSubsamplingHorz"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\CbSubsamplingHorz"
+               id="0x55B5"
+             type="uinteger"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The amount of pixels to remove in the Cb channel for every pixel not removed
+horizontally. This is additive with ChromaSubsamplingHorz. Example: For video
+with 4:2:1 chroma subsampling, the ChromaSubsamplingHorz **SHOULD** be set to 1
+and CbSubsamplingHorz **SHOULD** be set to 1.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoCbSubsampHorz"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\CbSubsamplingVert -->
+    <element
+             name="CbSubsamplingVert"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\CbSubsamplingVert"
+               id="0x55B6"
+             type="uinteger"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The amount of pixels to remove in the Cb channel for every pixel not removed
+vertically. This is additive with ChromaSubsamplingVert.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoCbSubsampVert"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\ChromaSitingHorz -->
+    <element
+             name="ChromaSitingHorz"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\ChromaSitingHorz"
+               id="0x55B7"
+             type="uinteger"
+           minver="4"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+How chroma is subsampled horizontally.
+        </documentation>
+        <restriction>
+            <enum value="0" label="unspecified"/>
+            <enum value="1" label="left collocated"/>
+            <enum value="2" label="half"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoChromaSitHorz"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\ChromaSitingVert -->
+    <element
+             name="ChromaSitingVert"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\ChromaSitingVert"
+               id="0x55B8"
+             type="uinteger"
+           minver="4"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+How chroma is subsampled vertically.
+        </documentation>
+        <restriction>
+            <enum value="0" label="unspecified"/>
+            <enum value="1" label="top collocated"/>
+            <enum value="2" label="half"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoChromaSitVert"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\Range -->
+    <element
+             name="Range"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\Range"
+               id="0x55B9"
+             type="uinteger"
+           minver="4"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Clipping of the color ranges.
+        </documentation>
+        <restriction>
+            <enum value="0" label="unspecified"/>
+            <enum value="1" label="broadcast range"/>
+            <enum value="2" label="full range (no clipping)"/>
+            <enum
+                value="3"
+                label="defined by MatrixCoefficients / TransferCharacteristics"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoColourRange"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\TransferCharacteristics -->
+    <element
+             name="TransferCharacteristics"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\TransferCharacteristics"
+               id="0x55BA"
+             type="uinteger"
+           minver="4"
+          default="2"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The transfer characteristics of the video. For clarity, the value and meanings
+for TransferCharacteristics are adopted from Table 3 of ISO/IEC 23091-4 or
+ITU-T H.273.
+        </documentation>
+        <restriction>
+            <enum value="0" label="reserved"/>
+            <enum value="1" label="ITU-R BT.709"/>
+            <enum value="2" label="unspecified"/>
+            <enum value="3" label="reserved"/>
+            <enum value="4" label="Gamma 2.2 curve - BT.470M"/>
+            <enum value="5" label="Gamma 2.8 curve - BT.470BG"/>
+            <enum value="6" label="SMPTE 170M"/>
+            <enum value="7" label="SMPTE 240M"/>
+            <enum value="8" label="Linear"/>
+            <enum value="9" label="Log"/>
+            <enum value="10" label="Log Sqrt"/>
+            <enum value="11" label="IEC 61966-2-4"/>
+            <enum value="12" label="ITU-R BT.1361 Extended Colour Gamut"/>
+            <enum value="13" label="IEC 61966-2-1"/>
+            <enum value="14" label="ITU-R BT.2020 10 bit"/>
+            <enum value="15" label="ITU-R BT.2020 12 bit"/>
+            <enum value="16" label="ITU-R BT.2100 Perceptual Quantization"/>
+            <enum value="17" label="SMPTE ST 428-1"/>
+            <enum value="18" label="ARIB STD-B67 (HLG)"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoColourTransferCharacter"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\Primaries -->
+    <element
+             name="Primaries"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\Primaries"
+               id="0x55BB"
+             type="uinteger"
+           minver="4"
+          default="2"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The colour primaries of the video. For clarity, the value and meanings for
+Primaries are adopted from Table 2 of ISO/IEC 23091-4 or ITU-T H.273.
+        </documentation>
+        <restriction>
+            <enum value="0" label="reserved"/>
+            <enum value="1" label="ITU-R BT.709"/>
+            <enum value="2" label="unspecified"/>
+            <enum value="3" label="reserved"/>
+            <enum value="4" label="ITU-R BT.470M"/>
+            <enum value="5" label="ITU-R BT.470BG - BT.601 625"/>
+            <enum value="6" label="ITU-R BT.601 525 - SMPTE 170M"/>
+            <enum value="7" label="SMPTE 240M"/>
+            <enum value="8" label="FILM"/>
+            <enum value="9" label="ITU-R BT.2020"/>
+            <enum value="10" label="SMPTE ST 428-1"/>
+            <enum value="11" label="SMPTE RP 432-2"/>
+            <enum value="12" label="SMPTE EG 432-2"/>
+            <enum value="22" label="EBU Tech. 3213-E - JEDEC P22 phosphors"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoColourPrimaries"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MaxCLL -->
+    <element
+             name="MaxCLL"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MaxCLL"
+               id="0x55BC"
+             type="uinteger"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Maximum brightness of a single pixel (Maximum Content Light Level) in candelas
+per square meter (cd/m^2^).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoColourMaxCLL"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MaxFALL -->
+    <element
+             name="MaxFALL"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MaxFALL"
+               id="0x55BD"
+             type="uinteger"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Maximum brightness of a single full frame (Maximum Frame-Average Light Level) in
+candelas per square meter (cd/m^2^).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoColourMaxFALL"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata -->
+    <element
+             name="MasteringMetadata"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata"
+               id="0x55D0"
+             type="master"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+SMPTE 2086 mastering data.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoColourMasterMeta"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryRChromaticityX -->
+    <element
+             name="PrimaryRChromaticityX"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryRChromaticityX"
+               id="0x55D1"
+             type="float" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Red X chromaticity coordinate, as defined by CIE 1931.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoRChromaX"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryRChromaticityY -->
+    <element
+             name="PrimaryRChromaticityY"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryRChromaticityY"
+               id="0x55D2"
+             type="float" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Red Y chromaticity coordinate, as defined by CIE 1931.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoRChromaY"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryGChromaticityX -->
+    <element
+             name="PrimaryGChromaticityX"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryGChromaticityX"
+               id="0x55D3"
+             type="float" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Green X chromaticity coordinate, as defined by CIE 1931.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoGChromaX"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryGChromaticityY -->
+    <element
+             name="PrimaryGChromaticityY"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryGChromaticityY"
+               id="0x55D4"
+             type="float" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Green Y chromaticity coordinate, as defined by CIE 1931.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoGChromaY"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryBChromaticityX -->
+    <element
+             name="PrimaryBChromaticityX"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryBChromaticityX"
+               id="0x55D5"
+             type="float" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Blue X chromaticity coordinate, as defined by CIE 1931.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoBChromaX"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryBChromaticityY -->
+    <element
+             name="PrimaryBChromaticityY"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\PrimaryBChromaticityY"
+               id="0x55D6"
+             type="float" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Blue Y chromaticity coordinate, as defined by CIE 1931.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoBChromaY"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\WhitePointChromaticityX -->
+    <element
+             name="WhitePointChromaticityX"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\WhitePointChromaticityX"
+               id="0x55D7"
+             type="float" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+White X chromaticity coordinate, as defined by CIE 1931.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoWhitePointChromaX"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\WhitePointChromaticityY -->
+    <element
+             name="WhitePointChromaticityY"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\WhitePointChromaticityY"
+               id="0x55D8"
+             type="float" range="0-1"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+White Y chromaticity coordinate, as defined by CIE 1931.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoWhitePointChromaY"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\LuminanceMax -->
+    <element
+             name="LuminanceMax"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\LuminanceMax"
+               id="0x55D9"
+             type="float" range="&gt;= 0x0p+0"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Maximum luminance. Represented in candelas per square meter (cd/m^2^).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoLuminanceMax"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\LuminanceMin -->
+    <element
+             name="LuminanceMin"
+             path="\Segment\Tracks\TrackEntry\Video\Colour\MasteringMetadata\LuminanceMin"
+               id="0x55DA"
+             type="float" range="&gt;= 0x0p+0"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Minimum luminance. Represented in candelas per square meter (cd/m^2^).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoLuminanceMin"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
   <element name="Projection" path="\Segment\Tracks\TrackEntry\Video\Projection" id="0x7670" type="master" minver="4" maxOccurs="1">
     <documentation lang="en" purpose="definition">Describes the video projection details. Used to render spherical, VR videos or flipping videos horizontally/vertically.</documentation>
     <extension type="webmproject.org" webm="1"/>
