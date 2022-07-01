@@ -2366,26 +2366,54 @@ Minimum luminance. Represented in candelas per square meter (cd/m^2^).
         <extension type="libmatroska" cppname="VideoLuminanceMin"/>
         <extension type="stream copy" keep="1"/>
     </element>
-  <element name="Projection" path="\Segment\Tracks\TrackEntry\Video\Projection" id="0x7670" type="master" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Describes the video projection details. Used to render spherical, VR videos or flipping videos horizontally/vertically.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoProjection"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ProjectionType" path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionType" id="0x7671" type="uinteger" minver="4" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Describes the projection used for this video track.</documentation>
-    <restriction>
-      <enum value="0" label="rectangular"/>
-      <enum value="1" label="equirectangular"/>
-      <enum value="2" label="cubemap"/>
-      <enum value="3" label="mesh"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoProjectionType"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ProjectionPrivate" path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionPrivate" id="0x7672" type="binary" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Private data that only applies to a specific projection.
+    <!-- \Segment\Tracks\TrackEntry\Video\Projection -->
+    <element
+             name="Projection"
+             path="\Segment\Tracks\TrackEntry\Video\Projection"
+               id="0x7670"
+             type="master"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Describes the video projection details. Used to render spherical, VR videos or
+flipping videos horizontally/vertically.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoProjection"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Projection\ProjectionType -->
+    <element
+             name="ProjectionType"
+             path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionType"
+               id="0x7671"
+             type="uinteger"
+           minver="4"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Describes the projection used for this video track.
+        </documentation>
+        <restriction>
+            <enum value="0" label="rectangular"/>
+            <enum value="1" label="equirectangular"/>
+            <enum value="2" label="cubemap"/>
+            <enum value="3" label="mesh"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoProjectionType"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Projection\ProjectionPrivate -->
+    <element
+             name="ProjectionPrivate"
+             path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionPrivate"
+               id="0x7672"
+             type="binary"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Private data that only applies to a specific projection.
 
 *  If `ProjectionType` equals 0 (Rectangular),
      then this element must not be present.
@@ -2394,390 +2422,1024 @@ Minimum luminance. Represented in candelas per square meter (cd/m^2^).
 *  If `ProjectionType` equals 2 (Cubemap), then this element must be present and contain the same binary data that would be stored
       inside an ISOBMFF Cubemap Projection Box ('cbmp').
 *  If `ProjectionType` equals 3 (Mesh), then this element must be present and contain the same binary data that would be stored inside
-       an ISOBMFF Mesh Projection Box ('mshp').</documentation>
+       an ISOBMFF Mesh Projection Box ('mshp').
+        </documentation>
+        <documentation lang="en" purpose="usage notes">
+ISOBMFF box size and fourcc fields are not included in the binary data, but the
+FullBox version and flag fields are. This is to avoid redundant framing
+information while preserving versioning and semantics between the two container
+formats.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoProjectionPrivate"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Projection\ProjectionPoseYaw -->
+    <element
+             name="ProjectionPoseYaw"
+             path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionPoseYaw"
+               id="0x7673"
+             type="float" range="&gt;= -0xB4p+0, &lt;= 0xB4p+0"
+           minver="4"
+          default="0x0p+0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specifies a yaw rotation to the projection.
 
-<documentation lang="en" purpose="usage notes">ISOBMFF box size and fourcc fields are not included in the binary data,
-but the FullBox version and flag fields are. This is to avoid
-redundant framing information while preserving versioning and semantics between the two container formats.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoProjectionPrivate"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ProjectionPoseYaw" path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionPoseYaw" id="0x7673" type="float" range="&gt;= -0xB4p+0, &lt;= 0xB4p+0" minver="4" default="0x0p+0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specifies a yaw rotation to the projection.
+Value represents a clockwise rotation, in degrees, around the up vector. This
+rotation must be applied before any `ProjectionPosePitch` or
+`ProjectionPoseRoll` rotations. The value of this element **MUST** be in the
+-180 to 180 degree range, both included.
 
-Value represents a clockwise rotation, in degrees, around the up vector. This rotation must be applied
-before any `ProjectionPosePitch` or `ProjectionPoseRoll` rotations.
-The value of this element **MUST** be in the -180 to 180 degree range, both included.
+Setting `ProjectionPoseYaw` to 180 or -180 degrees, with the
+`ProjectionPoseRoll` and `ProjectionPosePitch` set to 0 degrees flips the image
+horizontally.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoProjectionPoseYaw"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Projection\ProjectionPosePitch -->
+    <element
+             name="ProjectionPosePitch"
+             path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionPosePitch"
+               id="0x7674"
+             type="float" range="&gt;= -0x5Ap+0, &lt;= 0x5Ap+0"
+           minver="4"
+          default="0x0p+0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specifies a pitch rotation to the projection.
 
-Setting `ProjectionPoseYaw` to 180 or -180 degrees, with the `ProjectionPoseRoll` and `ProjectionPosePitch` set to 0 degrees flips the image horizontally.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoProjectionPoseYaw"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ProjectionPosePitch" path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionPosePitch" id="0x7674" type="float" range="&gt;= -0x5Ap+0, &lt;= 0x5Ap+0" minver="4" default="0x0p+0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specifies a pitch rotation to the projection.
+Value represents a counter-clockwise rotation, in degrees, around the right
+vector. This rotation must be applied after the `ProjectionPoseYaw` rotation and
+before the `ProjectionPoseRoll` rotation. The value of this element **MUST** be
+in the -90 to 90 degree range, both included.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoProjectionPosePitch"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Video\Projection\ProjectionPoseRoll -->
+    <element
+             name="ProjectionPoseRoll"
+             path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionPoseRoll"
+               id="0x7675"
+             type="float" range="&gt;= -0xB4p+0, &lt;= 0xB4p+0"
+           minver="4"
+          default="0x0p+0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Specifies a roll rotation to the projection.
 
-Value represents a counter-clockwise rotation, in degrees, around the right vector. This rotation must be applied
-after the `ProjectionPoseYaw` rotation and before the `ProjectionPoseRoll` rotation.
-The value of this element **MUST** be in the -90 to 90 degree range, both included.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoProjectionPosePitch"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ProjectionPoseRoll" path="\Segment\Tracks\TrackEntry\Video\Projection\ProjectionPoseRoll" id="0x7675" type="float" range="&gt;= -0xB4p+0, &lt;= 0xB4p+0" minver="4" default="0x0p+0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Specifies a roll rotation to the projection.
+Value represents a counter-clockwise rotation, in degrees, around the forward
+vector. This rotation must be applied after the `ProjectionPoseYaw` and
+`ProjectionPosePitch` rotations. The value of this element **MUST** be in the
+-180 to 180 degree range, both included.
 
-Value represents a counter-clockwise rotation, in degrees, around the forward vector. This rotation must be applied
-after the `ProjectionPoseYaw` and `ProjectionPosePitch` rotations.
-The value of this element **MUST** be in the -180 to 180 degree range, both included.
+Setting `ProjectionPoseRoll` to 180 or -180 degrees, the `ProjectionPoseYaw` to
+180 or -180 degrees with `ProjectionPosePitch` set to 0 degrees flips the image
+vertically.
 
-Setting `ProjectionPoseRoll` to 180 or -180 degrees, the `ProjectionPoseYaw` to 180 or -180 degrees with `ProjectionPosePitch` set to 0 degrees flips the image vertically.
-
-Setting `ProjectionPoseRoll` to 180 or -180 degrees, with the `ProjectionPoseYaw` and `ProjectionPosePitch` set to 0 degrees flips the image horizontally and vertically.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="libmatroska" cppname="VideoProjectionPoseRoll"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="Audio" path="\Segment\Tracks\TrackEntry\Audio" id="0xE1" type="master" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Audio settings.</documentation>
-    <extension type="libmatroska" cppname="TrackAudio"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="SamplingFrequency" path="\Segment\Tracks\TrackEntry\Audio\SamplingFrequency" id="0xB5" type="float" range="&gt; 0x0p+0" default="0x1.f4p+12" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Sampling frequency in Hz.</documentation>
-    <extension type="libmatroska" cppname="AudioSamplingFreq"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="OutputSamplingFrequency" path="\Segment\Tracks\TrackEntry\Audio\OutputSamplingFrequency" id="0x78B5" type="float" range="&gt; 0x0p+0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Real output sampling frequency in Hz (used for SBR techniques).</documentation>
-    <implementation_note note_attribute="default">The default value for OutputSamplingFrequency of the same TrackEntry is equal to the SamplingFrequency.</implementation_note>
-    <extension type="libmatroska" cppname="AudioOutputSamplingFreq"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="Channels" path="\Segment\Tracks\TrackEntry\Audio\Channels" id="0x9F" type="uinteger" range="not 0" default="1" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Numbers of channels in the track.</documentation>
-    <extension type="libmatroska" cppname="AudioChannels"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="ChannelPositions" path="\Segment\Tracks\TrackEntry\Audio\ChannelPositions" id="0x7D7B" type="binary" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Table of horizontal angles for each successive channel.</documentation>
-    <extension type="libmatroska" cppname="AudioPosition"/>
-  </element>
-  <element name="BitDepth" path="\Segment\Tracks\TrackEntry\Audio\BitDepth" id="0x6264" type="uinteger" range="not 0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Bits per sample, mostly used for PCM.</documentation>
-    <extension type="libmatroska" cppname="AudioBitDepth"/>
-    <extension type="stream copy" keep="1"/>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="TrackOperation" path="\Segment\Tracks\TrackEntry\TrackOperation" id="0xE2" type="master" minver="3" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Operation that needs to be applied on tracks to create this virtual track.
-For more details look at (#track-operation).</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackCombinePlanes" path="\Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes" id="0xE3" type="master" minver="3" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Contains the list of all video plane tracks that need to be combined to create this 3D track</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackPlane" path="\Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane" id="0xE4" type="master" minver="3" minOccurs="1">
-    <documentation lang="en" purpose="definition">Contains a video plane track that need to be combined to create this 3D track</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackPlaneUID" path="\Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane\TrackPlaneUID" id="0xE5" type="uinteger" minver="3" range="not 0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The trackUID number of the track representing the plane.</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackPlaneType" path="\Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane\TrackPlaneType" id="0xE6" type="uinteger" minver="3" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The kind of plane this track corresponds to.</documentation>
-    <restriction>
-      <enum value="0" label="left eye"/>
-      <enum value="1" label="right eye"/>
-      <enum value="2" label="background"/>
-    </restriction>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackJoinBlocks" path="\Segment\Tracks\TrackEntry\TrackOperation\TrackJoinBlocks" id="0xE9" type="master" minver="3" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Contains the list of all tracks whose Blocks need to be combined to create this virtual track</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrackJoinUID" path="\Segment\Tracks\TrackEntry\TrackOperation\TrackJoinBlocks\TrackJoinUID" id="0xED" type="uinteger" minver="3" range="not 0" minOccurs="1">
-    <documentation lang="en" purpose="definition">The trackUID number of a track whose blocks are used to create this virtual track.</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="TrickTrackUID" path="\Segment\Tracks\TrackEntry\TrickTrackUID" id="0xC0" type="uinteger" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The TrackUID of the Smooth FF/RW video in the paired EBML structure corresponding to this video track. See [@?DivXTrickTrack].</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="TrickTrackSegmentUID" path="\Segment\Tracks\TrackEntry\TrickTrackSegmentUID" id="0xC1" type="binary" minver="0" maxver="0" length="16" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The SegmentUID of the Segment containing the track identified by TrickTrackUID. See [@?DivXTrickTrack].</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="TrickTrackFlag" path="\Segment\Tracks\TrackEntry\TrickTrackFlag" id="0xC6" type="uinteger" minver="0" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Set to 1 if this video track is a Smooth FF/RW track. If set to 1, MasterTrackUID and MasterTrackSegUID should must be present and BlockGroups for this track must contain ReferenceFrame structures.
-Otherwise, TrickTrackUID and TrickTrackSegUID must be present if this track has a corresponding Smooth FF/RW track. See [@?DivXTrickTrack].</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="TrickMasterTrackUID" path="\Segment\Tracks\TrackEntry\TrickMasterTrackUID" id="0xC7" type="uinteger" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The TrackUID of the video track in the paired EBML structure that corresponds to this Smooth FF/RW track. See [@?DivXTrickTrack].</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="TrickMasterTrackSegmentUID" path="\Segment\Tracks\TrackEntry\TrickMasterTrackSegmentUID" id="0xC4" type="binary" minver="0" maxver="0" length="16" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The SegmentUID of the Segment containing the track identified by MasterTrackUID. See [@?DivXTrickTrack].</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="ContentEncodings" path="\Segment\Tracks\TrackEntry\ContentEncodings" id="0x6D80" type="master" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Settings for several content encoding mechanisms like compression or encryption.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentEncoding" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding" id="0x6240" type="master" minOccurs="1">
-    <documentation lang="en" purpose="definition">Settings for one content encoding like compression or encryption.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentEncodingOrder" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingOrder" id="0x5031" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Tell in which order to apply each `ContentEncoding` of the `ContentEncodings`.
-The decoder/demuxer **MUST** start with the `ContentEncoding` with the highest `ContentEncodingOrder` and work its way down to the `ContentEncoding` with the lowest `ContentEncodingOrder`.
-This value **MUST** be unique over for each `ContentEncoding` found in the `ContentEncodings` of this `TrackEntry`.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentEncodingScope" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingScope" id="0x5032" type="uinteger" default="1" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A bit field that describes which Elements have been modified in this way.
-Values (big-endian) can be OR'ed.</documentation>
-    <restriction>
-      <enum value="1" label="Block">
-        <documentation lang="en" purpose="definition">All frame contents, excluding lacing data.</documentation>
-      </enum>
-      <enum value="2" label="Private">
-        <documentation lang="en" purpose="definition">The track's private data.</documentation>
-      </enum>
-      <enum value="4" label="Next">
-        <documentation lang="en" purpose="definition">The next ContentEncoding (next `ContentEncodingOrder`. Either the data inside `ContentCompression` and/or `ContentEncryption`).</documentation>
-        <documentation lang="en" purpose="usage notes">This value **SHOULD NOT** be used.</documentation>
-      </enum>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentEncodingType" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingType" id="0x5033" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A value describing what kind of transformation is applied.</documentation>
-    <restriction>
-      <enum value="0" label="Compression"/>
-      <enum value="1" label="Encryption"/>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentCompression" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression" id="0x5034" type="master" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Settings describing the compression used.
-This Element **MUST** be present if the value of ContentEncodingType is 0 and absent otherwise.
-Each block **MUST** be decompressable even if no previous block is available in order not to prevent seeking.</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentCompAlgo" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression\ContentCompAlgo" id="0x4254" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The compression algorithm used.</documentation>
-    <restriction>
-      <enum value="0" label="zlib">
-        <documentation lang="en" purpose="definition">zlib compression [@!RFC1950].</documentation>
-      </enum>
-      <enum value="1" label="bzlib">
-        <documentation lang="en" purpose="definition">bzip2 compression [@!BZIP2], **SHOULD NOT** be used; see usage notes.</documentation>
-      </enum>
-      <enum value="2" label="lzo1x">
-        <documentation lang="en" purpose="definition">Lempel-Ziv-Oberhumer compression [@!LZO], **SHOULD NOT** be used; see usage notes.</documentation>
-      </enum>
-      <enum value="3" label="Header Stripping">
-        <documentation lang="en" purpose="definition">Octets in `ContentCompSettings` ((#contentcompsettings-element)) have been stripped from each frame.</documentation>
-      </enum>
-    </restriction>
-    <documentation lang="en" purpose="usage notes">Compression method "1" (bzlib) and "2" (lzo1x) are lacking proper documentation on the format which limits implementation possibilities.
-Due to licensing conflicts on commonly available libraries compression methods "2" (lzo1x) does not offer widespread interoperability.
-Decoding implementations **MAY** support methods "1" and "2" as possible. The use of these compression methods **SHOULD NOT** be used as a default.</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentCompSettings" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression\ContentCompSettings" id="0x4255" type="binary" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Settings that might be needed by the decompressor. For Header Stripping (`ContentCompAlgo`=3),
-the bytes that were removed from the beginning of each frames of the track.</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentEncryption" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption" id="0x5035" type="master" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Settings describing the encryption used.
-This Element **MUST** be present if the value of `ContentEncodingType` is 1 (encryption) and **MUST** be ignored otherwise.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentEncAlgo" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAlgo" id="0x47E1" type="uinteger" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The encryption algorithm used.
-The value "0" means that the contents have not been encrypted.</documentation>
-    <restriction>
-      <enum value="0" label="Not encrypted"/>
-      <enum value="1" label="DES">
-        <documentation lang="en" purpose="definition">Data Encryption Standard (DES) [@!FIPS.46-3].</documentation>
-      </enum>
-      <enum value="2" label="3DES">
-        <documentation lang="en" purpose="definition">Triple Data Encryption Algorithm [@!SP.800-67].</documentation>
-      </enum>
-      <enum value="3" label="Twofish">
-        <documentation lang="en" purpose="definition">Twofish Encryption Algorithm [@!Twofish].</documentation>
-      </enum>
-      <enum value="4" label="Blowfish">
-        <documentation lang="en" purpose="definition">Blowfish Encryption Algorithm [@!Blowfish].</documentation>
-      </enum>
-      <enum value="5" label="AES">
-        <documentation lang="en" purpose="definition">Advanced Encryption Standard (AES) [@!FIPS.197].</documentation>
-      </enum>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentEncKeyID" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncKeyID" id="0x47E2" type="binary" maxOccurs="1">
-    <documentation lang="en" purpose="definition">For public key algorithms this is the ID of the public key the the data was encrypted with.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentEncAESSettings" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAESSettings" id="0x47E7" type="master" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Settings describing the encryption algorithm used.
-It **MUST** be ignored if `ContentEncAlgo` is not AES (5).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="AESSettingsCipherMode" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAESSettings\AESSettingsCipherMode" id="0x47E8" type="uinteger" minver="4" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The AES cipher mode used in the encryption.
-It **MUST** be ignored if `ContentEncAlgo` is not AES (5).</documentation>
-    <restriction>
-      <enum value="1" label="AES-CTR">
-        <documentation lang="en" purpose="definition">Counter [@!SP.800-38A].</documentation>
-      </enum>
-      <enum value="2" label="AES-CBC">
-        <documentation lang="en" purpose="definition">Cipher Block Chaining [@!SP.800-38A].</documentation>
-      </enum>
-    </restriction>
-    <extension type="webmproject.org" webm="1"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="ContentSignature" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSignature" id="0x47E3" type="binary" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A cryptographic signature of the contents.</documentation>
-  </element>
-  <element name="ContentSigKeyID" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigKeyID" id="0x47E4" type="binary" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">This is the ID of the private key the data was signed with.</documentation>
-  </element>
-  <element name="ContentSigAlgo" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigAlgo" id="0x47E5" type="uinteger" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The algorithm used for the signature.</documentation>
-    <restriction>
-      <enum value="0" label="Not signed"/>
-      <enum value="1" label="RSA"/>
-    </restriction>
-  </element>
-  <element name="ContentSigHashAlgo" path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigHashAlgo" id="0x47E6" type="uinteger" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The hash algorithm used for the signature.</documentation>
-    <restriction>
-      <enum value="0" label="Not signed"/>
-      <enum value="1" label="SHA1-160"/>
-      <enum value="2" label="MD5"/>
-    </restriction>
-  </element>
-  <element name="Cues" path="\Segment\Cues" id="0x1C53BB6B" type="master" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A Top-Level Element to speed seeking access.
-All entries are local to the Segment.</documentation>
-    <implementation_note note_attribute="minOccurs">This Element **SHOULD** be set when the Segment is not transmitted as a live stream (see #livestreaming).</implementation_note>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CuePoint" path="\Segment\Cues\CuePoint" id="0xBB" type="master" minOccurs="1">
-    <documentation lang="en" purpose="definition">Contains all information relative to a seek point in the Segment.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CueTime" path="\Segment\Cues\CuePoint\CueTime" id="0xB3" type="uinteger" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Absolute timestamp of the seek point, expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks).</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CueTrackPositions" path="\Segment\Cues\CuePoint\CueTrackPositions" id="0xB7" type="master" minOccurs="1">
-    <documentation lang="en" purpose="definition">Contain positions for different tracks corresponding to the timestamp.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CueTrack" path="\Segment\Cues\CuePoint\CueTrackPositions\CueTrack" id="0xF7" type="uinteger" range="not 0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The track for which a position is given.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CueClusterPosition" path="\Segment\Cues\CuePoint\CueTrackPositions\CueClusterPosition" id="0xF1" type="uinteger" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The Segment Position of the Cluster containing the associated Block.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CueRelativePosition" path="\Segment\Cues\CuePoint\CueTrackPositions\CueRelativePosition" id="0xF0" type="uinteger" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The relative position inside the Cluster of the referenced SimpleBlock or BlockGroup
-with 0 being the first possible position for an Element inside that Cluster.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CueDuration" path="\Segment\Cues\CuePoint\CueTrackPositions\CueDuration" id="0xB2" type="uinteger" minver="4" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The duration of the block, expressed in Segment Ticks which is based on TimestampScale; see (#timestamp-ticks).
-If missing, the track's DefaultDuration does not apply and no duration information is available in terms of the cues.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CueBlockNumber" path="\Segment\Cues\CuePoint\CueTrackPositions\CueBlockNumber" id="0x5378" type="uinteger" range="not 0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Number of the Block in the specified Cluster.</documentation>
-    <extension type="webmproject.org" webm="1"/>
-  </element>
-  <element name="CueCodecState" path="\Segment\Cues\CuePoint\CueTrackPositions\CueCodecState" id="0xEA" type="uinteger" minver="2" default="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The Segment Position of the Codec State corresponding to this Cue Element.
-0 means that the data is taken from the initial Track Entry.</documentation>
-  </element>
-  <element name="CueReference" path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference" id="0xDB" type="master" minver="2">
-    <documentation lang="en" purpose="definition">The Clusters containing the referenced Blocks.</documentation>
-  </element>
-  <element name="CueRefTime" path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefTime" id="0x96" type="uinteger" minver="2" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Timestamp of the referenced Block, expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks).</documentation>
-  </element>
-  <element name="CueRefCluster" path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCluster" id="0x97" type="uinteger" minver="0" maxver="0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The Segment Position of the Cluster containing the referenced Block.</documentation>
-  </element>
-  <element name="CueRefNumber" path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefNumber" id="0x535F" type="uinteger" minver="0" maxver="0" range="not 0" default="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Number of the referenced Block of Track X in the specified Cluster.</documentation>
-  </element>
-  <element name="CueRefCodecState" path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCodecState" id="0xEB" type="uinteger" minver="0" maxver="0" default="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The Segment Position of the Codec State corresponding to this referenced Element.
-0 means that the data is taken from the initial Track Entry.</documentation>
-  </element>
-  <element name="Attachments" path="\Segment\Attachments" id="0x1941A469" type="master" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Contain attached files.</documentation>
-  </element>
-  <element name="AttachedFile" path="\Segment\Attachments\AttachedFile" id="0x61A7" type="master" minOccurs="1">
-    <documentation lang="en" purpose="definition">An attached file.</documentation>
-    <extension type="libmatroska" cppname="Attached"/>
-  </element>
-  <element name="FileDescription" path="\Segment\Attachments\AttachedFile\FileDescription" id="0x467E" type="utf-8" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A human-friendly name for the attached file.</documentation>
-  </element>
-  <element name="FileName" path="\Segment\Attachments\AttachedFile\FileName" id="0x466E" type="utf-8" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Filename of the attached file.</documentation>
-  </element>
-  <element name="FileMimeType" path="\Segment\Attachments\AttachedFile\FileMimeType" id="0x4660" type="string" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">MIME type of the file.</documentation>
-    <extension type="libmatroska" cppname="MimeType"/>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="FileData" path="\Segment\Attachments\AttachedFile\FileData" id="0x465C" type="binary" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The data of the file.</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="FileUID" path="\Segment\Attachments\AttachedFile\FileUID" id="0x46AE" type="uinteger" range="not 0" minOccurs="1" maxOccurs="1">
-    <documentation lang="en" purpose="definition">Unique ID representing the file, as random as possible.</documentation>
-    <extension type="stream copy" keep="1"/>
-  </element>
-  <element name="FileReferral" path="\Segment\Attachments\AttachedFile\FileReferral" id="0x4675" type="binary" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">A binary value that a track/codec can refer to when the attachment is needed.</documentation>
-  </element>
-  <element name="FileUsedStartTime" path="\Segment\Attachments\AttachedFile\FileUsedStartTime" id="0x4661" type="uinteger" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The timestamp at which this optimized font attachment comes into context, expressed in Segment Ticks which is based on TimestampScale. See [@?DivXWorldFonts].</documentation>
-    <documentation lang="en" purpose="usage notes">This element is reserved for future use and if written **MUST** be the segment start timestamp.</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
-  <element name="FileUsedEndTime" path="\Segment\Attachments\AttachedFile\FileUsedEndTime" id="0x4662" type="uinteger" minver="0" maxver="0" maxOccurs="1">
-    <documentation lang="en" purpose="definition">The timestamp at which this optimized font attachment goes out of context, expressed in Segment Ticks which is based on TimestampScale. See [@?DivXWorldFonts].</documentation>
-    <documentation lang="en" purpose="usage notes">This element is reserved for future use and if written **MUST** be the segment end timestamp.</documentation>
-    <extension type="divx.com" divx="1"/>
-  </element>
+Setting `ProjectionPoseRoll` to 180 or -180 degrees, with the
+`ProjectionPoseYaw` and `ProjectionPosePitch` set to 0 degrees flips the image
+horizontally and vertically.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="libmatroska" cppname="VideoProjectionPoseRoll"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Audio -->
+    <element
+             name="Audio"
+             path="\Segment\Tracks\TrackEntry\Audio"
+               id="0xE1"
+             type="master"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Audio settings.
+        </documentation>
+        <extension type="libmatroska" cppname="TrackAudio"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Audio\SamplingFrequency -->
+    <element
+             name="SamplingFrequency"
+             path="\Segment\Tracks\TrackEntry\Audio\SamplingFrequency"
+               id="0xB5"
+             type="float" range="&gt; 0x0p+0"
+          default="0x1.f4p+12"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Sampling frequency in Hz.
+        </documentation>
+        <extension type="libmatroska" cppname="AudioSamplingFreq"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Audio\OutputSamplingFrequency -->
+    <element
+             name="OutputSamplingFrequency"
+             path="\Segment\Tracks\TrackEntry\Audio\OutputSamplingFrequency"
+               id="0x78B5"
+             type="float" range="&gt; 0x0p+0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Real output sampling frequency in Hz (used for SBR techniques).
+        </documentation>
+        <implementation_note note_attribute="default">
+The default value for OutputSamplingFrequency of the same TrackEntry is equal to
+the SamplingFrequency.
+        </implementation_note>
+        <extension type="libmatroska" cppname="AudioOutputSamplingFreq"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Audio\Channels -->
+    <element
+             name="Channels"
+             path="\Segment\Tracks\TrackEntry\Audio\Channels"
+               id="0x9F"
+             type="uinteger" range="not 0"
+          default="1"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Numbers of channels in the track.
+        </documentation>
+        <extension type="libmatroska" cppname="AudioChannels"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Audio\ChannelPositions -->
+    <element
+             name="ChannelPositions"
+             path="\Segment\Tracks\TrackEntry\Audio\ChannelPositions"
+               id="0x7D7B"
+             type="binary"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Table of horizontal angles for each successive channel.
+        </documentation>
+        <extension type="libmatroska" cppname="AudioPosition"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\Audio\BitDepth -->
+    <element
+             name="BitDepth"
+             path="\Segment\Tracks\TrackEntry\Audio\BitDepth"
+               id="0x6264"
+             type="uinteger" range="not 0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Bits per sample, mostly used for PCM.
+        </documentation>
+        <extension type="libmatroska" cppname="AudioBitDepth"/>
+        <extension type="stream copy" keep="1"/>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOperation -->
+    <element
+             name="TrackOperation"
+             path="\Segment\Tracks\TrackEntry\TrackOperation"
+               id="0xE2"
+             type="master"
+           minver="3"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Operation that needs to be applied on tracks to create this virtual track. For
+more details look at (#track-operation).
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes -->
+    <element
+             name="TrackCombinePlanes"
+             path="\Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes"
+               id="0xE3"
+             type="master"
+           minver="3"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contains the list of all video plane tracks that need to be combined to create
+this 3D track
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane -->
+    <element
+             name="TrackPlane"
+             path="\Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane"
+               id="0xE4"
+             type="master"
+           minver="3"
+        minOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contains a video plane track that need to be combined to create this 3D track
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane\TrackPlaneUID -->
+    <element
+             name="TrackPlaneUID"
+             path="\Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane\TrackPlaneUID"
+               id="0xE5"
+             type="uinteger" range="not 0"
+           minver="3"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The trackUID number of the track representing the plane.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane\TrackPlaneType -->
+    <element
+             name="TrackPlaneType"
+             path="\Segment\Tracks\TrackEntry\TrackOperation\TrackCombinePlanes\TrackPlane\TrackPlaneType"
+               id="0xE6"
+             type="uinteger"
+           minver="3"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The kind of plane this track corresponds to.
+        </documentation>
+        <restriction>
+            <enum value="0" label="left eye"/>
+            <enum value="1" label="right eye"/>
+            <enum value="2" label="background"/>
+        </restriction>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOperation\TrackJoinBlocks -->
+    <element
+             name="TrackJoinBlocks"
+             path="\Segment\Tracks\TrackEntry\TrackOperation\TrackJoinBlocks"
+               id="0xE9"
+             type="master"
+           minver="3"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contains the list of all tracks whose Blocks need to be combined to create this
+virtual track
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrackOperation\TrackJoinBlocks\TrackJoinUID -->
+    <element
+             name="TrackJoinUID"
+             path="\Segment\Tracks\TrackEntry\TrackOperation\TrackJoinBlocks\TrackJoinUID"
+               id="0xED"
+             type="uinteger" range="not 0"
+           minver="3"
+        minOccurs="1">
+        <documentation lang="en" purpose="definition">
+The trackUID number of a track whose blocks are used to create this virtual
+track.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrickTrackUID -->
+    <element
+             name="TrickTrackUID"
+             path="\Segment\Tracks\TrackEntry\TrickTrackUID"
+               id="0xC0"
+             type="uinteger"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The TrackUID of the Smooth FF/RW video in the paired EBML structure
+corresponding to this video track. See [@?DivXTrickTrack].
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrickTrackSegmentUID -->
+    <element
+             name="TrickTrackSegmentUID"
+             path="\Segment\Tracks\TrackEntry\TrickTrackSegmentUID"
+               id="0xC1"
+             type="binary" length="16"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The SegmentUID of the Segment containing the track identified by TrickTrackUID.
+See [@?DivXTrickTrack].
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrickTrackFlag -->
+    <element
+             name="TrickTrackFlag"
+             path="\Segment\Tracks\TrackEntry\TrickTrackFlag"
+               id="0xC6"
+             type="uinteger"
+           minver="0" maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Set to 1 if this video track is a Smooth FF/RW track. If set to 1,
+MasterTrackUID and MasterTrackSegUID should must be present and BlockGroups for
+this track must contain ReferenceFrame structures. Otherwise, TrickTrackUID and
+TrickTrackSegUID must be present if this track has a corresponding Smooth FF/RW
+track. See [@?DivXTrickTrack].
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrickMasterTrackUID -->
+    <element
+             name="TrickMasterTrackUID"
+             path="\Segment\Tracks\TrackEntry\TrickMasterTrackUID"
+               id="0xC7"
+             type="uinteger"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The TrackUID of the video track in the paired EBML structure that corresponds to
+this Smooth FF/RW track. See [@?DivXTrickTrack].
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\TrickMasterTrackSegmentUID -->
+    <element
+             name="TrickMasterTrackSegmentUID"
+             path="\Segment\Tracks\TrackEntry\TrickMasterTrackSegmentUID"
+               id="0xC4"
+             type="binary" length="16"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The SegmentUID of the Segment containing the track identified by MasterTrackUID.
+See [@?DivXTrickTrack].
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings -->
+    <element
+             name="ContentEncodings"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings"
+               id="0x6D80"
+             type="master"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Settings for several content encoding mechanisms like compression or encryption.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding -->
+    <element
+             name="ContentEncoding"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding"
+               id="0x6240"
+             type="master"
+        minOccurs="1">
+        <documentation lang="en" purpose="definition">
+Settings for one content encoding like compression or encryption.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingOrder -->
+    <element
+             name="ContentEncodingOrder"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingOrder"
+               id="0x5031"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Tell in which order to apply each `ContentEncoding` of the `ContentEncodings`.
+The decoder/demuxer **MUST** start with the `ContentEncoding` with the highest
+`ContentEncodingOrder` and work its way down to the `ContentEncoding` with the
+lowest `ContentEncodingOrder`. This value **MUST** be unique over for each
+`ContentEncoding` found in the `ContentEncodings` of this `TrackEntry`.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingScope -->
+    <element
+             name="ContentEncodingScope"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingScope"
+               id="0x5032"
+             type="uinteger"
+          default="1"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A bit field that describes which Elements have been modified in this way. Values
+(big-endian) can be OR'ed.
+        </documentation>
+        <restriction>
+            <enum value="1" label="Block">
+                <documentation lang="en" purpose="definition">
+All frame contents, excluding lacing data.
+                </documentation>
+            </enum>
+            <enum value="2" label="Private">
+                <documentation lang="en" purpose="definition">
+The track's private data.
+                </documentation>
+            </enum>
+            <enum value="4" label="Next">
+                <documentation lang="en" purpose="definition">
+The next ContentEncoding (next `ContentEncodingOrder`. Either the data inside
+`ContentCompression` and/or `ContentEncryption`).
+                </documentation>
+                <documentation lang="en" purpose="usage notes">
+This value **SHOULD NOT** be used.
+                </documentation>
+            </enum>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingType -->
+    <element
+             name="ContentEncodingType"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncodingType"
+               id="0x5033"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A value describing what kind of transformation is applied.
+        </documentation>
+        <restriction>
+            <enum value="0" label="Compression"/>
+            <enum value="1" label="Encryption"/>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression -->
+    <element
+             name="ContentCompression"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression"
+               id="0x5034"
+             type="master"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Settings describing the compression used. This Element **MUST** be present if
+the value of ContentEncodingType is 0 and absent otherwise. Each block **MUST**
+be decompressable even if no previous block is available in order not to prevent
+seeking.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression\ContentCompAlgo -->
+    <element
+             name="ContentCompAlgo"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression\ContentCompAlgo"
+               id="0x4254"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The compression algorithm used.
+        </documentation>
+        <restriction>
+            <enum value="0" label="zlib">
+                <documentation lang="en" purpose="definition">
+zlib compression [@!RFC1950].
+                </documentation>
+            </enum>
+            <enum value="1" label="bzlib">
+                <documentation lang="en" purpose="definition">
+bzip2 compression [@!BZIP2], **SHOULD NOT** be used; see usage notes.
+                </documentation>
+            </enum>
+            <enum value="2" label="lzo1x">
+                <documentation lang="en" purpose="definition">
+Lempel-Ziv-Oberhumer compression [@!LZO], **SHOULD NOT** be used; see usage
+notes.
+                </documentation>
+            </enum>
+            <enum value="3" label="Header Stripping">
+                <documentation lang="en" purpose="definition">
+Octets in `ContentCompSettings` ((#contentcompsettings-element)) have been
+stripped from each frame.
+                </documentation>
+            </enum>
+        </restriction>
+        <documentation lang="en" purpose="usage notes">
+Compression method "1" (bzlib) and "2" (lzo1x) are lacking proper documentation
+on the format which limits implementation possibilities. Due to licensing
+conflicts on commonly available libraries compression methods "2" (lzo1x) does
+not offer widespread interoperability. Decoding implementations **MAY** support
+methods "1" and "2" as possible. The use of these compression methods **SHOULD
+NOT** be used as a default.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression\ContentCompSettings -->
+    <element
+             name="ContentCompSettings"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentCompression\ContentCompSettings"
+               id="0x4255"
+             type="binary"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Settings that might be needed by the decompressor. For Header Stripping
+(`ContentCompAlgo`=3), the bytes that were removed from the beginning of each
+frames of the track.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption -->
+    <element
+             name="ContentEncryption"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption"
+               id="0x5035"
+             type="master"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Settings describing the encryption used. This Element **MUST** be present if the
+value of `ContentEncodingType` is 1 (encryption) and **MUST** be ignored
+otherwise.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAlgo -->
+    <element
+             name="ContentEncAlgo"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAlgo"
+               id="0x47E1"
+             type="uinteger"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The encryption algorithm used. The value "0" means that the contents have not
+been encrypted.
+        </documentation>
+        <restriction>
+            <enum value="0" label="Not encrypted"/>
+            <enum value="1" label="DES">
+                <documentation lang="en" purpose="definition">
+Data Encryption Standard (DES) [@!FIPS.46-3].
+                </documentation>
+            </enum>
+            <enum value="2" label="3DES">
+                <documentation lang="en" purpose="definition">
+Triple Data Encryption Algorithm [@!SP.800-67].
+                </documentation>
+            </enum>
+            <enum value="3" label="Twofish">
+                <documentation lang="en" purpose="definition">
+Twofish Encryption Algorithm [@!Twofish].
+                </documentation>
+            </enum>
+            <enum value="4" label="Blowfish">
+                <documentation lang="en" purpose="definition">
+Blowfish Encryption Algorithm [@!Blowfish].
+                </documentation>
+            </enum>
+            <enum value="5" label="AES">
+                <documentation lang="en" purpose="definition">
+Advanced Encryption Standard (AES) [@!FIPS.197].
+                </documentation>
+            </enum>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncKeyID -->
+    <element
+             name="ContentEncKeyID"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncKeyID"
+               id="0x47E2"
+             type="binary"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+For public key algorithms this is the ID of the public key the the data was
+encrypted with.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAESSettings -->
+    <element
+             name="ContentEncAESSettings"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAESSettings"
+               id="0x47E7"
+             type="master"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Settings describing the encryption algorithm used. It **MUST** be ignored if
+`ContentEncAlgo` is not AES (5).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAESSettings\AESSettingsCipherMode -->
+    <element
+             name="AESSettingsCipherMode"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentEncAESSettings\AESSettingsCipherMode"
+               id="0x47E8"
+             type="uinteger"
+           minver="4"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The AES cipher mode used in the encryption. It **MUST** be ignored if
+`ContentEncAlgo` is not AES (5).
+        </documentation>
+        <restriction>
+            <enum value="1" label="AES-CTR">
+                <documentation lang="en" purpose="definition">Counter [@!SP.800-38A].</documentation>
+            </enum>
+            <enum value="2" label="AES-CBC">
+                <documentation lang="en" purpose="definition">Cipher Block Chaining [@!SP.800-38A].</documentation>
+            </enum>
+        </restriction>
+        <extension type="webmproject.org" webm="1"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSignature -->
+    <element
+             name="ContentSignature"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSignature"
+               id="0x47E3"
+             type="binary"
+           maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A cryptographic signature of the contents.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigKeyID -->
+    <element
+             name="ContentSigKeyID"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigKeyID"
+               id="0x47E4"
+             type="binary"
+           maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+This is the ID of the private key the data was signed with.
+        </documentation>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigAlgo -->
+    <element
+             name="ContentSigAlgo"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigAlgo"
+               id="0x47E5"
+             type="uinteger"
+           maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The algorithm used for the signature.
+        </documentation>
+        <restriction>
+            <enum value="0" label="Not signed"/>
+            <enum value="1" label="RSA"/>
+        </restriction>
+    </element>
+    <!-- \Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigHashAlgo -->
+    <element
+             name="ContentSigHashAlgo"
+             path="\Segment\Tracks\TrackEntry\ContentEncodings\ContentEncoding\ContentEncryption\ContentSigHashAlgo"
+               id="0x47E6"
+             type="uinteger"
+           maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The hash algorithm used for the signature.
+        </documentation>
+        <restriction>
+            <enum value="0" label="Not signed"/>
+            <enum value="1" label="SHA1-160"/>
+            <enum value="2" label="MD5"/>
+        </restriction>
+    </element>
+    <!-- \Segment\Cues -->
+    <element
+             name="Cues"
+             path="\Segment\Cues"
+               id="0x1C53BB6B"
+             type="master"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A Top-Level Element to speed seeking access. All entries are local to the
+Segment.
+        </documentation>
+        <implementation_note note_attribute="minOccurs">
+This Element **SHOULD** be set when the Segment is not transmitted as a live
+stream (see #livestreaming).
+        </implementation_note>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint -->
+    <element
+             name="CuePoint"
+             path="\Segment\Cues\CuePoint"
+               id="0xBB"
+             type="master"
+        minOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contains all information relative to a seek point in the Segment.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTime -->
+    <element
+             name="CueTime"
+             path="\Segment\Cues\CuePoint\CueTime"
+               id="0xB3"
+             type="uinteger"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Absolute timestamp of the seek point, expressed in Matroska Ticks -- ie in
+nanoseconds; see (#timestamp-ticks).
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions -->
+    <element
+             name="CueTrackPositions"
+             path="\Segment\Cues\CuePoint\CueTrackPositions"
+               id="0xB7"
+             type="master"
+        minOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contain positions for different tracks corresponding to the timestamp.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueTrack -->
+    <element
+             name="CueTrack"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueTrack"
+               id="0xF7"
+             type="uinteger" range="not 0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The track for which a position is given.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueClusterPosition -->
+    <element
+             name="CueClusterPosition"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueClusterPosition"
+               id="0xF1"
+             type="uinteger"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The Segment Position of the Cluster containing the associated Block.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueRelativePosition -->
+    <element
+             name="CueRelativePosition"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueRelativePosition"
+               id="0xF0"
+             type="uinteger"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The relative position inside the Cluster of the referenced SimpleBlock or
+BlockGroup with 0 being the first possible position for an Element inside that
+Cluster.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueDuration -->
+    <element
+             name="CueDuration"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueDuration"
+               id="0xB2"
+             type="uinteger"
+           minver="4"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The duration of the block, expressed in Segment Ticks which is based on
+TimestampScale; see (#timestamp-ticks). If missing, the track's DefaultDuration
+does not apply and no duration information is available in terms of the cues.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueBlockNumber -->
+    <element
+             name="CueBlockNumber"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueBlockNumber"
+               id="0x5378"
+             type="uinteger" range="not 0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Number of the Block in the specified Cluster.
+        </documentation>
+        <extension type="webmproject.org" webm="1"/>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueCodecState -->
+    <element
+             name="CueCodecState"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueCodecState"
+               id="0xEA"
+             type="uinteger"
+           minver="2"
+          default="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The Segment Position of the Codec State corresponding to this Cue Element. 0
+means that the data is taken from the initial Track Entry.
+        </documentation>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference -->
+    <element
+          name="CueReference"
+          path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference"
+            id="0xDB"
+          type="master"
+        minver="2">
+        <documentation lang="en" purpose="definition">
+The Clusters containing the referenced Blocks.
+        </documentation>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefTime -->
+    <element
+             name="CueRefTime"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefTime"
+               id="0x96"
+             type="uinteger"
+           minver="2"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Timestamp of the referenced Block, expressed in Matroska Ticks -- ie in
+nanoseconds; see (#timestamp-ticks).
+        </documentation>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCluster -->
+    <element
+             name="CueRefCluster"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCluster"
+               id="0x97"
+             type="uinteger"
+           minver="0" maxver="0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The Segment Position of the Cluster containing the referenced Block.
+        </documentation>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefNumber -->
+    <element
+             name="CueRefNumber"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefNumber"
+               id="0x535F"
+             type="uinteger" range="not 0"
+           minver="0" maxver="0"
+          default="1"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Number of the referenced Block of Track X in the specified Cluster.
+        </documentation>
+    </element>
+    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCodecState -->
+    <element
+             name="CueRefCodecState"
+             path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCodecState"
+               id="0xEB"
+             type="uinteger"
+           minver="0" maxver="0"
+          default="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The Segment Position of the Codec State corresponding to this referenced
+Element. 0 means that the data is taken from the initial Track Entry.
+        </documentation>
+    </element>
+    <!-- \Segment\Attachments -->
+    <element
+             name="Attachments"
+             path="\Segment\Attachments"
+               id="0x1941A469"
+             type="master"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Contain attached files.
+        </documentation>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile -->
+    <element
+             name="AttachedFile"
+             path="\Segment\Attachments\AttachedFile"
+               id="0x61A7"
+             type="master"
+        minOccurs="1">
+        <documentation lang="en" purpose="definition">
+An attached file.
+        </documentation>
+        <extension type="libmatroska" cppname="Attached"/>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile\FileDescription -->
+    <element
+             name="FileDescription"
+             path="\Segment\Attachments\AttachedFile\FileDescription"
+               id="0x467E"
+             type="utf-8"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A human-friendly name for the attached file.
+        </documentation>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile\FileName -->
+    <element
+             name="FileName"
+             path="\Segment\Attachments\AttachedFile\FileName"
+               id="0x466E"
+             type="utf-8"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Filename of the attached file.
+        </documentation>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile\FileMimeType -->
+    <element
+             name="FileMimeType"
+             path="\Segment\Attachments\AttachedFile\FileMimeType"
+               id="0x4660"
+             type="string"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+MIME type of the file.
+        </documentation>
+        <extension type="libmatroska" cppname="MimeType"/>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile\FileData -->
+    <element
+             name="FileData"
+             path="\Segment\Attachments\AttachedFile\FileData"
+               id="0x465C"
+             type="binary"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The data of the file.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile\FileUID -->
+    <element
+             name="FileUID"
+             path="\Segment\Attachments\AttachedFile\FileUID"
+               id="0x46AE"
+             type="uinteger" range="not 0"
+        minOccurs="1" maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+Unique ID representing the file, as random as possible.
+        </documentation>
+        <extension type="stream copy" keep="1"/>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile\FileReferral -->
+    <element
+             name="FileReferral"
+             path="\Segment\Attachments\AttachedFile\FileReferral"
+               id="0x4675"
+             type="binary"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+A binary value that a track/codec can refer to when the attachment is needed.
+        </documentation>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile\FileUsedStartTime -->
+    <element
+             name="FileUsedStartTime"
+             path="\Segment\Attachments\AttachedFile\FileUsedStartTime"
+               id="0x4661"
+             type="uinteger"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The timestamp at which this optimized font attachment comes into context,
+expressed in Segment Ticks which is based on TimestampScale. See
+[@?DivXWorldFonts].
+        </documentation>
+        <documentation lang="en" purpose="usage notes">
+This element is reserved for future use and if written **MUST** be the segment
+start timestamp.
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
+    <!-- \Segment\Attachments\AttachedFile\FileUsedEndTime -->
+    <element
+             name="FileUsedEndTime"
+             path="\Segment\Attachments\AttachedFile\FileUsedEndTime"
+               id="0x4662"
+             type="uinteger"
+           minver="0" maxver="0"
+        maxOccurs="1">
+        <documentation lang="en" purpose="definition">
+The timestamp at which this optimized font attachment goes out of context,
+expressed in Segment Ticks which is based on TimestampScale. See
+[@?DivXWorldFonts].
+        </documentation>
+        <documentation lang="en" purpose="usage notes">
+This element is reserved for future use and if written **MUST** be the segment
+end timestamp.
+        </documentation>
+        <extension type="divx.com" divx="1"/>
+    </element>
   <element name="Chapters" path="\Segment\Chapters" id="0x1043A770" type="master" maxOccurs="1" recurring="1">
     <documentation lang="en" purpose="definition">A system to define basic menus and partition data.
 For more detailed information, look at the Chapters explanation in (#chapters).</documentation>
