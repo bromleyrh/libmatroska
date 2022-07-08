@@ -28,6 +28,8 @@ define(`minmax', `minOccurs="$1" maxOccurs="$2"')
 
 define(`def',
        `<documentation lang="en" purpose="definition">$1</documentation>')
+define(`usage',
+       `<documentation lang="en" purpose="`usage' notes">$1</documentation>')
 -->
 
 ppush(`EBML')
@@ -98,279 +100,234 @@ The Segment Position of the Element.
     ppop()
 
     <!-- \Segment\Info -->
-    <element
-             name="Info"
-             path="\Segment\Info"
-               id="0x1549A966"
-             type="master"
-        minOccurs="1" maxOccurs="1"
-        recurring="1">
-        <documentation lang="en" purpose="definition">
+    pushes(`Info', `0x1549A966',
+           `type="master"' minmax(1, 1) `recurring="1"')
+
+        def(`
 Contains general information about the Segment.
-        </documentation>
+        ')
         <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Info\SegmentUID -->
-    <element
-             name="SegmentUID"
-             path="\Segment\Info\SegmentUID"
-               id="0x73A4"
-             type="binary" range="not 0" length="16"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+
+        <!-- \Segment\Info\SegmentUID -->
+        epushes(`SegmentUID', `0x73A4',
+                `type="binary" range="not 0" length="16" maxOccurs="1"')
+
+            def(`
 A randomly generated unique ID to identify the Segment amongst many others (128
 bits).
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+            ')
+            usage(`
 If the Segment is a part of a Linked Segment, then this Element is **REQUIRED**.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\SegmentFilename -->
-    <element
-             name="SegmentFilename"
-             path="\Segment\Info\SegmentFilename"
-               id="0x7384"
-             type="utf-8"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+
+        <!-- \Segment\Info\SegmentFilename -->
+        enexte(`SegmentFilename', `0x7384',
+               `type="utf-8" maxOccurs="1"')
+
+            def(`
 A filename corresponding to this Segment.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\PrevUID -->
-    <element
-             name="PrevUID"
-             path="\Segment\Info\PrevUID"
-               id="0x3CB923"
-             type="binary" length="16"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+
+        <!-- \Segment\Info\PrevUID -->
+        enexte(`PrevUID', `0x3CB923'
+               `type="binary" length="16" maxOccurs="1"')
+
+            def(`
 A unique ID to identify the previous Segment of a Linked Segment (128 bits).
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+            ')
+            usage(`
 If the Segment is a part of a Linked Segment that uses Hard Linking, then either
 the PrevUID or the NextUID Element is **REQUIRED**. If a Segment contains a
 PrevUID but not a NextUID, then it **MAY** be considered as the last Segment of
 the Linked Segment. The PrevUID **MUST NOT** be equal to the SegmentUID.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\PrevFilename -->
-    <element
-             name="PrevFilename"
-             path="\Segment\Info\PrevFilename"
-               id="0x3C83AB"
-             type="utf-8"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+
+        <!-- \Segment\Info\PrevFilename -->
+        enexte(`PrevFilename', `0x3C83AB',
+               `type="utf-8" maxOccurs="1"')
+
+            def(`
 A filename corresponding to the file of the previous Linked Segment.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+            ')
+            usage(`
 Provision of the previous filename is for display convenience, but PrevUID
 **SHOULD** be considered authoritative for identifying the previous Segment in a
 Linked Segment.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\NextUID -->
-    <element
-             name="NextUID"
-             path="\Segment\Info\NextUID"
-               id="0x3EB923"
-             type="binary" length="16"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+
+        <!-- \Segment\Info\NextUID -->
+        enexte(`NextUID', `0x3EB923',
+               `type="binary" length="16" maxOccurs="1"')
+
+            def(`
 A unique ID to identify the next Segment of a Linked Segment (128 bits).
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+            ')
+            usage(`
 If the Segment is a part of a Linked Segment that uses Hard Linking, then either
 the PrevUID or the NextUID Element is **REQUIRED**. If a Segment contains a
 NextUID but not a PrevUID, then it **MAY** be considered as the first Segment of
 the Linked Segment. The NextUID **MUST NOT** be equal to the SegmentUID.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\NextFilename -->
-    <element
-             name="NextFilename"
-             path="\Segment\Info\NextFilename"
-               id="0x3E83BB"
-             type="utf-8"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+
+        <!-- \Segment\Info\NextFilename -->
+        enexte(`NextFilename', `0x3E83BB',
+               `type="utf-8" maxOccurs="1"')
+
+            def(`
 A filename corresponding to the file of the next Linked Segment.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+            ')
+            usage(`
 Provision of the next filename is for display convenience, but NextUID
 **SHOULD** be considered authoritative for identifying the Next Segment.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\SegmentFamily -->
-    <element
-        name="SegmentFamily"
-        path="\Segment\Info\SegmentFamily"
-          id="0x4444"
-        type="binary" length="16">
-        <documentation lang="en" purpose="definition">
+            ')
+
+        <!-- \Segment\Info\SegmentFamily -->
+        enexte(`SegmentFamily', `0x4444',
+               `type="binary" length="16"')
+
+            def(`
 A randomly generated unique ID that all Segments of a Linked Segment **MUST**
 share (128 bits).
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
-If the Segment Info contains a `ChapterTranslate` element, this Element is
+            ')
+            usage(`
+If the Segment Info contains a "ChapterTranslate" element, this Element is
 **REQUIRED**.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\ChapterTranslate -->
-    <element
-        name="ChapterTranslate"
-        path="\Segment\Info\ChapterTranslate"
-          id="0x6924"
-        type="master">
-        <documentation lang="en" purpose="definition">
-The mapping between this `Segment` and a segment value in the given Chapter
+            ')
+
+        <!-- \Segment\Info\ChapterTranslate -->
+        enexte(`ChapterTranslate', `0x6924',
+               `type="master"')
+
+            def(`
+The mapping between this "Segment" and a segment value in the given Chapter
 Codec.
-        </documentation>
-        <documentation lang="en" purpose="rationale">
+            ')
+            <documentation lang="en" purpose="rationale">
 Chapter Codec may need to address different segments, but they may not know of
 the way to identify such segment when stored in Matroska. This element and its
 child elements add a way to map the internal segments known to the Chapter Codec
 to the Segment IDs in Matroska. This allows remuxing a file with Chapter Codec
 without changing the content of the codec data, just the Segment mapping.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\ChapterTranslate\ChapterTranslateID -->
-    <element
-             name="ChapterTranslateID"
-             path="\Segment\Info\ChapterTranslate\ChapterTranslateID"
-               id="0x69A5"
-             type="binary"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            </documentation>
+
+            <!-- \Segment\Info\ChapterTranslate\ChapterTranslateID -->
+            epushes(`ChapterTranslateID', `0x69A5',
+                    `type="binary"' minmax(1, 1))
+
+                def(`
 The binary value used to represent this Segment in the chapter codec data. The
 format depends on the ChapProcessCodecID used; see
 (#chapprocesscodecid-element).
-        </documentation>
-    </element>
-    <!-- \Segment\Info\ChapterTranslate\ChapterTranslateCodec -->
-    <element
-             name="ChapterTranslateCodec"
-             path="\Segment\Info\ChapterTranslate\ChapterTranslateCodec"
-               id="0x69BF"
-             type="uinteger"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
-This `ChapterTranslate` applies to this chapter codec of the given chapter
+                ')
+
+            <!-- \Segment\Info\ChapterTranslate\ChapterTranslateCodec -->
+            enexte(`ChapterTranslateCodec', `0x69BF',
+                   `type="uinteger"' minmax(1, 1))
+
+                def(`
+This "ChapterTranslate" applies to this chapter codec of the given chapter
 edition(s); see (#chapprocesscodecid-element).
-        </documentation>
-        <restriction>
-            <enum value="0" label="Matroska Script">
-                <documentation lang="en" purpose="definition">
+                ')
+                <restriction>
+                    <enum value="0" label="Matroska Script">
+                        def(`
 Chapter commands using the Matroska Script codec.
-                </documentation>
-            </enum>
-            <enum value="1" label="DVD-menu">
-                <documentation lang="en" purpose="definition">
+                        ')
+                    </enum>
+                    <enum value="1" label="DVD-menu">
+                        def(`
 Chapter commands using the DVD-like codec.
-                </documentation>
-            </enum>
-        </restriction>
-    </element>
-    <!-- \Segment\Info\ChapterTranslate\ChapterTranslateEditionUID -->
-    <element
-        name="ChapterTranslateEditionUID"
-        path="\Segment\Info\ChapterTranslate\ChapterTranslateEditionUID"
-          id="0x69FC"
-        type="uinteger">
-        <documentation lang="en" purpose="definition">
-Specify a chapter edition UID on which this `ChapterTranslate` applies.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
-When no `ChapterTranslateEditionUID` is specified in the `ChapterTranslate`, the
-`ChapterTranslate` applied to all chapter editions found in the Segment using
-the given `ChapterTranslateCodec`.
-        </documentation>
-    </element>
-    <!-- \Segment\Info\TimestampScale -->
-    <element
-             name="TimestampScale"
-             path="\Segment\Info\TimestampScale"
-               id="0x2AD7B1"
-             type="uinteger" range="not 0"
-          default="1000000"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                    </enum>
+                </restriction>
+
+            <!-- \Segment\Info\ChapterTranslate\ChapterTranslateEditionUID -->
+            enexte(`ChapterTranslateEditionUID', `0x69FC',
+                   `type="uinteger"')
+
+                def(`
+Specify a chapter edition UID on which this "ChapterTranslate" applies.
+                ')
+                usage(`
+When no "ChapterTranslateEditionUID" is specified in the "ChapterTranslate", the
+"ChapterTranslate" applied to all chapter editions found in the Segment using
+the given "ChapterTranslateCodec".
+                ')
+
+            epop()
+
+        ppop()
+
+        <!-- \Segment\Info\TimestampScale -->
+        epushes(`TimestampScale', `0x2AD7B1',
+               `type="uinteger" range="not 0" default="1000000"' minmax(1, 1))
+
+            def(`
 Base unit for Segment Ticks and Track Ticks, in nanoseconds. A TimestampScale
 value of 1.000.000 means scaled timestamps in the Segment are expressed in
 milliseconds; see (#timestamps) on how to interpret timestamps.
-        </documentation>
-        <extension type="libmatroska" cppname="TimecodeScale"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Info\Duration -->
-    <element
-             name="Duration"
-             path="\Segment\Info\Duration"
-               id="0x4489"
-             type="float" range="&gt; 0x0p+0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="libmatroska" cppname="TimecodeScale"/>
+            <extension type="webmproject.org" webm="1"/>
+
+        <!-- \Segment\Info\Duration -->
+        enexte(`Duration', `0x4489',
+               `type="float" range="&gt; 0x0p+0" maxOccurs="1"')
+
+            def(`
 Duration of the Segment, expressed in Segment Ticks which is based on
 TimestampScale; see (#timestamp-ticks).
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Info\DateUTC -->
-    <element
-             name="DateUTC"
-             path="\Segment\Info\DateUTC"
-               id="0x4461"
-             type="date"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+        <!-- \Segment\Info\DateUTC -->
+        enexte(`DateUTC', `0x4461',
+               `type="date" maxOccurs="1"')
+
+            def(`
 The date and time that the Segment was created by the muxing application or
 library.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Info\Title -->
-    <element
-             name="Title"
-             path="\Segment\Info\Title"
-               id="0x7BA9"
-             type="utf-8"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+        <!-- \Segment\Info\Title -->
+        enexte(`Title', `0x7BA9',
+               `type="utf-8" maxOccurs="1"')
+
+            def(`
 General name of the Segment.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Info\MuxingApp -->
-    <element
-             name="MuxingApp"
-             path="\Segment\Info\MuxingApp"
-               id="0x4D80"
-             type="utf-8"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+        <!-- \Segment\Info\MuxingApp -->
+        enexte(`MuxingApp', `0x4D80',
+               `type="utf-8" minmax(1, 1)')
+
+            def(`
 Muxing application or library (example: "libmatroska-0.4.3").
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+            ')
+            usage(`
 Include the full name of the application or library followed by the version
 number.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Info\WritingApp -->
-    <element
-             name="WritingApp"
-             path="\Segment\Info\WritingApp"
-               id="0x5741"
-             type="utf-8"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+        <!-- \Segment\Info\WritingApp -->
+        enexte(`WritingApp', `0x5741',
+               `type="utf-8" minmax(1, 1)')
+
+            def(`
 Writing application (example: "mkvmerge-0.3.3").
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+            ')
+            usage(`
 Include the full name of the application followed by the version number.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+        epop()
+
+    ppop()
+
     <!-- \Segment\Cluster -->
     <element
                       name="Cluster"
