@@ -329,217 +329,186 @@ Include the full name of the application followed by the version number.
     ppop()
 
     <!-- \Segment\Cluster -->
-    <element
-                      name="Cluster"
-                      path="\Segment\Cluster"
-                        id="0x1F43B675"
-                      type="master"
-        unknownsizeallowed="1">
-        <documentation lang="en" purpose="definition">
+    pushes(`Cluster', `0x1F43B675',
+           `type="master" unknownsizeallowed="1"')
+
+        def(`
 The Top-Level Element containing the (monolithic) Block structure.
-        </documentation>
+        ')
         <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\Timestamp -->
-    <element
-             name="Timestamp"
-             path="\Segment\Cluster\Timestamp"
-               id="0xE7"
-             type="uinteger"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+
+        <!-- \Segment\Cluster\Timestamp -->
+        epushes(`Timestamp', `0xE7'
+                `type="uinteger"' minmax(1, 1))
+
+            def(`
 Absolute timestamp of the cluster, expressed in Segment Ticks which is based on
 TimestampScale; see (#timestamp-ticks).
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+            ')
+            usage(`
 This element **SHOULD** be the first child element of the Cluster it belongs to,
 or the second if that Cluster contains a CRC-32 element ((#crc-32)).
-        </documentation>
-        <extension type="libmatroska" cppname="ClusterTimecode"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\SilentTracks -->
-    <element
-             name="SilentTracks"
-             path="\Segment\Cluster\SilentTracks"
-               id="0x5854"
-             type="master"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="libmatroska" cppname="ClusterTimecode"/>
+            <extension type="webmproject.org" webm="1"/>
+
+        <!-- \Segment\Cluster\SilentTracks -->
+        enexte(`SilentTracks', `0x5854',
+               `type="master" minver="0" maxver="0" maxOccurs="1"')
+
+            def(`
 The list of tracks that are not used in that part of the stream. It is useful
 when using overlay tracks on seeking or to decide what track to use.
-        </documentation>
-        <extension type="libmatroska" cppname="ClusterSilentTracks"/>
-    </element>
-    <!-- \Segment\Cluster\SilentTracks\SilentTrackNumber -->
-    <element
-          name="SilentTrackNumber"
-          path="\Segment\Cluster\SilentTracks\SilentTrackNumber"
-            id="0x58D7"
-          type="uinteger"
-        minver="0" maxver="0">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="libmatroska" cppname="ClusterSilentTracks"/>
+
+            <!-- \Segment\Cluster\SilentTracks\SilentTrackNumber -->
+            epushes(`SilentTrackNumber', `0x58D7',
+                    `type="uinteger" minver="0" maxver="0"')
+
+                def(`
 One of the track number that are not used from now on in the stream. It could
 change later if not specified as silent in a further Cluster.
-        </documentation>
-        <extension type="libmatroska" cppname="ClusterSilentTrackNumber"/>
-    </element>
-    <!-- \Segment\Cluster\Position -->
-    <element
-             name="Position"
-             path="\Segment\Cluster\Position"
-               id="0xA7"
-             type="uinteger"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska"
+                 cppname="ClusterSilentTrackNumber"/>
+
+            epop()
+
+        ppop()
+
+        <!-- \Segment\Cluster\Position -->
+        pushes(`Position', `0xA7',
+               `type="uinteger" maxOccurs="1"')
+
+            def(`
 The Segment Position of the Cluster in the Segment (0 in live streams). It might
 help to resynchronise offset on damaged streams.
-        </documentation>
-        <extension type="libmatroska" cppname="ClusterPosition"/>
-    </element>
-    <!-- \Segment\Cluster\PrevSize -->
-    <element
-             name="PrevSize"
-             path="\Segment\Cluster\PrevSize"
-               id="0xAB"
-             type="uinteger"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="libmatroska" cppname="ClusterPosition"/>
+
+        <!-- \Segment\Cluster\PrevSize -->
+        enexte(`PrevSize', `0xAB',
+               `type="uinteger" maxOccurs="1"')
+
+            def(`
 Size of the previous Cluster, in octets. Can be useful for backward playing.
-        </documentation>
-        <extension type="libmatroska" cppname="ClusterPrevSize"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\SimpleBlock -->
-    <element
-          name="SimpleBlock"
-          path="\Segment\Cluster\SimpleBlock"
-            id="0xA3"
-          type="binary"
-        minver="2">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="libmatroska" cppname="ClusterPrevSize"/>
+            <extension type="webmproject.org" webm="1"/>
+
+        <!-- \Segment\Cluster\SimpleBlock -->
+        enexte(`SimpleBlock', `0xA3',
+               `type="binary" minver="2"')
+
+            def(`
 Similar to Block, see (#block-structure), but without all the extra information,
 mostly used to reduce overhead when no extra feature is needed; see
 (#simpleblock-structure) on SimpleBlock Structure.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="divx.com" divx="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup -->
-    <element
-        name="BlockGroup"
-        path="\Segment\Cluster\BlockGroup"
-          id="0xA0"
-        type="master">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+            <extension type="divx.com" divx="1"/>
+
+        <!-- \Segment\Cluster\BlockGroup -->
+        enexte(`BlockGroup', `0xA0',
+               `type="master"')
+
+            def(`
 Basic container of information containing a single Block and information
 specific to that Block.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\Block -->
-    <element
-             name="Block"
-             path="\Segment\Cluster\BlockGroup\Block"
-               id="0xA1"
-             type="binary"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Cluster\BlockGroup\Block -->
+            epushes(`Block', `0xA1',
+                    `type="binary"' minmax(1, 1))
+
+                def(`
 Block containing the actual data to be rendered and a timestamp relative to the
 Cluster Timestamp; see (#block-structure) on Block Structure.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\BlockVirtual -->
-    <element
-             name="BlockVirtual"
-             path="\Segment\Cluster\BlockGroup\BlockVirtual"
-               id="0xA2"
-             type="binary"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Cluster\BlockGroup\BlockVirtual -->
+            enexte(`BlockVirtual', `0xA2',
+                   `type="binary" minver="0" maxver="0" maxOccurs="1"')
+
+                def(`
 A Block with no data. It **MUST** be stored in the stream at the place the real
 Block would be in display order.
-        </documentation>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\BlockAdditions -->
-    <element
-             name="BlockAdditions"
-             path="\Segment\Cluster\BlockGroup\BlockAdditions"
-               id="0x75A1"
-             type="master"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Cluster\BlockGroup\BlockAdditions -->
+            enexte(`BlockAdditions', `0x75A1',
+                   `type="master" maxOccurs="1"')
+
+                def(`
 Contain additional blocks to complete the main one. An EBML parser that has no
 knowledge of the Block structure could still see and use/skip these data.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore -->
-    <element
-             name="BlockMore"
-             path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore"
-               id="0xA6"
-             type="master"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore -->
+                epushes(`BlockMore', `0xA6',
+                        `type="master" minOccurs="1"')
+
+                    def(`
 Contain the BlockAdditional and some parameters.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAddID -->
-    <element
-             name="BlockAddID"
-             path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAddID"
-               id="0xEE"
-             type="uinteger" range="not 0"
-          default="1"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                    <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore
+                         \BlockAddID -->
+                    epushes(`BlockAddID', `0xEE',
+                            `type="uinteger" range="not 0" default="1"'
+                            minmax(1, 1)')
+
+                        def(`
 An ID to identify the BlockAdditional level. If BlockAddIDType of the
 corresponding block is 0, this value is also the value of BlockAddIDType for the
 meaning of the content of BlockAdditional.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAdditional -->
-    <element
-             name="BlockAdditional"
-             path="\Segment\Cluster\BlockGroup\BlockAdditions\BlockMore\BlockAdditional"
-               id="0xA5"
-             type="binary"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="webmproject.org" webm="1"/>
+
+                    <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore
+                         \BlockAdditional -->
+                    epushes(`BlockAdditional', `0xA5',
+                            `type="binary"' minmax(1, 1))
+
+                        def(`
 Interpreted by the codec as it wishes (using the BlockAddID).
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\BlockDuration -->
-    <element
-             name="BlockDuration"
-             path="\Segment\Cluster\BlockGroup\BlockDuration"
-               id="0x9B"
-             type="uinteger"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="webmproject.org" webm="1"/>
+
+                    epop()
+
+                ppop()
+
+            ppop()
+
+        ppop()
+
+        <!-- \Segment\Cluster\BlockGroup\BlockDuration -->
+        pushes(`BlockDuration', `0x9B',
+               `type="uinteger" maxOccurs="1"')
+
+            def(`
 The duration of the Block, expressed in Track Ticks; see (#timestamp-ticks). The
 BlockDuration Element can be useful at the end of a Track to define the duration
 of the last frame (as there is no subsequent Block available), or when there is
 a break in a track like for subtitle tracks.
-        </documentation>
-        <implementation_note note_attribute="minOccurs">
+            ')
+            <implementation_note note_attribute="minOccurs">
 BlockDuration **MUST** be set (minOccurs=1) if the associated TrackEntry stores
 a DefaultDuration value.
-        </implementation_note>
-        <implementation_note note_attribute="default">
+            </implementation_note>
+            <implementation_note note_attribute="default">
 When not written and with no DefaultDuration, the value is assumed to be the
 difference between the timestamp of this Block and the timestamp of the next
 Block in "display" order (not coding order).
-        </implementation_note>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
+            </implementation_note>
+            <extension type="webmproject.org" webm="1"/>
+
     <!-- \Segment\Cluster\BlockGroup\ReferencePriority -->
     <element
              name="ReferencePriority"
