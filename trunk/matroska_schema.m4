@@ -25,6 +25,7 @@ define(`nexte', `pnext($1)elem($2, $3)')
 define(`enexte', `eleme()pnext($1)elem($2, $3)')
 
 define(`minmax', `minOccurs="$1" maxOccurs="$2"')
+define(`minmaxver', `minver="$1" maxver="$2"')
 
 define(`def',
        `<documentation lang="en" purpose="definition">$1</documentation>')
@@ -354,7 +355,7 @@ or the second if that Cluster contains a CRC-32 element ((#crc-32)).
 
         <!-- \Segment\Cluster\SilentTracks -->
         enexte(`SilentTracks', `0x5854',
-               `type="master" minver="0" maxver="0" maxOccurs="1"')
+               `type="master"' minmaxver(0, 0) `maxOccurs="1"')
 
             def(`
 The list of tracks that are not used in that part of the stream. It is useful
@@ -364,7 +365,7 @@ when using overlay tracks on seeking or to decide what track to use.
 
             <!-- \Segment\Cluster\SilentTracks\SilentTrackNumber -->
             epushes(`SilentTrackNumber', `0x58D7',
-                    `type="uinteger" minver="0" maxver="0"')
+                    `type="uinteger"' minmaxver(0, 0))
 
                 def(`
 One of the track number that are not used from now on in the stream. It could
@@ -431,7 +432,7 @@ Cluster Timestamp; see (#block-structure) on Block Structure.
 
             <!-- \Segment\Cluster\BlockGroup\BlockVirtual -->
             enexte(`BlockVirtual', `0xA2',
-                   `type="binary" minver="0" maxver="0" maxOccurs="1"')
+                   `type="binary"' minmaxver(0, 0) `maxOccurs="1"')
 
                 def(`
 A Block with no data. It **MUST** be stored in the stream at the place the real
@@ -472,7 +473,7 @@ meaning of the content of BlockAdditional.
 
                     <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore
                          \BlockAdditional -->
-                    epushes(`BlockAdditional', `0xA5',
+                    enexte(`BlockAdditional', `0xA5',
                             `type="binary"' minmax(1, 1))
 
                         def(`
@@ -486,261 +487,220 @@ Interpreted by the codec as it wishes (using the BlockAddID).
 
             ppop()
 
-        ppop()
+            <!-- \Segment\Cluster\BlockGroup\BlockDuration -->
+            pushes(`BlockDuration', `0x9B',
+                   `type="uinteger" maxOccurs="1"')
 
-        <!-- \Segment\Cluster\BlockGroup\BlockDuration -->
-        pushes(`BlockDuration', `0x9B',
-               `type="uinteger" maxOccurs="1"')
-
-            def(`
+                def(`
 The duration of the Block, expressed in Track Ticks; see (#timestamp-ticks). The
 BlockDuration Element can be useful at the end of a Track to define the duration
 of the last frame (as there is no subsequent Block available), or when there is
 a break in a track like for subtitle tracks.
-            ')
-            <implementation_note note_attribute="minOccurs">
+                ')
+                <implementation_note note_attribute="minOccurs">
 BlockDuration **MUST** be set (minOccurs=1) if the associated TrackEntry stores
 a DefaultDuration value.
-            </implementation_note>
-            <implementation_note note_attribute="default">
+                </implementation_note>
+                <implementation_note note_attribute="default">
 When not written and with no DefaultDuration, the value is assumed to be the
 difference between the timestamp of this Block and the timestamp of the next
 Block in "display" order (not coding order).
-            </implementation_note>
-            <extension type="webmproject.org" webm="1"/>
+                </implementation_note>
+                <extension type="webmproject.org" webm="1"/>
 
-    <!-- \Segment\Cluster\BlockGroup\ReferencePriority -->
-    <element
-             name="ReferencePriority"
-             path="\Segment\Cluster\BlockGroup\ReferencePriority"
-               id="0xFA"
-             type="uinteger"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            <!-- \Segment\Cluster\BlockGroup\ReferencePriority -->
+            enexte(`ReferencePriority', `0xFA',
+                   `type="uinteger" default="0"' minmax(1, 1))
+
+                def(`
 This frame is referenced and has the specified cache priority. In cache only a
 frame of the same or higher priority can replace this frame. A value of 0 means
 the frame is not referenced.
-        </documentation>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\ReferenceBlock -->
-    <element
-        name="ReferenceBlock"
-        path="\Segment\Cluster\BlockGroup\ReferenceBlock"
-          id="0xFB"
-        type="integer">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Cluster\BlockGroup\ReferenceBlock -->
+            enexte(`ReferenceBlock', `0xFB',
+                   `type="integer"')
+
+                def(`
 A timestamp value, relative to the timestamp of the Block in this BlockGroup,
 expressed in Track Ticks; see (#timestamp-ticks). This is used to reference
 other frames necessary to decode this frame. The relative value **SHOULD**
-correspond to a valid `Block` this `Block` depends on. Historically Matroska
-Writer didn't write the actual `Block(s)` this `Block` depends on, but *some*
-`Block` in the past.
+correspond to a valid "Block" this "Block" depends on. Historically Matroska
+Writer didnt write the actual "Block(s)" this "Block" depends on, but *some*
+"Block" in the past.
 
-The value "0" **MAY** also be used to signify this `Block` cannot be decoded on
-its own, but without knownledge of which `Block` is necessary. In this case,
-other `ReferenceBlock` **MUST NOT** be found in the same `BlockGroup`.
+The value "0" **MAY** also be used to signify this "Block" cannot be decoded on
+its own, but without knownledge of which "Block" is necessary. In this case,
+other "ReferenceBlock" **MUST NOT** be found in the same "BlockGroup".
 
-If the `BlockGroup` doesn't have any `ReferenceBlock` element, then the `Block`
-it contains can be decoded without using any other `Block` data.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\ReferenceVirtual -->
-    <element
-             name="ReferenceVirtual"
-             path="\Segment\Cluster\BlockGroup\ReferenceVirtual"
-               id="0xFD"
-             type="integer"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+If the "BlockGroup" doesn't have any "ReferenceBlock" element, then the "Block"
+it contains can be decoded without using any other "Block" data.
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Cluster\BlockGroup\ReferenceVirtual -->
+            enexte(`ReferenceVirtual', `0xFD',
+                   `type="integer"' minmaxver(0, 0) `maxOccurs="1"')
+
+                def(`
 The Segment Position of the data that would otherwise be in position of the
 virtual block.
-        </documentation>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\CodecState -->
-    <element
-             name="CodecState"
-             path="\Segment\Cluster\BlockGroup\CodecState"
-               id="0xA4"
-             type="binary"
-           minver="2"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Cluster\BlockGroup\CodecState -->
+            enexte(`CodecState', `0xA4',
+                   `type="binary" minver="2" maxOccurs="1"')
+
+                def(`
 The new codec state to use. Data interpretation is private to the codec. This
 information **SHOULD** always be referenced by a seek entry.
-        </documentation>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\DiscardPadding -->
-    <element
-             name="DiscardPadding"
-             path="\Segment\Cluster\BlockGroup\DiscardPadding"
-               id="0x75A2"
-             type="integer"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Cluster\BlockGroup\DiscardPadding -->
+            enexte(`DiscardPadding', `0x75A2',
+                   `type="integer" minver="4" maxOccurs="1"')
+
+                def(`
 Duration of the silent data added to the Block, expressed in Matroska Ticks --
 ie in nanoseconds; see (#timestamp-ticks) (padding at the end of the Block for
 positive value, at the beginning of the Block for negative value). The duration
 of DiscardPadding is not calculated in the duration of the TrackEntry and
 **SHOULD** be discarded during playback.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\Slices -->
-    <element
-             name="Slices"
-             path="\Segment\Cluster\BlockGroup\Slices"
-               id="0x8E"
-             type="master"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Cluster\BlockGroup\Slices -->
+            enexte(`Slices', `0x8E',
+                   `type="master"' minmaxver(0, 0) `maxOccurs="1"')
+
+                def(`
 Contains slices description.
-        </documentation>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice -->
-    <element
-          name="TimeSlice"
-          path="\Segment\Cluster\BlockGroup\Slices\TimeSlice"
-            id="0xE8"
-          type="master"
-        minver="0" maxver="0">
-        <documentation lang="en" purpose="definition">
+                ')
+
+                <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice -->
+                epushes(`TimeSlice', `0xE8',
+                        `type="master"' minmaxver(0, 0))
+
+                    def(`
 Contains extra time information about the data contained in the Block. Being
 able to interpret this Element is not **REQUIRED** for playback.
-        </documentation>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\LaceNumber -->
-    <element
-             name="LaceNumber"
-             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\LaceNumber"
-               id="0xCC"
-             type="uinteger"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice
+                         \LaceNumber -->
+                    epushes(`LaceNumber', `0xCC',
+                            `type="uinteger"' minmaxver(0, 0) `maxOccurs="1"')
+
+                        def(`
 The reverse number of the frame in the lace (0 is the last frame, 1 is the next
 to last, etc). Being able to interpret this Element is not **REQUIRED** for
 playback.
-        </documentation>
-        <extension type="libmatroska" cppname="SliceLaceNumber"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\FrameNumber -->
-    <element
-             name="FrameNumber"
-             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\FrameNumber"
-               id="0xCD"
-             type="uinteger"
-           minver="0" maxver="0"
-          default="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="libmatroska"
+                         cppname="SliceLaceNumber"/>
+
+                    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice
+                         \FrameNumber -->
+                    enexte(`FrameNumber', `0xCD',
+                           `type="uinteger"' minmaxver(0, 0)
+                           `default="0" maxOccurs="1"')
+
+                        def(`
 The number of the frame to generate from this lace with this delay (allow you to
 generate many frames from the same Block/Frame).
-        </documentation>
-        <extension type="libmatroska" cppname="SliceFrameNumber"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\BlockAdditionID -->
-    <element
-             name="BlockAdditionID"
-             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\BlockAdditionID"
-               id="0xCB"
-             type="uinteger"
-           minver="0" maxver="0"
-          default="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="libmatroska"
+                         cppname="SliceFrameNumber"/>
+
+                    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice
+                         \BlockAdditionID -->
+                    enexte(`BlockAdditionID', `0xCB',
+                           `type="uinteger"' minmaxver(0, 0)
+                           `default="0" maxOccurs="1"')
+
+                        def(`
 The ID of the BlockAdditional Element (0 is the main Block).
-        </documentation>
-        <extension type="libmatroska" cppname="SliceBlockAddID"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\Delay -->
-    <element
-             name="Delay"
-             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\Delay"
-               id="0xCE"
-             type="uinteger"
-           minver="0" maxver="0"
-          default="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="libmatroska"
+                         cppname="SliceBlockAddID"/>
+
+                    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\Delay -->
+                    enexte(`Delay', `0xCE',
+                           `type="uinteger"' minmaxver(0, 0)
+                           `default="0" maxOccurs="1"')
+
+                        def(`
 The delay to apply to the Element, expressed in Track Ticks; see
 (#timestamp-ticks).
-        </documentation>
-        <extension type="libmatroska" cppname="SliceDelay"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\SliceDuration -->
-    <element
-             name="SliceDuration"
-             path="\Segment\Cluster\BlockGroup\Slices\TimeSlice\SliceDuration"
-               id="0xCF"
-             type="uinteger"
-           minver="0" maxver="0"
-          default="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="libmatroska" cppname="SliceDelay"/>
+
+                    <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice
+                         \SliceDuration -->
+                    enexte(`SliceDuration', `0xCF',
+                           `type="uinteger"' minmaxver(0, 0)
+                           `default="0" maxOccurs="1"')
+
+                        def(`
 The duration to apply to the Element, expressed in Track Ticks; see
 (#timestamp-ticks).
-        </documentation>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\ReferenceFrame -->
-    <element
-             name="ReferenceFrame"
-             path="\Segment\Cluster\BlockGroup\ReferenceFrame"
-               id="0xC8"
-             type="master"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+
+                    epop()
+
+                ppop()
+
+            ppop()
+
+            <!-- \Segment\Cluster\BlockGroup\ReferenceFrame -->
+            pushes(`ReferenceFrame', `0xC8',
+                   `type="master"' minmaxver(0, 0) `maxOccurs="1"')
+
+                def(`
 Contains information about the last reference frame. See [@?DivXTrickTrack].
-        </documentation>
-        <extension type="divx.com" divx="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceOffset -->
-    <element
-             name="ReferenceOffset"
-             path="\Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceOffset"
-               id="0xC9"
-             type="uinteger"
-           minver="0" maxver="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="divx.com" divx="1"/>
+
+                <!-- \Segment\Cluster\BlockGroup\ReferenceFrame
+                     \ReferenceOffset -->
+                epushes(`ReferenceOffset', `0xC9',
+                        `type="uinteger"' minmaxver(0, 0) minmax(1, 1))
+
+                    def(`
 The relative offset, in bytes, from the previous BlockGroup element for this
 Smooth FF/RW video track to the containing BlockGroup element. See
 [@?DivXTrickTrack].
-        </documentation>
-        <extension type="divx.com" divx="1"/>
-    </element>
-    <!-- \Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceTimestamp -->
-    <element
-             name="ReferenceTimestamp"
-             path="\Segment\Cluster\BlockGroup\ReferenceFrame\ReferenceTimestamp"
-               id="0xCA"
-             type="uinteger"
-           minver="0" maxver="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="divx.com" divx="1"/>
+
+                <!-- \Segment\Cluster\BlockGroup\ReferenceFrame
+                     \ReferenceTimestamp -->
+                enexte(`ReferenceTimestamp', `0xCA',
+                       `type="uinteger"' minmaxver(0, 0) minmax(1, 1))
+
+                    def(`
 The timestamp of the BlockGroup pointed to by ReferenceOffset, expressed in
 Track Ticks; see (#timestamp-ticks). See [@?DivXTrickTrack].
-        </documentation>
-        <extension type="libmatroska" cppname="ReferenceTimeCode"/>
-        <extension type="divx.com" divx="1"/>
-    </element>
-    <!-- \Segment\Cluster\EncryptedBlock -->
-    <element
-          name="EncryptedBlock"
-          path="\Segment\Cluster\EncryptedBlock"
-            id="0xAF"
-          type="binary"
-        minver="0" maxver="0">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="libmatroska" cppname="ReferenceTimeCode"/>
+                    <extension type="divx.com" divx="1"/>
+
+                epop()
+
+            ppop()
+
+        ppop()
+
+        <!-- \Segment\Cluster\EncryptedBlock -->
+        pushes(`EncryptedBlock', `0xAF',
+               `type="binary"' minmaxver(0, 0))
+
+            def(`
 Similar to SimpleBlock, see (#simpleblock-structure), but the data inside the
 Block are Transformed (encrypt and/or signed).
-        </documentation>
-    </element>
+            ')
+
     <!-- \Segment\Tracks -->
     <element
              name="Tracks"
@@ -4097,3 +4057,5 @@ same SimpleTag as TagString.
         <extension type="webmproject.org" webm="1"/>
     </element>
 </EBMLSchema>
+
+<!-- vi: set filetype=xml: -->
