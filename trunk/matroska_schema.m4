@@ -2688,1032 +2688,877 @@ stream (see #livestreaming).
         </implementation_note>
         <extension type="webmproject.org" webm="1"/>
 
-    <!-- \Segment\Cues\CuePoint -->
-    <element
-             name="CuePoint"
-             path="\Segment\Cues\CuePoint"
-               id="0xBB"
-             type="master"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+        <!-- \Segment\Cues\CuePoint -->
+        epushes(`CuePoint', `0xBB',
+                type="master" minOccurs="1"')
+
+            def(`
 Contains all information relative to a seek point in the Segment.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTime -->
-    <element
-             name="CueTime"
-             path="\Segment\Cues\CuePoint\CueTime"
-               id="0xB3"
-             type="uinteger"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Cues\CuePoint\CueTime -->
+            epushes(`CueTime', `0xB3',
+                    `type="uinteger"' minmax(1, 1))
+
+                def(`
 Absolute timestamp of the seek point, expressed in Matroska Ticks -- ie in
 nanoseconds; see (#timestamp-ticks).
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions -->
-    <element
-             name="CueTrackPositions"
-             path="\Segment\Cues\CuePoint\CueTrackPositions"
-               id="0xB7"
-             type="master"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Cues\CuePoint\CueTrackPositions -->
+            enextes(`CueTrackPositions', `0xB7',
+                    `type="master" minOccurs="1"')
+
+                def(`
 Contain positions for different tracks corresponding to the timestamp.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueTrack -->
-    <element
-             name="CueTrack"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueTrack"
-               id="0xF7"
-             type="uinteger" range="not 0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueTrack -->
+                epushes(`CueTrack', `0xF7',
+                        `type="uinteger" range="not 0"' minmax(1, 1))
+
+                    def(`
 The track for which a position is given.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueClusterPosition -->
-    <element
-             name="CueClusterPosition"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueClusterPosition"
-               id="0xF1"
-             type="uinteger"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Cues\CuePoint\CueTrackPositions
+                     \CueClusterPosition -->
+                enextes(`CueClusterPosition', `0xF1',
+                        `type="uinteger"' minmax(1, 1))
+
+                    def(`
 The Segment Position of the Cluster containing the associated Block.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueRelativePosition -->
-    <element
-             name="CueRelativePosition"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueRelativePosition"
-               id="0xF0"
-             type="uinteger"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Cues\CuePoint\CueTrackPositions
+                     \CueRelativePosition -->
+                enextes(`CueRelativePosition', `0xF0',
+                        `type="uinteger" minver="4" maxOccurs="1"')
+
+                    def(`
 The relative position inside the Cluster of the referenced SimpleBlock or
 BlockGroup with 0 being the first possible position for an Element inside that
 Cluster.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueDuration -->
-    <element
-             name="CueDuration"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueDuration"
-               id="0xB2"
-             type="uinteger"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueDuration -->
+                enextes(`CueDuration', `0xB2',
+                        `type="uinteger" minver="4" maxOccurs="1"')
+
+                    def(`
 The duration of the block, expressed in Segment Ticks which is based on
-TimestampScale; see (#timestamp-ticks). If missing, the track's DefaultDuration
+TimestampScale; see (#timestamp-ticks). If missing, the tracks DefaultDuration
 does not apply and no duration information is available in terms of the cues.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueBlockNumber -->
-    <element
-             name="CueBlockNumber"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueBlockNumber"
-               id="0x5378"
-             type="uinteger" range="not 0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueBlockNumber -->
+                enextes(`CueBlockNumber', `0x5378',
+                        `type="uinteger" range="not 0" maxOccurs="1"')
+
+                    def(`
 Number of the Block in the specified Cluster.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueCodecState -->
-    <element
-             name="CueCodecState"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueCodecState"
-               id="0xEA"
-             type="uinteger"
-           minver="2"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueCodecState -->
+                enextes(`CueCodecState', `0xEA',
+                        `type="uinteger" minver="2" default="0"' minmax(1, 1))
+
+                    def(`
 The Segment Position of the Codec State corresponding to this Cue Element. 0
 means that the data is taken from the initial Track Entry.
-        </documentation>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference -->
-    <element
-          name="CueReference"
-          path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference"
-            id="0xDB"
-          type="master"
-        minver="2">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference -->
+                enextes(`CueReference', `0xDB',
+                        `type="master" minver="2"')
+
+                    def(`
 The Clusters containing the referenced Blocks.
-        </documentation>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefTime -->
-    <element
-             name="CueRefTime"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefTime"
-               id="0x96"
-             type="uinteger"
-           minver="2"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference
+                         \CueRefTime -->
+                    epushes(`CueRefTime', `0x96',
+                            `type="uinteger" minver="2"' minmax(1, 1))
+
+                        def(`
 Timestamp of the referenced Block, expressed in Matroska Ticks -- ie in
 nanoseconds; see (#timestamp-ticks).
-        </documentation>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCluster -->
-    <element
-             name="CueRefCluster"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCluster"
-               id="0x97"
-             type="uinteger"
-           minver="0" maxver="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+
+                    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference
+                         \CueRefCluster -->
+                    enextes(`CueRefCluster', `0x97',
+                            `type="uinteger"' minmaxver(0, 0) minmax(1, 1))
+
+                        def(`
 The Segment Position of the Cluster containing the referenced Block.
-        </documentation>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefNumber -->
-    <element
-             name="CueRefNumber"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefNumber"
-               id="0x535F"
-             type="uinteger" range="not 0"
-           minver="0" maxver="0"
-          default="1"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+
+                    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference
+                         \CueRefNumber -->
+                    enextes(`CueRefNumber', `0x535F',
+                            `type="uinteger" range="not 0"' minmaxver(0, 0)
+                            `default="1" maxOccurs="1"')
+
+                        def(`
 Number of the referenced Block of Track X in the specified Cluster.
-        </documentation>
-    </element>
-    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCodecState -->
-    <element
-             name="CueRefCodecState"
-             path="\Segment\Cues\CuePoint\CueTrackPositions\CueReference\CueRefCodecState"
-               id="0xEB"
-             type="uinteger"
-           minver="0" maxver="0"
-          default="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+
+                    <!-- \Segment\Cues\CuePoint\CueTrackPositions\CueReference
+                         \CueRefCodecState -->
+                    enextes(`CueRefCodecState', `0xEB',
+                            `type="uinteger"' minmaxver(0, 0)
+                            `default="0" maxOccurs="1"')
+
+                        def(`
 The Segment Position of the Codec State corresponding to this referenced
 Element. 0 means that the data is taken from the initial Track Entry.
-        </documentation>
-    </element>
+                        ')
+
+                    epop()
+
+                ppop()
+
+            ppop()
+
+        ppop()
+
+    ppop()
+
     <!-- \Segment\Attachments -->
-    <element
-             name="Attachments"
-             path="\Segment\Attachments"
-               id="0x1941A469"
-             type="master"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+    pushes(`Attachments', `0x1941A469',
+           `type="master" maxOccurs="1"')
+
+        def(`
 Contain attached files.
-        </documentation>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile -->
-    <element
-             name="AttachedFile"
-             path="\Segment\Attachments\AttachedFile"
-               id="0x61A7"
-             type="master"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+        ')
+
+        <!-- \Segment\Attachments\AttachedFile -->
+        epushes(`AttachedFile', `0x61A7',
+                `type="master" minOccurs="1"')
+
+            def(`
 An attached file.
-        </documentation>
-        <extension type="libmatroska" cppname="Attached"/>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile\FileDescription -->
-    <element
-             name="FileDescription"
-             path="\Segment\Attachments\AttachedFile\FileDescription"
-               id="0x467E"
-             type="utf-8"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="libmatroska" cppname="Attached"/>
+
+            <!-- \Segment\Attachments\AttachedFile\FileDescription -->
+            epushes(`FileDescription', `0x467E',
+                    `type="utf-8" maxOccurs="1"')
+
+                def(`
 A human-friendly name for the attached file.
-        </documentation>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile\FileName -->
-    <element
-             name="FileName"
-             path="\Segment\Attachments\AttachedFile\FileName"
-               id="0x466E"
-             type="utf-8"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Attachments\AttachedFile\FileName -->
+            enextes(`FileName', `0x466E',
+                    `type="utf-8"' minmax(1, 1))
+
+                def(`
 Filename of the attached file.
-        </documentation>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile\FileMimeType -->
-    <element
-             name="FileMimeType"
-             path="\Segment\Attachments\AttachedFile\FileMimeType"
-               id="0x4660"
-             type="string"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Attachments\AttachedFile\FileMimeType -->
+            enextes(`FileMimeType', `0x4660',
+                    `type="string"' minmax(1, 1))
+
+                def(`
 MIME type of the file.
-        </documentation>
-        <extension type="libmatroska" cppname="MimeType"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile\FileData -->
-    <element
-             name="FileData"
-             path="\Segment\Attachments\AttachedFile\FileData"
-               id="0x465C"
-             type="binary"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="MimeType"/>
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Attachments\AttachedFile\FileData -->
+            enextes(`FileData', `0x465C',
+                    `type="binary"' minmax(1, 1))
+
+                def(`
 The data of the file.
-        </documentation>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile\FileUID -->
-    <element
-             name="FileUID"
-             path="\Segment\Attachments\AttachedFile\FileUID"
-               id="0x46AE"
-             type="uinteger" range="not 0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Attachments\AttachedFile\FileUID -->
+            enextes(`FileUID', `0x46AE',
+                    `type="uinteger" range="not 0"' minmax(1, 1))
+
+                def(`
 Unique ID representing the file, as random as possible.
-        </documentation>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile\FileReferral -->
-    <element
-             name="FileReferral"
-             path="\Segment\Attachments\AttachedFile\FileReferral"
-               id="0x4675"
-             type="binary"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Attachments\AttachedFile\FileReferral -->
+            enextes(`FileReferral', `0x4675',
+                    `type="binary"' minmaxver(0, 0) `maxOccurs="1"')
+
+                def(`
 A binary value that a track/codec can refer to when the attachment is needed.
-        </documentation>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile\FileUsedStartTime -->
-    <element
-             name="FileUsedStartTime"
-             path="\Segment\Attachments\AttachedFile\FileUsedStartTime"
-               id="0x4661"
-             type="uinteger"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Attachments\AttachedFile\FileUsedStartTime -->
+            enextes(`FileUsedStartTime', `0x4661',
+                    `type="uinteger"' minmaxver(0, 0) `maxOccurs="1"')
+
+                def(`
 The timestamp at which this optimized font attachment comes into context,
 expressed in Segment Ticks which is based on TimestampScale. See
 [@?DivXWorldFonts].
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+                ')
+                usage(`
 This element is reserved for future use and if written **MUST** be the segment
 start timestamp.
-        </documentation>
-        <extension type="divx.com" divx="1"/>
-    </element>
-    <!-- \Segment\Attachments\AttachedFile\FileUsedEndTime -->
-    <element
-             name="FileUsedEndTime"
-             path="\Segment\Attachments\AttachedFile\FileUsedEndTime"
-               id="0x4662"
-             type="uinteger"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="divx.com" divx="1"/>
+
+            <!-- \Segment\Attachments\AttachedFile\FileUsedEndTime -->
+            enextes(`FileUsedEndTime', `0x4662',
+                    `type="uinteger"' minmaxver(0, 0) `maxOccurs="1"')
+
+                def(`
 The timestamp at which this optimized font attachment goes out of context,
 expressed in Segment Ticks which is based on TimestampScale. See
 [@?DivXWorldFonts].
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+                ')
+                usage(`
 This element is reserved for future use and if written **MUST** be the segment
 end timestamp.
-        </documentation>
-        <extension type="divx.com" divx="1"/>
-    </element>
+                ')
+                <extension type="divx.com" divx="1"/>
+
+            epop()
+
+        ppop()
+
+    ppop()
+
     <!-- \Segment\Chapters -->
-    <element
-             name="Chapters"
-             path="\Segment\Chapters"
-               id="0x1043A770"
-             type="master"
-        maxOccurs="1"
-        recurring="1">
-        <documentation lang="en" purpose="definition">
+    pushes(`Chapters', `0x1043A770',
+           `type="master" maxOccurs="1" recurring="1"')
+
+        def(`
 A system to define basic menus and partition data. For more detailed
 information, look at the Chapters explanation in (#chapters).
-        </documentation>
+        ')
         <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry -->
-    <element
-             name="EditionEntry"
-             path="\Segment\Chapters\EditionEntry"
-               id="0x45B9"
-             type="master"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+
+        <!-- \Segment\Chapters\EditionEntry -->
+        epushes(`EditionEntry', `0x45B9',
+                `type="master" minOccurs="1"')
+
+            def(`
 Contains all information about a Segment edition.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\EditionUID -->
-    <element
-             name="EditionUID"
-             path="\Segment\Chapters\EditionEntry\EditionUID"
-               id="0x45BC"
-             type="uinteger" range="not 0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
-A unique ID to identify the edition. It's useful for tagging an edition.
-        </documentation>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\EditionFlagHidden -->
-    <element
-             name="EditionFlagHidden"
-             path="\Segment\Chapters\EditionEntry\EditionFlagHidden"
-               id="0x45BD"
-             type="uinteger" range="0-1"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Chapters\EditionEntry\EditionUID -->
+            epushes(`EditionUID', `0x45BC',
+                    `type="uinteger" range="not 0" maxOccurs="1"')
+
+                def(`
+A unique ID to identify the edition. Its useful for tagging an edition.
+                ')
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Chapters\EditionEntry\EditionFlagHidden -->
+            enextes(`EditionFlagHidden', `0x45BD',
+                    `type="uinteger" range="0-1" default="0"' minmax(1, 1))
+
+                def(`
 Set to 1 if an edition is hidden. Hidden editions **SHOULD NOT** be available to
 the user interface (but still to Control Tracks; see (#chapter-flags) on Chapter
 flags).
-        </documentation>
-        <extension type="other document" spec="control-track"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\EditionFlagDefault -->
-    <element
-             name="EditionFlagDefault"
-             path="\Segment\Chapters\EditionEntry\EditionFlagDefault"
-               id="0x45DB"
-             type="uinteger" range="0-1"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="other document" spec="control-track"/>
+
+            <!-- \Segment\Chapters\EditionEntry\EditionFlagDefault -->
+            enextes(`EditionFlagDefault', `0x45DB',
+                    `type="uinteger" range="0-1" default="0"' minmax(1, 1))
+
+                def(`
 Set to 1 if the edition **SHOULD** be used as the default one.
-        </documentation>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\EditionFlagOrdered -->
-    <element
-             name="EditionFlagOrdered"
-             path="\Segment\Chapters\EditionEntry\EditionFlagOrdered"
-               id="0x45DD"
-             type="uinteger" range="0-1"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Chapters\EditionEntry\EditionFlagOrdered -->
+            enextes(`EditionFlagOrdered', `0x45DD',
+                    `type="uinteger" range="0-1" default="0"' minmax(1, 1))
+
+                def(`
 Set to 1 if the chapters can be defined multiple times and the order to play
 them is enforced; see (#editionflagordered).
-        </documentation>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom -->
-    <element
-             name="ChapterAtom"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom"
-               id="0xB6"
-             type="master"
-        minOccurs="1"
-        recursive="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Chapters\EditionEntry\+ChapterAtom -->
+            enextes(`+ChapterAtom', `0xB6',
+                    `type="master" minOccurs="1" recursive="1"')
+
+                def(`
 Contains the atom information to use as the chapter atom (apply to all tracks).
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterUID -->
-    <element
-             name="ChapterUID"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterUID"
-               id="0x73C4"
-             type="uinteger" range="not 0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterUID -->
+                epushes(`ChapterUID', `0x73C4',
+                        `type="uinteger" range="not 0"' minmax(1, 1))
+
+                    def(`
 A unique ID to identify the Chapter.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterStringUID -->
-    <element
-             name="ChapterStringUID"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterStringUID"
-               id="0x5654"
-             type="utf-8"
-           minver="3"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+                    <extension type="stream copy" keep="1"/>
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterStringUID -->
+                enextes(`ChapterStringUID', `0x5654',
+                        `type="utf-8" minver="3" maxOccurs="1"')
+
+                    def(`
 A unique string ID to identify the Chapter. Use for WebVTT cue identifier
 storage [@!WebVTT].
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterTimeStart -->
-    <element
-             name="ChapterTimeStart"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterTimeStart"
-               id="0x91"
-             type="uinteger"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterTimeStart -->
+                enextes(`ChapterTimeStart', `0x91',
+                        `type="uinteger"' minmax(1, 1))
+
+                    def(`
 Timestamp of the start of Chapter, expressed in Matroska Ticks -- ie in
 nanoseconds; see (#timestamp-ticks).
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterTimeEnd -->
-    <element
-             name="ChapterTimeEnd"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterTimeEnd"
-               id="0x92"
-             type="uinteger"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterTimeEnd -->
+                enextes(`ChapterTimeEnd', `0x92',
+                        `type="uinteger" maxOccurs="1"')
+
+                    def(`
 Timestamp of the end of Chapter timestamp excluded, expressed in Matroska Ticks
 -- ie in nanoseconds; see (#timestamp-ticks). The value **MUST** be greater than
-or equal to the `ChapterTimeStart` of the same `ChapterAtom`.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
-The `ChapterTimeEnd` timestamp value being excluded, it **MUST** take in account
-the duration of the last frame it includes, especially for the `ChapterAtom`
-using the last frames of the `Segment`.
-        </documentation>
-        <implementation_note note_attribute="minOccurs">
+or equal to the "ChapterTimeStart" of the same "ChapterAtom".
+                    ')
+                    usage(`
+The "ChapterTimeEnd" timestamp value being excluded, it **MUST** take in account
+the duration of the last frame it includes, especially for the "ChapterAtom"
+using the last frames of the "Segment".
+                    ')
+                    <implementation_note note_attribute="minOccurs">
 ChapterTimeEnd **MUST** be set (minOccurs=1) if the Edition is an ordered
-edition; see (#editionflagordered), unless it's a `Parent Chapter`; see
+edition; see (#editionflagordered), unless its a "Parent Chapter"; see
 (#nested-chapters)
-        </implementation_note>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterFlagHidden -->
-    <element
-             name="ChapterFlagHidden"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterFlagHidden"
-               id="0x98"
-             type="uinteger" range="0-1"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    </implementation_note>
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterFlagHidden -->
+                enextes(`ChapterFlagHidden', `0x98',
+                        `type="uinteger" range="0-1" default="0"' minmax(1, 1))
+
+                    def(`
 Set to 1 if a chapter is hidden. Hidden chapters **SHOULD NOT** be available to
 the user interface (but still to Control Tracks; see (#chapterflaghidden) on
 Chapter flags).
-        </documentation>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterFlagEnabled -->
-    <element
-             name="ChapterFlagEnabled"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterFlagEnabled"
-               id="0x4598"
-             type="uinteger" range="0-1"
-          default="1"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterFlagEnabled -->
+                enextes(`ChapterFlagEnabled', `0x4598',
+                        `type="uinteger" range="0-1" default="1"' minmax(1, 1))
+
+                    def(`
 Set to 1 if the chapter is enabled. It can be enabled/disabled by a Control
 Track. When disabled, the movie **SHOULD** skip all the content between the
 TimeStart and TimeEnd of this chapter; see (#chapter-flags) on Chapter flags.
-        </documentation>
-        <extension type="other document" spec="control-track"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterSegmentUID -->
-    <element
-             name="ChapterSegmentUID"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterSegmentUID"
-               id="0x6E67"
-             type="binary" range="&gt;0" length="16"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="other document" spec="control-track"/>
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterSegmentUID -->
+                enextes(`ChapterSegmentUID', `0x6E67',
+                        `type="binary" range="&gt;0" length="16" maxOccurs="1"')
+
+                    def(`
 The SegmentUID of another Segment to play during this chapter.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
-The value **MUST NOT** be the `SegmentUID` value of the `Segment` it belongs to.
-        </documentation>
-        <implementation_note note_attribute="minOccurs">
+                    ')
+                    usage(`
+The value **MUST NOT** be the "SegmentUID" value of the "Segment" it belongs to.
+                    ')
+                    <implementation_note note_attribute="minOccurs">
 ChapterSegmentUID **MUST** be set (minOccurs=1) if ChapterSegmentEditionUID is
 used; see (#medium-linking) on medium-linking Segments.
-        </implementation_note>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterSegmentEditionUID -->
-    <element
-             name="ChapterSegmentEditionUID"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterSegmentEditionUID"
-               id="0x6EBC"
-             type="uinteger" range="not 0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    </implementation_note>
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterSegmentEditionUID -->
+                enextes(`ChapterSegmentEditionUID', `0x6EBC',
+                        `type="uinteger" range="not 0" maxOccurs="1"')
+
+                    def(`
 The EditionUID to play from the Segment linked in ChapterSegmentUID. If
 ChapterSegmentEditionUID is undeclared, then no Edition of the linked Segment is
 used; see (#medium-linking) on medium-linking Segments.
-        </documentation>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterPhysicalEquiv -->
-    <element
-             name="ChapterPhysicalEquiv"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterPhysicalEquiv"
-               id="0x63C3"
-             type="uinteger"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterPhysicalEquiv -->
+                enextes(`ChapterPhysicalEquiv', `0x63C3',
+                        `type="uinteger" maxOccurs="1"')
+
+                    def(`
 Specify the physical equivalent of this ChapterAtom like "DVD" (60) or "SIDE"
 (50); see (#physical-types) for a complete list of values.
-        </documentation>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterTrack -->
-    <element
-             name="ChapterTrack"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterTrack"
-               id="0x8F"
-             type="master"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterTrack -->
+                enextes(`ChapterTrack', `0x8F',
+                        `type="master" maxOccurs="1"')
+
+                    def(`
 List of tracks on which the chapter applies. If this Element is not present, all
 tracks apply
-        </documentation>
-        <extension type="other document" spec="control-track"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterTrack\ChapterTrackUID -->
-    <element
-             name="ChapterTrackUID"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterTrack\ChapterTrackUID"
-               id="0x89"
-             type="uinteger" range="not 0"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="other document" spec="control-track"/>
+
+                    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                         \ChapterTrack\ChapterTrackUID -->
+                    epushes(`ChapterTrackUID', `0x89',
+                            `type="uinteger" range="not 0" minOccurs="1"')
+
+                        def(`
 UID of the Track to apply this chapter to. In the absence of a control track,
 choosing this chapter will select the listed Tracks and deselect unlisted
 tracks. Absence of this Element indicates that the Chapter **SHOULD** be applied
 to any currently used Tracks.
-        </documentation>
-        <extension type="libmatroska" cppname="ChapterTrackNumber"/>
-        <extension type="other document" spec="control-track"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay -->
-    <element
-        name="ChapterDisplay"
-        path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay"
-          id="0x80"
-        type="master">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="libmatroska"
+                            cppname="ChapterTrackNumber"/>
+                        <extension type="other document" spec="control-track"/>
+
+                    epop()
+
+                ppop()
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                     \ChapterDisplay -->
+                pushes(`ChapterDisplay', `0x80',
+                       `type="master"')
+
+                    def(`
 Contains all possible strings to use for the chapter display.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay\ChapString -->
-    <element
-             name="ChapString"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay\ChapString"
-               id="0x85"
-             type="utf-8"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                         \ChapterDisplay\ChapString -->
+                    epushes(`ChapString', `0x85',
+                            `type="utf-8"' minmax(1, 1))
+
+                        def(`
 Contains the string to use as the chapter atom.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="ChapterString"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay\ChapLanguage -->
-    <element
-             name="ChapLanguage"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay\ChapLanguage"
-               id="0x437C"
-             type="string"
-          default="eng"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="webmproject.org" webm="1"/>
+                        <extension type="libmatroska" cppname="ChapterString"/>
+
+                    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                         \ChapterDisplay\ChapLanguage -->
+                    enextes(`ChapLanguage', `0x437C',
+                            `type="string" default="eng" minOccurs="1"')
+
+                        def(`
 A language corresponding to the string, in the bibliographic ISO-639-2 form
 [@!ISO639-2]. This Element **MUST** be ignored if a ChapLanguageIETF Element is
 used within the same ChapterDisplay Element.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="ChapterLanguage"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay\ChapLanguageIETF -->
-    <element
-          name="ChapLanguageIETF"
-          path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay\ChapLanguageIETF"
-            id="0x437D"
-          type="string"
-        minver="4">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="webmproject.org" webm="1"/>
+                        <extension type="libmatroska"
+                            cppname="ChapterLanguage"/>
+
+                    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                         \ChapterDisplay\ChapLanguageIETF -->
+                    enextes(`ChapLanguageIETF', `0x437D',
+                            `type="string" minver="4"')
+
+                        def(`
 Specifies a language corresponding to the ChapString in the format defined in
 [@!BCP47] and using the IANA Language Subtag Registry [@!IANALangRegistry]. If a
 ChapLanguageIETF Element is used, then any ChapLanguage and ChapCountry Elements
 used in the same ChapterDisplay **MUST** be ignored.
-        </documentation>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay\ChapCountry -->
-    <element
-        name="ChapCountry"
-        path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapterDisplay\ChapCountry"
-          id="0x437E"
-        type="string">
-        <documentation lang="en" purpose="definition">
+                        ')
+
+                    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                         \ChapterDisplay\ChapCountry -->
+                    enextes(`ChapCountry', `0x437E',
+                            `type="string"')
+
+                        def(`
 A country corresponding to the string, using the same 2 octets country-codes as
 in Internet domains [@!IANADomains] based on [@!ISO3166-1] alpha-2 codes. This
 Element **MUST** be ignored if a ChapLanguageIETF Element is used within the
 same ChapterDisplay Element.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="ChapterCountry"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess -->
-    <element
-        name="ChapProcess"
-        path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess"
-          id="0x6944"
-        type="master">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="webmproject.org" webm="1"/>
+                        <extension type="libmatroska" cppname="ChapterCountry"/>
+
+                    epop()
+
+                ppop()
+
+                <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess -->
+                pushes(`ChapProcess', `0x6944',
+                       `type="master"')
+
+                    def(`
 Contains all the commands associated to the Atom.
-        </documentation>
-        <extension type="libmatroska" cppname="ChapterProcess"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessCodecID -->
-    <element
-             name="ChapProcessCodecID"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessCodecID"
-               id="0x6955"
-             type="uinteger"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="libmatroska" cppname="ChapterProcess"/>
+
+                    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess
+                         \ChapProcessCodecID -->
+                    epushes(`ChapProcessCodecID', `0x6955',
+                            `type="uinteger" default="0"' minmax(1, 1))
+
+                        def(`
 Contains the type of the codec used for the processing. A value of 0 means
 native Matroska processing (to be defined), a value of 1 means the DVD command
 set is used; see (#menu-features) on DVD menus. More codec IDs can be added
 later.
-        </documentation>
-        <extension type="libmatroska" cppname="ChapterProcessCodecID"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessPrivate -->
-    <element
-             name="ChapProcessPrivate"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessPrivate"
-               id="0x450D"
-             type="binary"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="libmatroska"
+                            cppname="ChapterProcessCodecID"/>
+
+                    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess
+                         \ChapProcessPrivate -->
+                    enextes(`ChapProcessPrivate', `0x450D',
+                            `type="binary" maxOccurs="1"')
+
+                        def(`
 Some optional data attached to the ChapProcessCodecID information. For
 ChapProcessCodecID = 1, it is the "DVD level" equivalent; see (#menu-features)
 on DVD menus.
-        </documentation>
-        <extension type="libmatroska" cppname="ChapterProcessPrivate"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessCommand -->
-    <element
-        name="ChapProcessCommand"
-        path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessCommand"
-          id="0x6911"
-        type="master">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="libmatroska"
+                            cppname="ChapterProcessPrivate"/>
+
+                    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess
+                         \ChapProcessCommand -->
+                    enextes(`ChapProcessCommand', `0x6911',
+                            `type="master"')
+
+                        def(`
 Contains all the commands associated to the Atom.
-        </documentation>
-        <extension type="libmatroska" cppname="ChapterProcessCommand"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessCommand\ChapProcessTime -->
-    <element
-             name="ChapProcessTime"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessCommand\ChapProcessTime"
-               id="0x6922"
-             type="uinteger"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                        <extension type="libmatroska"
+                            cppname="ChapterProcessCommand"/>
+
+                        <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                             \ChapProcess\ChapProcessCommand\ChapProcessTime -->
+                        epushes(`ChapProcessTime', `0x6922',
+                                `type="uinteger"' minmax(1, 1))
+
+                            def(`
 Defines when the process command **SHOULD** be handled
-        </documentation>
-        <restriction>
-            <enum value="0" label="during the whole chapter"/>
-            <enum value="1" label="before starting playback"/>
-            <enum value="2" label="after playback of the chapter"/>
-        </restriction>
-        <extension type="libmatroska" cppname="ChapterProcessTime"/>
-    </element>
-    <!-- \Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessCommand\ChapProcessData -->
-    <element
-             name="ChapProcessData"
-             path="\Segment\Chapters\EditionEntry\+ChapterAtom\ChapProcess\ChapProcessCommand\ChapProcessData"
-               id="0x6933"
-             type="binary"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                            ')
+                            <restriction>
+                                enument(0, `during the whole chapter')
+                                enument(1, `before starting playback')
+                                enument(2, `after playback of the chapter')
+                            </restriction>
+                            <extension type="libmatroska"
+                                cppname="ChapterProcessTime"/>
+
+                        <!-- \Segment\Chapters\EditionEntry\+ChapterAtom
+                             \ChapProcess\ChapProcessCommand\ChapProcessData -->
+                        enextes(`ChapProcessData', `0x6933',
+                                `type="binary"' minmax(1, 1))
+
+                            def(`
 Contains the command information. The data **SHOULD** be interpreted depending
 on the ChapProcessCodecID value. For ChapProcessCodecID = 1, the data correspond
 to the binary DVD cell pre/post commands; see (#menu-features) on DVD menus.
-        </documentation>
-        <extension type="libmatroska" cppname="ChapterProcessData"/>
-    </element>
+                            ')
+                            <extension type="libmatroska"
+                                cppname="ChapterProcessData"/>
+
+                        epop()
+
+                    ppop()
+
+                ppop()
+
+            ppop()
+
+        ppop()
+
+    ppop()
+
     <!-- \Segment\Tags -->
-    <element
-        name="Tags"
-        path="\Segment\Tags"
-          id="0x1254C367"
-        type="master">
-        <documentation lang="en" purpose="definition">
+    pushes(`Tags', `0x1254C367',
+           `type="master"')
+
+        def(`
 Element containing metadata describing Tracks, Editions, Chapters, Attachments,
 or the Segment as a whole. A list of valid tags can be found in
 [@!MatroskaTags].
-        </documentation>
+        ')
         <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tags\Tag -->
-    <element
-             name="Tag"
-             path="\Segment\Tags\Tag"
-               id="0x7373"
-             type="master"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+
+        <!-- \Segment\Tags\Tag -->
+        epushes(`Tag', `0x7373',
+                `type="master" minOccurs="1"')
+
+            def(`
 A single metadata descriptor.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tags\Tag\Targets -->
-    <element
-             name="Targets"
-             path="\Segment\Tags\Tag\Targets"
-               id="0x63C0"
-             type="master"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tags\Tag\Targets -->
+            epushes(`Targets', `0x63C0',
+                    `type="master"' minmax(1, 1))
+
+                def(`
 Specifies which other elements the metadata represented by the Tag applies to.
 If empty or not present, then the Tag describes everything in the Segment.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="TagTargets"/>
-    </element>
-    <!-- \Segment\Tags\Tag\Targets\TargetTypeValue -->
-    <element
-             name="TargetTypeValue"
-             path="\Segment\Tags\Tag\Targets\TargetTypeValue"
-               id="0x68CA"
-             type="uinteger"
-          default="50"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+                <extension type="libmatroska" cppname="TagTargets"/>
+
+                <!-- \Segment\Tags\Tag\Targets\TargetTypeValue -->
+                epushes(`TargetTypeValue', `0x68CA',
+                        `type="uinteger" default="50"' minmax(1, 1))
+
+                    def(`
 A number to indicate the logical level of the target.
-        </documentation>
-        <restriction>
-            <enum value="70" label="COLLECTION">
-                <documentation lang="en" purpose="definition">
+                    ')
+                    <restriction>
+                        enuments(70, `COLLECTION')
+                            def(`
 The highest hierarchical level that tags can describe.
-                </documentation>
-            </enum>
-            <enum
-                value="60"
-                label="EDITION / ISSUE / VOLUME / OPUS / SEASON / SEQUEL">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(60,
+                                  `EDITION / ISSUE / VOLUME / OPUS / SEASON / SEQUEL')
+                            def(`
 A list of lower levels grouped together.
-                </documentation>
-            </enum>
-            <enum value="50" label="ALBUM / OPERA / CONCERT / MOVIE / EPISODE">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(50,
+                                  `ALBUM / OPERA / CONCERT / MOVIE / EPISODE')
+                            def(`
 The most common grouping level of music and video (equals to an episode for TV
 series).
-                </documentation>
-            </enum>
-            <enum value="40" label="PART / SESSION">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(40, `PART / SESSION')
+                            def(`
 When an album or episode has different logical parts.
-                </documentation>
-            </enum>
-            <enum value="30" label="TRACK / SONG / CHAPTER">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(30, `TRACK / SONG / CHAPTER')
+                            def(`
 The common parts of an album or movie.
-                </documentation>
-            </enum>
-            <enum value="20" label="SUBTRACK / PART / MOVEMENT / SCENE">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(20, `SUBTRACK / PART / MOVEMENT / SCENE')
+                            def(`
 Corresponds to parts of a track for audio (like a movement).
-                </documentation>
-            </enum>
-            <enum value="10" label="SHOT">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(10, `SHOT')
+                            def(`
 The lowest hierarchy found in music or movies.
-                </documentation>
-            </enum>
-        </restriction>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="TagTargetTypeValue"/>
-    </element>
-    <!-- \Segment\Tags\Tag\Targets\TargetType -->
-    <element
-             name="TargetType"
-             path="\Segment\Tags\Tag\Targets\TargetType"
-               id="0x63CA"
-             type="string"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                            ')
+                        enumente()
+                    </restriction>
+                    <extension type="webmproject.org" webm="1"/>
+                    <extension type="libmatroska" cppname="TagTargetTypeValue"/>
+
+                <!-- \Segment\Tags\Tag\Targets\TargetType -->
+                enextes(`TargetType', `0x63CA',
+                        `type="string" maxOccurs="1"')
+
+                    def(`
 An informational string that can be used to display the logical level of the
 target like "ALBUM", "TRACK", "MOVIE", "CHAPTER", etc; see Section 6.4 of
 [@!MatroskaTags].
-        </documentation>
-        <restriction>
-            <enum value="COLLECTION" label="COLLECTION"/>
-            <enum value="EDITION" label="EDITION"/>
-            <enum value="ISSUE" label="ISSUE"/>
-            <enum value="VOLUME" label="VOLUME"/>
-            <enum value="OPUS" label="OPUS"/>
-            <enum value="SEASON" label="SEASON"/>
-            <enum value="SEQUEL" label="SEQUEL"/>
-            <enum value="ALBUM" label="ALBUM"/>
-            <enum value="OPERA" label="OPERA"/>
-            <enum value="CONCERT" label="CONCERT"/>
-            <enum value="MOVIE" label="MOVIE"/>
-            <enum value="EPISODE" label="EPISODE"/>
-            <enum value="PART" label="PART"/>
-            <enum value="SESSION" label="SESSION"/>
-            <enum value="TRACK" label="TRACK"/>
-            <enum value="SONG" label="SONG"/>
-            <enum value="CHAPTER" label="CHAPTER"/>
-            <enum value="SUBTRACK" label="SUBTRACK"/>
-            <enum value="PART" label="PART"/>
-            <enum value="MOVEMENT" label="MOVEMENT"/>
-            <enum value="SCENE" label="SCENE"/>
-            <enum value="SHOT" label="SHOT"/>
-        </restriction>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="TagTargetType"/>
-    </element>
-    <!-- \Segment\Tags\Tag\Targets\TagTrackUID -->
-    <element
-           name="TagTrackUID"
-           path="\Segment\Tags\Tag\Targets\TagTrackUID"
-             id="0x63C5"
-           type="uinteger"
-        default="0">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <restriction>
+                        enument(`COLLECTION', `COLLECTION')
+                        enument(`EDITION', `EDITION')
+                        enument(`ISSUE', `ISSUE')
+                        enument(`VOLUME', `VOLUME')
+                        enument(`OPUS', `OPUS')
+                        enument(`SEASON', `SEASON')
+                        enument(`SEQUEL', `SEQUEL')
+                        enument(`ALBUM', `ALBUM')
+                        enument(`OPERA', `OPERA')
+                        enument(`CONCERT', `CONCERT')
+                        enument(`MOVIE', `MOVIE')
+                        enument(`EPISODE', `EPISODE')
+                        enument(`PART', `PART')
+                        enument(`SESSION', `SESSION')
+                        enument(`TRACK', `TRACK')
+                        enument(`SONG', `SONG')
+                        enument(`CHAPTER', `CHAPTER')
+                        enument(`SUBTRACK', `SUBTRACK')
+                        enument(`PART', `PART')
+                        enument(`MOVEMENT', `MOVEMENT')
+                        enument(`SCENE', `SCENE')
+                        enument(`SHOT', `SHOT')
+                    </restriction>
+                    <extension type="webmproject.org" webm="1"/>
+                    <extension type="libmatroska" cppname="TagTargetType"/>
+
+                <!-- \Segment\Tags\Tag\Targets\TagTrackUID -->
+                enextes(`TagTrackUID', `0x63C5',
+                        `type="uinteger" default="0"')
+
+                    def(`
 A unique ID to identify the Track(s) the tags belong to.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+                    ')
+                    usage(`
 If the value is 0 at this level, the tags apply to all tracks in the Segment. If
-set to any other value, it **MUST** match the `TrackUID` value of a track found
+set to any other value, it **MUST** match the "TrackUID" value of a track found
 in this Segment.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tags\Tag\Targets\TagEditionUID -->
-    <element
-           name="TagEditionUID"
-           path="\Segment\Tags\Tag\Targets\TagEditionUID"
-             id="0x63C9"
-           type="uinteger"
-        default="0">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tags\Tag\Targets\TagEditionUID -->
+                enextes(`TagEditionUID', `0x63C9',
+                        `type="uinteger" default="0"')
+
+                    def(`
 A unique ID to identify the EditionEntry(s) the tags belong to.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+                    ')
+                    usage(`
 If the value is 0 at this level, the tags apply to all editions in the Segment.
-If set to any other value, it **MUST** match the `EditionUID` value of an
+If set to any other value, it **MUST** match the "EditionUID" value of an
 edition found in this Segment.
-        </documentation>
-    </element>
-    <!-- \Segment\Tags\Tag\Targets\TagChapterUID -->
-    <element
-           name="TagChapterUID"
-           path="\Segment\Tags\Tag\Targets\TagChapterUID"
-             id="0x63C4"
-           type="uinteger"
-        default="0">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Tags\Tag\Targets\TagChapterUID -->
+                enextes(`TagChapterUID', `0x63C4',
+                        `type="uinteger" default="0"')
+
+                    def(`
 A unique ID to identify the Chapter(s) the tags belong to.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+                    ')
+                    usage(`
 If the value is 0 at this level, the tags apply to all chapters in the Segment.
-If set to any other value, it **MUST** match the `ChapterUID` value of a chapter
+If set to any other value, it **MUST** match the "ChapterUID" value of a chapter
 found in this Segment.
-        </documentation>
-    </element>
-    <!-- \Segment\Tags\Tag\Targets\TagAttachmentUID -->
-    <element
-           name="TagAttachmentUID"
-           path="\Segment\Tags\Tag\Targets\TagAttachmentUID"
-             id="0x63C6"
-           type="uinteger"
-        default="0">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Tags\Tag\Targets\TagAttachmentUID -->
+                enextes(`TagAttachmentUID', `0x63C6',
+                        `type="uinteger" default="0"')
+
+                    def(`
 A unique ID to identify the Attachment(s) the tags belong to.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+                    ')
+                    usage(`
 If the value is 0 at this level, the tags apply to all the attachments in the
-Segment. If set to any other value, it **MUST** match the `FileUID` value of an
+Segment. If set to any other value, it **MUST** match the "FileUID" value of an
 attachment found in this Segment.
-        </documentation>
-    </element>
-    <!-- \Segment\Tags\Tag\+SimpleTag -->
-    <element
-             name="SimpleTag"
-             path="\Segment\Tags\Tag\+SimpleTag"
-               id="0x67C8"
-             type="master"
-        minOccurs="1"
-        recursive="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                epop()
+
+            ppop()
+
+            <!-- \Segment\Tags\Tag\+SimpleTag -->
+            pushes(`+SimpleTag', `0x67C8',
+                   `type="master" minOccurs="1" recursive="1"')
+
+                def(`
 Contains general information about the target.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="TagSimple"/>
-    </element>
-    <!-- \Segment\Tags\Tag\+SimpleTag\TagName -->
-    <element
-             name="TagName"
-             path="\Segment\Tags\Tag\+SimpleTag\TagName"
-               id="0x45A3"
-             type="utf-8"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+                <extension type="libmatroska" cppname="TagSimple"/>
+
+                <!-- \Segment\Tags\Tag\+SimpleTag\TagName -->
+                epushes(`TagName', `0x45A3',
+                        `type="utf-8"' minmax(1, 1))
+
+                    def(`
 The name of the Tag that is going to be stored.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tags\Tag\+SimpleTag\TagLanguage -->
-    <element
-             name="TagLanguage"
-             path="\Segment\Tags\Tag\+SimpleTag\TagLanguage"
-               id="0x447A"
-             type="string"
-          default="und"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tags\Tag\+SimpleTag\TagLanguage -->
+                enextes(`TagLanguage', `0x447A',
+                        `type="string" default="und"' minmax(1, 1))
+
+                    def(`
 Specifies the language of the tag specified, in the Matroska languages form; see
 (#language-codes) on language codes. This Element **MUST** be ignored if the
 TagLanguageIETF Element is used within the same SimpleTag Element.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="TagLangue"/>
-    </element>
-    <!-- \Segment\Tags\Tag\+SimpleTag\TagLanguageIETF -->
-    <element
-             name="TagLanguageIETF"
-             path="\Segment\Tags\Tag\+SimpleTag\TagLanguageIETF"
-               id="0x447B"
-             type="string"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+                    <extension type="libmatroska" cppname="TagLangue"/>
+
+                <!-- \Segment\Tags\Tag\+SimpleTag\TagLanguageIETF -->
+                enextes(`TagLanguageIETF', `0x447B',
+                        `type="string" minver="4" maxOccurs="1"')
+
+                    def(`
 Specifies the language used in the TagString according to [@!BCP47] and using
 the IANA Language Subtag Registry [@!IANALangRegistry]. If this Element is used,
 then any TagLanguage Elements used in the same SimpleTag **MUST** be ignored.
-        </documentation>
-    </element>
-    <!-- \Segment\Tags\Tag\+SimpleTag\TagDefault -->
-    <element
-             name="TagDefault"
-             path="\Segment\Tags\Tag\+SimpleTag\TagDefault"
-               id="0x4484"
-             type="uinteger" range="0-1"
-          default="1"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Tags\Tag\+SimpleTag\TagDefault -->
+                enextes(`TagDefault', `0x4484',
+                        `type="uinteger" range="0-1" default="1"' minmax(1, 1))
+
+                    def(`
 A boolean value to indicate if this is the default/original language to use for
 the given tag.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tags\Tag\+SimpleTag\TagDefaultBogus -->
-    <element
-             name="TagDefaultBogus"
-             path="\Segment\Tags\Tag\+SimpleTag\TagDefaultBogus"
-               id="0x44B4"
-             type="uinteger" range="0-1"
-           minver="0" maxver="0"
-          default="1"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tags\Tag\+SimpleTag\TagDefaultBogus -->
+                enextes(`TagDefaultBogus', `0x44B4',
+                        `type="uinteger" range="0-1"' minmaxver(0, 0)
+                        `default="1"' minmax(1, 1))
+
+                    def(`
 A variant of the TagDefault element with a bogus Element ID; see
 (#tagdefault-element).
-        </documentation>
-    </element>
-    <!-- \Segment\Tags\Tag\+SimpleTag\TagString -->
-    <element
-             name="TagString"
-             path="\Segment\Tags\Tag\+SimpleTag\TagString"
-               id="0x4487"
-             type="utf-8"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Tags\Tag\+SimpleTag\TagString -->
+                enextes(`TagString', `0x4487',
+                        `type="utf-8" maxOccurs="1"')
+
+                    def(`
 The value of the Tag.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tags\Tag\+SimpleTag\TagBinary -->
-    <element
-             name="TagBinary"
-             path="\Segment\Tags\Tag\+SimpleTag\TagBinary"
-               id="0x4485"
-             type="binary"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tags\Tag\+SimpleTag\TagBinary -->
+                enextes(`TagBinary', `0x4485',
+                        `type="binary" maxOccurs="1"')
+
+                    def(`
 The values of the Tag, if it is binary. Note that this cannot be used in the
 same SimpleTag as TagString.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
+                    ')
+                    <extension type="webmproject.org" webm="1"/>
+
+                epop()
+
+            ppop()
+
+        ppop()
+
+    ppop()
+
+ppop()
+
 </EBMLSchema>
 
 <!-- vi: set filetype=xml: -->
