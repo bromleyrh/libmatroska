@@ -23,9 +23,17 @@ define(`epop', `eleme()ppop()')
 
 define(`nexte', `pnext($1)elem($2, $3)')
 define(`enexte', `eleme()pnext($1)elem($2, $3)')
+define(`enextes', `eleme()pnext($1)elems($2, $3)')
 
 define(`minmax', `minOccurs="$1" maxOccurs="$2"')
 define(`minmaxver', `minver="$1" maxver="$2"')
+
+define(`_enuments', `<enum value="$1" label="$2"')
+
+define(`enument', `_enuments($1, $2)/>')
+define(`enuments', `_enuments($1, $2)>')
+define(`eenuments', `enumente()enuments($1, $2)')
+define(`enumente', `</enum>')
 
 define(`def',
        `<documentation lang="en" purpose="definition">$1</documentation>')
@@ -86,8 +94,8 @@ The binary ID corresponding to the Element name.
                 <extension type="webmproject.org" webm="1"/>
 
             <!-- \Segment\SeekHead\Seek\SeekPosition -->
-            enexte(`SeekPosition', `0x53AC',
-                   `type="uinteger"' minmax(1, 1))
+            enextes(`SeekPosition', `0x53AC',
+                    `type="uinteger"' minmax(1, 1))
 
                 def(`
 The Segment Position of the Element.
@@ -122,16 +130,16 @@ If the Segment is a part of a Linked Segment, then this Element is **REQUIRED**.
             ')
 
         <!-- \Segment\Info\SegmentFilename -->
-        enexte(`SegmentFilename', `0x7384',
-               `type="utf-8" maxOccurs="1"')
+        enextes(`SegmentFilename', `0x7384',
+                `type="utf-8" maxOccurs="1"')
 
             def(`
 A filename corresponding to this Segment.
             ')
 
         <!-- \Segment\Info\PrevUID -->
-        enexte(`PrevUID', `0x3CB923'
-               `type="binary" length="16" maxOccurs="1"')
+        enextes(`PrevUID', `0x3CB923'
+                `type="binary" length="16" maxOccurs="1"')
 
             def(`
 A unique ID to identify the previous Segment of a Linked Segment (128 bits).
@@ -144,8 +152,8 @@ the Linked Segment. The PrevUID **MUST NOT** be equal to the SegmentUID.
             ')
 
         <!-- \Segment\Info\PrevFilename -->
-        enexte(`PrevFilename', `0x3C83AB',
-               `type="utf-8" maxOccurs="1"')
+        enextes(`PrevFilename', `0x3C83AB',
+                `type="utf-8" maxOccurs="1"')
 
             def(`
 A filename corresponding to the file of the previous Linked Segment.
@@ -157,8 +165,8 @@ Linked Segment.
             ')
 
         <!-- \Segment\Info\NextUID -->
-        enexte(`NextUID', `0x3EB923',
-               `type="binary" length="16" maxOccurs="1"')
+        enextes(`NextUID', `0x3EB923',
+                `type="binary" length="16" maxOccurs="1"')
 
             def(`
 A unique ID to identify the next Segment of a Linked Segment (128 bits).
@@ -171,8 +179,8 @@ the Linked Segment. The NextUID **MUST NOT** be equal to the SegmentUID.
             ')
 
         <!-- \Segment\Info\NextFilename -->
-        enexte(`NextFilename', `0x3E83BB',
-               `type="utf-8" maxOccurs="1"')
+        enextes(`NextFilename', `0x3E83BB',
+                `type="utf-8" maxOccurs="1"')
 
             def(`
 A filename corresponding to the file of the next Linked Segment.
@@ -183,8 +191,8 @@ Provision of the next filename is for display convenience, but NextUID
             ')
 
         <!-- \Segment\Info\SegmentFamily -->
-        enexte(`SegmentFamily', `0x4444',
-               `type="binary" length="16"')
+        enextes(`SegmentFamily', `0x4444',
+                `type="binary" length="16"')
 
             def(`
 A randomly generated unique ID that all Segments of a Linked Segment **MUST**
@@ -196,8 +204,8 @@ If the Segment Info contains a "ChapterTranslate" element, this Element is
             ')
 
         <!-- \Segment\Info\ChapterTranslate -->
-        enexte(`ChapterTranslate', `0x6924',
-               `type="master"')
+        enextes(`ChapterTranslate', `0x6924',
+                `type="master"')
 
             def(`
 The mapping between this "Segment" and a segment value in the given Chapter
@@ -222,8 +230,8 @@ format depends on the ChapProcessCodecID used; see
                 ')
 
             <!-- \Segment\Info\ChapterTranslate\ChapterTranslateCodec -->
-            enexte(`ChapterTranslateCodec', `0x69BF',
-                   `type="uinteger"' minmax(1, 1))
+            enextes(`ChapterTranslateCodec', `0x69BF',
+                    `type="uinteger"' minmax(1, 1))
 
                 def(`
 This "ChapterTranslate" applies to this chapter codec of the given chapter
@@ -243,8 +251,8 @@ Chapter commands using the DVD-like codec.
                 </restriction>
 
             <!-- \Segment\Info\ChapterTranslate\ChapterTranslateEditionUID -->
-            enexte(`ChapterTranslateEditionUID', `0x69FC',
-                   `type="uinteger"')
+            enextes(`ChapterTranslateEditionUID', `0x69FC',
+                    `type="uinteger"')
 
                 def(`
 Specify a chapter edition UID on which this "ChapterTranslate" applies.
@@ -272,8 +280,8 @@ milliseconds; see (#timestamps) on how to interpret timestamps.
             <extension type="webmproject.org" webm="1"/>
 
         <!-- \Segment\Info\Duration -->
-        enexte(`Duration', `0x4489',
-               `type="float" range="&gt; 0x0p+0" maxOccurs="1"')
+        enextes(`Duration', `0x4489',
+                `type="float" range="&gt; 0x0p+0" maxOccurs="1"')
 
             def(`
 Duration of the Segment, expressed in Segment Ticks which is based on
@@ -282,8 +290,8 @@ TimestampScale; see (#timestamp-ticks).
             <extension type="webmproject.org" webm="1"/>
 
         <!-- \Segment\Info\DateUTC -->
-        enexte(`DateUTC', `0x4461',
-               `type="date" maxOccurs="1"')
+        enextes(`DateUTC', `0x4461',
+                `type="date" maxOccurs="1"')
 
             def(`
 The date and time that the Segment was created by the muxing application or
@@ -292,8 +300,8 @@ library.
             <extension type="webmproject.org" webm="1"/>
 
         <!-- \Segment\Info\Title -->
-        enexte(`Title', `0x7BA9',
-               `type="utf-8" maxOccurs="1"')
+        enextes(`Title', `0x7BA9',
+                `type="utf-8" maxOccurs="1"')
 
             def(`
 General name of the Segment.
@@ -301,8 +309,8 @@ General name of the Segment.
             <extension type="webmproject.org" webm="1"/>
 
         <!-- \Segment\Info\MuxingApp -->
-        enexte(`MuxingApp', `0x4D80',
-               `type="utf-8" minmax(1, 1)')
+        enextes(`MuxingApp', `0x4D80',
+                `type="utf-8" minmax(1, 1)')
 
             def(`
 Muxing application or library (example: "libmatroska-0.4.3").
@@ -314,8 +322,8 @@ number.
             <extension type="webmproject.org" webm="1"/>
 
         <!-- \Segment\Info\WritingApp -->
-        enexte(`WritingApp', `0x5741',
-               `type="utf-8" minmax(1, 1)')
+        enextes(`WritingApp', `0x5741',
+                `type="utf-8" minmax(1, 1)')
 
             def(`
 Writing application (example: "mkvmerge-0.3.3").
@@ -354,8 +362,8 @@ or the second if that Cluster contains a CRC-32 element ((#crc-32)).
             <extension type="webmproject.org" webm="1"/>
 
         <!-- \Segment\Cluster\SilentTracks -->
-        enexte(`SilentTracks', `0x5854',
-               `type="master"' minmaxver(0, 0) `maxOccurs="1"')
+        enextes(`SilentTracks', `0x5854',
+                `type="master"' minmaxver(0, 0) `maxOccurs="1"')
 
             def(`
 The list of tracks that are not used in that part of the stream. It is useful
@@ -389,8 +397,8 @@ help to resynchronise offset on damaged streams.
             <extension type="libmatroska" cppname="ClusterPosition"/>
 
         <!-- \Segment\Cluster\PrevSize -->
-        enexte(`PrevSize', `0xAB',
-               `type="uinteger" maxOccurs="1"')
+        enextes(`PrevSize', `0xAB',
+                `type="uinteger" maxOccurs="1"')
 
             def(`
 Size of the previous Cluster, in octets. Can be useful for backward playing.
@@ -399,8 +407,8 @@ Size of the previous Cluster, in octets. Can be useful for backward playing.
             <extension type="webmproject.org" webm="1"/>
 
         <!-- \Segment\Cluster\SimpleBlock -->
-        enexte(`SimpleBlock', `0xA3',
-               `type="binary" minver="2"')
+        enextes(`SimpleBlock', `0xA3',
+                `type="binary" minver="2"')
 
             def(`
 Similar to Block, see (#block-structure), but without all the extra information,
@@ -411,8 +419,8 @@ mostly used to reduce overhead when no extra feature is needed; see
             <extension type="divx.com" divx="1"/>
 
         <!-- \Segment\Cluster\BlockGroup -->
-        enexte(`BlockGroup', `0xA0',
-               `type="master"')
+        enextes(`BlockGroup', `0xA0',
+                `type="master"')
 
             def(`
 Basic container of information containing a single Block and information
@@ -431,8 +439,8 @@ Cluster Timestamp; see (#block-structure) on Block Structure.
                 <extension type="webmproject.org" webm="1"/>
 
             <!-- \Segment\Cluster\BlockGroup\BlockVirtual -->
-            enexte(`BlockVirtual', `0xA2',
-                   `type="binary"' minmaxver(0, 0) `maxOccurs="1"')
+            enextes(`BlockVirtual', `0xA2',
+                    `type="binary"' minmaxver(0, 0) `maxOccurs="1"')
 
                 def(`
 A Block with no data. It **MUST** be stored in the stream at the place the real
@@ -440,8 +448,8 @@ Block would be in display order.
                 ')
 
             <!-- \Segment\Cluster\BlockGroup\BlockAdditions -->
-            enexte(`BlockAdditions', `0x75A1',
-                   `type="master" maxOccurs="1"')
+            enextes(`BlockAdditions', `0x75A1',
+                    `type="master" maxOccurs="1"')
 
                 def(`
 Contain additional blocks to complete the main one. An EBML parser that has no
@@ -473,7 +481,7 @@ meaning of the content of BlockAdditional.
 
                     <!-- \Segment\Cluster\BlockGroup\BlockAdditions\BlockMore
                          \BlockAdditional -->
-                    enexte(`BlockAdditional', `0xA5',
+                    enextes(`BlockAdditional', `0xA5',
                             `type="binary"' minmax(1, 1))
 
                         def(`
@@ -509,8 +517,8 @@ Block in "display" order (not coding order).
                 <extension type="webmproject.org" webm="1"/>
 
             <!-- \Segment\Cluster\BlockGroup\ReferencePriority -->
-            enexte(`ReferencePriority', `0xFA',
-                   `type="uinteger" default="0"' minmax(1, 1))
+            enextes(`ReferencePriority', `0xFA',
+                    `type="uinteger" default="0"' minmax(1, 1))
 
                 def(`
 This frame is referenced and has the specified cache priority. In cache only a
@@ -519,8 +527,8 @@ the frame is not referenced.
                 ')
 
             <!-- \Segment\Cluster\BlockGroup\ReferenceBlock -->
-            enexte(`ReferenceBlock', `0xFB',
-                   `type="integer"')
+            enextes(`ReferenceBlock', `0xFB',
+                    `type="integer"')
 
                 def(`
 A timestamp value, relative to the timestamp of the Block in this BlockGroup,
@@ -540,8 +548,8 @@ it contains can be decoded without using any other "Block" data.
                 <extension type="webmproject.org" webm="1"/>
 
             <!-- \Segment\Cluster\BlockGroup\ReferenceVirtual -->
-            enexte(`ReferenceVirtual', `0xFD',
-                   `type="integer"' minmaxver(0, 0) `maxOccurs="1"')
+            enextes(`ReferenceVirtual', `0xFD',
+                    `type="integer"' minmaxver(0, 0) `maxOccurs="1"')
 
                 def(`
 The Segment Position of the data that would otherwise be in position of the
@@ -549,8 +557,8 @@ virtual block.
                 ')
 
             <!-- \Segment\Cluster\BlockGroup\CodecState -->
-            enexte(`CodecState', `0xA4',
-                   `type="binary" minver="2" maxOccurs="1"')
+            enextes(`CodecState', `0xA4',
+                    `type="binary" minver="2" maxOccurs="1"')
 
                 def(`
 The new codec state to use. Data interpretation is private to the codec. This
@@ -558,8 +566,8 @@ information **SHOULD** always be referenced by a seek entry.
                 ')
 
             <!-- \Segment\Cluster\BlockGroup\DiscardPadding -->
-            enexte(`DiscardPadding', `0x75A2',
-                   `type="integer" minver="4" maxOccurs="1"')
+            enextes(`DiscardPadding', `0x75A2',
+                    `type="integer" minver="4" maxOccurs="1"')
 
                 def(`
 Duration of the silent data added to the Block, expressed in Matroska Ticks --
@@ -571,8 +579,8 @@ of DiscardPadding is not calculated in the duration of the TrackEntry and
                 <extension type="webmproject.org" webm="1"/>
 
             <!-- \Segment\Cluster\BlockGroup\Slices -->
-            enexte(`Slices', `0x8E',
-                   `type="master"' minmaxver(0, 0) `maxOccurs="1"')
+            enextes(`Slices', `0x8E',
+                    `type="master"' minmaxver(0, 0) `maxOccurs="1"')
 
                 def(`
 Contains slices description.
@@ -602,9 +610,9 @@ playback.
 
                     <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice
                          \FrameNumber -->
-                    enexte(`FrameNumber', `0xCD',
-                           `type="uinteger"' minmaxver(0, 0)
-                           `default="0" maxOccurs="1"')
+                    enextes(`FrameNumber', `0xCD',
+                            `type="uinteger"' minmaxver(0, 0)
+                            `default="0" maxOccurs="1"')
 
                         def(`
 The number of the frame to generate from this lace with this delay (allow you to
@@ -615,9 +623,9 @@ generate many frames from the same Block/Frame).
 
                     <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice
                          \BlockAdditionID -->
-                    enexte(`BlockAdditionID', `0xCB',
-                           `type="uinteger"' minmaxver(0, 0)
-                           `default="0" maxOccurs="1"')
+                    enextes(`BlockAdditionID', `0xCB',
+                            `type="uinteger"' minmaxver(0, 0)
+                            `default="0" maxOccurs="1"')
 
                         def(`
 The ID of the BlockAdditional Element (0 is the main Block).
@@ -626,9 +634,9 @@ The ID of the BlockAdditional Element (0 is the main Block).
                          cppname="SliceBlockAddID"/>
 
                     <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice\Delay -->
-                    enexte(`Delay', `0xCE',
-                           `type="uinteger"' minmaxver(0, 0)
-                           `default="0" maxOccurs="1"')
+                    enextes(`Delay', `0xCE',
+                            `type="uinteger"' minmaxver(0, 0)
+                            `default="0" maxOccurs="1"')
 
                         def(`
 The delay to apply to the Element, expressed in Track Ticks; see
@@ -638,9 +646,9 @@ The delay to apply to the Element, expressed in Track Ticks; see
 
                     <!-- \Segment\Cluster\BlockGroup\Slices\TimeSlice
                          \SliceDuration -->
-                    enexte(`SliceDuration', `0xCF',
-                           `type="uinteger"' minmaxver(0, 0)
-                           `default="0" maxOccurs="1"')
+                    enextes(`SliceDuration', `0xCF',
+                            `type="uinteger"' minmaxver(0, 0)
+                            `default="0" maxOccurs="1"')
 
                         def(`
 The duration to apply to the Element, expressed in Track Ticks; see
@@ -676,8 +684,8 @@ Smooth FF/RW video track to the containing BlockGroup element. See
 
                 <!-- \Segment\Cluster\BlockGroup\ReferenceFrame
                      \ReferenceTimestamp -->
-                enexte(`ReferenceTimestamp', `0xCA',
-                       `type="uinteger"' minmaxver(0, 0) minmax(1, 1))
+                enextes(`ReferenceTimestamp', `0xCA',
+                        `type="uinteger"' minmaxver(0, 0) minmax(1, 1))
 
                     def(`
 The timestamp of the BlockGroup pointed to by ReferenceOffset, expressed in
@@ -701,970 +709,767 @@ Similar to SimpleBlock, see (#simpleblock-structure), but the data inside the
 Block are Transformed (encrypt and/or signed).
             ')
 
+        epop()
+
+    ppop()
+
     <!-- \Segment\Tracks -->
-    <element
-             name="Tracks"
-             path="\Segment\Tracks"
-               id="0x1654AE6B"
-             type="master"
-        maxOccurs="1"
-        recurring="1">
-        <documentation lang="en" purpose="definition">
+    pushes(`Tracks', `0x1654AE6B'
+           `type="master" maxOccurs="1" recurring="1"')
+
+        def(`
 A Top-Level Element of information with many tracks described.
-        </documentation>
+        ')
         <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry -->
-    <element
-             name="TrackEntry"
-             path="\Segment\Tracks\TrackEntry"
-               id="0xAE"
-             type="master"
-        minOccurs="1">
-        <documentation lang="en" purpose="definition">
+
+        <!-- \Segment\Tracks\TrackEntry -->
+        epushes(`TrackEntry', `0xAE',
+                `type="master" minOccurs="1"')
+
+            def(`
 Describes a track with all Elements.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackNumber -->
-    <element
-             name="TrackNumber"
-             path="\Segment\Tracks\TrackEntry\TrackNumber"
-               id="0xD7"
-             type="uinteger" range="not 0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+            ')
+            <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\TrackNumber -->
+            epushes(`TrackNumber', `0xD7',
+                    `type="uinteger" range="not 0"' minmax(1, 1))
+
+                def(`
 The track number as used in the Block Header (using more than 127 tracks is not
 encouraged, though the design allows an unlimited number).
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackUID -->
-    <element
-             name="TrackUID"
-             path="\Segment\Tracks\TrackEntry\TrackUID"
-               id="0x73C5"
-             type="uinteger" range="not 0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\TrackUID -->
+            enextes(`TrackUID', `0x73C5',
+                    `type="uinteger" range="not 0"' minmax(1, 1))
+
+                def(`
 A unique ID to identify the Track.
-        </documentation>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackType -->
-    <element
-             name="TrackType"
-             path="\Segment\Tracks\TrackEntry\TrackType"
-               id="0x83"
-             type="uinteger"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
-The `TrackType` defines the type of each frame found in the Track. The value
+                ')
+                <extension type="stream copy" keep="1"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\TrackType -->
+            enextes(`TrackType', `0x83',
+                    `type="uinteger"' minmax(1, 1))
+
+                def(`
+The "TrackType" defines the type of each frame found in the Track. The value
 **SHOULD** be stored on 1 octet.
-        </documentation>
-        <restriction>
-            <enum value="1" label="video">
-                <documentation lang="en" purpose="definition">
+                ')
+                <restriction>
+                    enuments(1, `video')
+                        def(`
 An image.
-                </documentation>
-            </enum>
-            <enum value="2" label="audio">
-                <documentation lang="en" purpose="definition">
+                        ')
+                    eenuments(2, `audio')
+                        def(`
 Audio samples.
-                </documentation>
-            </enum>
-            <enum value="3" label="complex">
-                <documentation lang="en" purpose="definition">
-A mix of different other TrackType. The codec needs to define how the `Matroska
-Player` should interpret such data.
-                </documentation>
-            </enum>
-            <enum value="16" label="logo">
-                <documentation lang="en" purpose="definition">
+                        ')
+                    eenuments(3, `complex')
+                        def(`
+A mix of different other TrackType. The codec needs to define how the "Matroska
+Player" should interpret such data.
+                        ')
+                    eenuments(16, `logo')
+                        def(`
 An image to be rendered over the video track(s).
-                </documentation>
-            </enum>
-            <enum value="17" label="subtitle">
-                <documentation lang="en" purpose="definition">
+                        ')
+                    eenuments(17, `subtitle')
+                        def(`
 Subtitle or closed caption data to be rendered over the video track(s).
-                </documentation>
-            </enum>
-            <enum value="18" label="buttons">
-                <documentation lang="en" purpose="definition">
+                        ')
+                    eenuments(18, `buttons')
+                        def(`
 Interactive button(s) to be rendered over the video track(s).
-                </documentation>
-            </enum>
-            <enum value="32" label="control">
-                <documentation lang="en" purpose="definition">
-Metadata used to control the player of the `Matroska Player`.
-                </documentation>
-            </enum>
-            <enum value="33" label="metadata">
-                <documentation lang="en" purpose="definition">
-Timed metadata that can be passed on to the `Matroska Player`.
-                </documentation>
-            </enum>
-        </restriction>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagEnabled -->
-    <element
-             name="FlagEnabled"
-             path="\Segment\Tracks\TrackEntry\FlagEnabled"
-               id="0xB9"
-             type="uinteger" range="0-1"
-           minver="2"
-          default="1"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                        ')
+                    eenuments(32, `control')
+                        def(`
+Metadata used to control the player of the "Matroska Player".
+                        ')
+                    eenuments(33, `metadata')
+                        def(`
+Timed metadata that can be passed on to the "Matroska Player".
+                        ')
+                    enumente()
+                </restriction>
+                <extension type="stream copy" keep="1"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\FlagEnabled -->
+            enextes(`FlagEnabled', `0xB9',
+                    `type="uinteger" range="0-1" minver="2" default="1"'
+                    minmax(1, 1))
+
+                def(`
 Set to 1 if the track is usable. It is possible to turn a not usable track into
 a usable track using chapter codecs or control tracks.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="TrackFlagEnabled"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagDefault -->
-    <element
-             name="FlagDefault"
-             path="\Segment\Tracks\TrackEntry\FlagDefault"
-               id="0x88"
-             type="uinteger" range="0-1"
-          default="1"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+                <extension type="libmatroska" cppname="TrackFlagEnabled"/>
+
+            <!-- \Segment\Tracks\TrackEntry\FlagDefault -->
+            enextes(`FlagDefault', `0x88',
+                    `type="uinteger" range="0-1" default="1"' minmax(1, 1))
+
+                def(`
 Set if that track (audio, video or subs) **SHOULD** be eligible for automatic
 selection by the player; see (#default-track-selection) for more details.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackFlagDefault"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagForced -->
-    <element
-             name="FlagForced"
-             path="\Segment\Tracks\TrackEntry\FlagForced"
-               id="0x55AA"
-             type="uinteger" range="0-1"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackFlagDefault"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\FlagForced -->
+            enextes(`FlagForced', `0x55AA',
+                    `type="uinteger" range="0-1" default="0"' minmax(1, 1))
+
+                def(`
 Applies only to subtitles. Set if that track **SHOULD** be eligible for
-automatic selection by the player if it matches the user's language preference,
-even if the user's preferences would normally not enable subtitles with the
+automatic selection by the player if it matches the users language preference,
+even if the users preferences would normally not enable subtitles with the
 selected audio track; this can be used for tracks containing only translations
 of foreign-language audio or onscreen text. See (#default-track-selection) for
 more details.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackFlagForced"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagHearingImpaired -->
-    <element
-             name="FlagHearingImpaired"
-             path="\Segment\Tracks\TrackEntry\FlagHearingImpaired"
-               id="0x55AB"
-             type="uinteger" range="0-1"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackFlagForced"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\FlagHearingImpaired -->
+            enextes(`FlagHearingImpaired', `0x55AB',
+                    `type="uinteger" range="0-1" minver="4" maxOccurs="1"')
+
+                def(`
 Set to 1 if that track is suitable for users with hearing impairments, set to 0
 if it is unsuitable for users with hearing impairments.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagVisualImpaired -->
-    <element
-             name="FlagVisualImpaired"
-             path="\Segment\Tracks\TrackEntry\FlagVisualImpaired"
-               id="0x55AC"
-             type="uinteger" range="0-1"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\FlagVisualImpaired -->
+            enextes(`FlagVisualImpaired', `0x55AC',
+                    `type="uinteger" range="0-1" minver="4" maxOccurs="1"')
+
+                def(`
 Set to 1 if that track is suitable for users with visual impairments, set to 0
 if it is unsuitable for users with visual impairments.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagTextDescriptions -->
-    <element
-             name="FlagTextDescriptions"
-             path="\Segment\Tracks\TrackEntry\FlagTextDescriptions"
-               id="0x55AD"
-             type="uinteger" range="0-1"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\FlagTextDescriptions -->
+            enextes(`FlagTextDescriptions', `0x55AD',
+                    `type="uinteger" range="0-1" minver="4" maxOccurs="1"')
+
+                def(`
 Set to 1 if that track contains textual descriptions of video content, set to 0
 if that track does not contain textual descriptions of video content.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagOriginal -->
-    <element
-             name="FlagOriginal"
-             path="\Segment\Tracks\TrackEntry\FlagOriginal"
-               id="0x55AE"
-             type="uinteger" range="0-1"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\FlagOriginal -->
+            enextes(`FlagOriginal', `0x55AE',
+                    `type="uinteger" range="0-1" minver="4" maxOccurs="1"')
+
+                def(`
 Set to 1 if that track is in the content's original language, set to 0 if it is
 a translation.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagCommentary -->
-    <element
-             name="FlagCommentary"
-             path="\Segment\Tracks\TrackEntry\FlagCommentary"
-               id="0x55AF"
-             type="uinteger" range="0-1"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\FlagCommentary -->
+            enextes(`FlagCommentary', `0x55AF',
+                    `type="uinteger" range="0-1" minver="4" maxOccurs="1"')
+
+                def(`
 Set to 1 if that track contains commentary, set to 0 if it does not contain
 commentary.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\FlagLacing -->
-    <element
-             name="FlagLacing"
-             path="\Segment\Tracks\TrackEntry\FlagLacing"
-               id="0x9C"
-             type="uinteger" range="0-1"
-          default="1"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\FlagLacing -->
+            enextes(`FlagLacing', `0x9C',
+                    `type="uinteger" range="0-1" default="1"' minmax(1, 1))
+
+                def(`
 Set to 1 if the track **MAY** contain blocks using lacing. When set to 0 all
 blocks **MUST** have their lacing flags set to No lacing; see (#block-lacing) on
 Block Lacing.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackFlagLacing"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\MinCache -->
-    <element
-             name="MinCache"
-             path="\Segment\Tracks\TrackEntry\MinCache"
-               id="0x6DE7"
-             type="uinteger"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackFlagLacing"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\MinCache -->
+            enextes(`MinCache', `0x6DE7',
+                    `type="uinteger" default="0"' minmax(1, 1))
+
+                def(`
 The minimum number of frames a player **SHOULD** be able to cache during
 playback. If set to 0, the reference pseudo-cache system is not used.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackMinCache"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\MaxCache -->
-    <element
-             name="MaxCache"
-             path="\Segment\Tracks\TrackEntry\MaxCache"
-               id="0x6DF8"
-             type="uinteger"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackMinCache"/>
+
+            <!-- \Segment\Tracks\TrackEntry\MaxCache -->
+            enextes(`MaxCache', `0x6DF8',
+                    `type="uinteger" maxOccurs="1"')
+
+                def(`
 The maximum cache size necessary to store referenced frames in and the current
 frame. 0 means no cache is needed.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackMaxCache"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\DefaultDuration -->
-    <element
-             name="DefaultDuration"
-             path="\Segment\Tracks\TrackEntry\DefaultDuration"
-               id="0x23E383"
-             type="uinteger" range="not 0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackMaxCache"/>
+
+            <!-- \Segment\Tracks\TrackEntry\DefaultDuration -->
+            enextes(`DefaultDuration', `0x23E383',
+                    `type="uinteger" range="not 0" maxOccurs="1"')
+
+                def(`
 Number of nanoseconds per frame, expressed in Matroska Ticks -- ie in
 nanoseconds; see (#timestamp-ticks) (frame in the Matroska sense -- one Element
 put into a (Simple)Block).
-        </documentation>
-        <extension type="libmatroska" cppname="TrackDefaultDuration"/>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\DefaultDecodedFieldDuration -->
-    <element
-             name="DefaultDecodedFieldDuration"
-             path="\Segment\Tracks\TrackEntry\DefaultDecodedFieldDuration"
-               id="0x234E7A"
-             type="uinteger" range="not 0"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackDefaultDuration"/>
+                <extension type="stream copy" keep="1"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\DefaultDecodedFieldDuration -->
+            enextes(`DefaultDecodedFieldDuration', `0x234E7A',
+                    `type="uinteger" range="not 0" minver="4" maxOccurs="1"')
+
+                def(`
 The period between two successive fields at the output of the decoding process,
 expressed in Matroska Ticks -- ie in nanoseconds; see (#timestamp-ticks). see
 (#defaultdecodedfieldduration) for more information
-        </documentation>
-        <extension
-            type="libmatroska"
-            cppname="TrackDefaultDecodedFieldDuration"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackTimestampScale -->
-    <element
-             name="TrackTimestampScale"
-             path="\Segment\Tracks\TrackEntry\TrackTimestampScale"
-               id="0x23314F"
-             type="float" range="&gt; 0x0p+0"
-           maxver="3"
-          default="0x1p+0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension
+                    type="libmatroska"
+                    cppname="TrackDefaultDecodedFieldDuration"/>
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\TrackTimestampScale -->
+            enextes(`TrackTimestampScale', `0x23314F',
+                    `type="float" range="&gt; 0x0p+0" maxver="3" default="0x1p+0"'
+                    minmax(1, 1))
+
+                def(`
 DEPRECATED, DO NOT USE. The scale to apply on this track to work at normal speed
 in relation with other tracks (mostly used to adjust video speed when the audio
 length differs).
-        </documentation>
-        <extension type="libmatroska" cppname="TrackTimecodeScale"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackOffset -->
-    <element
-             name="TrackOffset"
-             path="\Segment\Tracks\TrackEntry\TrackOffset"
-               id="0x537F"
-             type="integer"
-           minver="0" maxver="0"
-          default="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
-A value to add to the Block's Timestamp, expressed in Matroska Ticks -- ie in
+                ')
+                <extension type="libmatroska" cppname="TrackTimecodeScale"/>
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\TrackOffset -->
+            enextes(`TrackOffset', `0x537F',
+                    `type="integer"' minmaxver(0, 0)
+                    `default="0" maxOccurs="1"')
+
+                def(`
+A value to add to the Blocks Timestamp, expressed in Matroska Ticks -- ie in
 nanoseconds; see (#timestamp-ticks). This can be used to adjust the playback
 offset of a track.
-        </documentation>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\MaxBlockAdditionID -->
-    <element
-             name="MaxBlockAdditionID"
-             path="\Segment\Tracks\TrackEntry\MaxBlockAdditionID"
-               id="0x55EE"
-             type="uinteger"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\MaxBlockAdditionID -->
+            enextes(`MaxBlockAdditionID', `0x55EE',
+                    `type="uinteger" default="0"' minmax(1, 1))
+
+                def(`
 The maximum value of BlockAddID ((#blockaddid-element)). A value 0 means there
 is no BlockAdditions ((#blockadditions-element)) for this track.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping -->
-    <element
-          name="BlockAdditionMapping"
-          path="\Segment\Tracks\TrackEntry\BlockAdditionMapping"
-            id="0x41E4"
-          type="master"
-        minver="4">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping -->
+            enextes(`BlockAdditionMapping', `0x41E4',
+                    `type="master" minver="4"')
+
+                def(`
 Contains elements that extend the track format, by adding content either to each
 frame, with BlockAddID ((#blockaddid-element)), or to the track as a whole with
 BlockAddIDExtraData.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDValue -->
-    <element
-             name="BlockAddIDValue"
-             path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDValue"
-               id="0x41F0"
-             type="uinteger" range=">=2"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+                <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping
+                     \BlockAddIDValue -->
+                epushes(`BlockAddIDValue', `0x41F0',
+                        `type="uinteger" range=">=2" minver="4" maxOccurs="1"')
+
+                    def(`
 If the track format extension needs content beside frames, the value refers to
 the BlockAddID ((#blockaddid-element)), value being described. To keep
 MaxBlockAdditionID as low as possible, small values **SHOULD** be used.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDName -->
-    <element
-             name="BlockAddIDName"
-             path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDName"
-               id="0x41A4"
-             type="string"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping
+                     \BlockAddIDName -->
+                enextes(`BlockAddIDName', `0x41A4',
+                        `type="string" minver="4" maxOccurs="1"')
+
+                    def(`
 A human-friendly name describing the type of BlockAdditional data, as defined by
 the associated Block Additional Mapping.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDType -->
-    <element
-             name="BlockAddIDType"
-             path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDType"
-               id="0x41E7"
-             type="uinteger"
-           minver="4"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping
+                     \BlockAddIDType -->
+                enextes(`BlockAddIDType', `0x41E7',
+                        `type="uinteger" minver="4" default="0"' minmax(1, 1))
+
+                    def(`
 Stores the registered identifier of the Block Additional Mapping to define how
 the BlockAdditional data should be handled.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDExtraData -->
-    <element
-             name="BlockAddIDExtraData"
-             path="\Segment\Tracks\TrackEntry\BlockAdditionMapping\BlockAddIDExtraData"
-               id="0x41ED"
-             type="binary"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                <!-- \Segment\Tracks\TrackEntry\BlockAdditionMapping
+                     \BlockAddIDExtraData -->
+                enextes(`BlockAddIDExtraData', `0x41ED',
+                        `type="binary" minver="4" maxOccurs="1"')
+
+                    def(`
 Extra binary data that the BlockAddIDType can use to interpret the
 BlockAdditional data. The interpretation of the binary data depends on the
 BlockAddIDType value and the corresponding Block Additional Mapping.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Name -->
-    <element
-             name="Name"
-             path="\Segment\Tracks\TrackEntry\Name"
-               id="0x536E"
-             type="utf-8"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+
+                epop()
+
+            ppop()
+
+            <!-- \Segment\Tracks\TrackEntry\Name -->
+            pushes(`Name', `0x536E',
+                   `type="utf-8" maxOccurs="1"')
+
+                def(`
 A human-readable track name.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackName"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Language -->
-    <element
-             name="Language"
-             path="\Segment\Tracks\TrackEntry\Language"
-               id="0x22B59C"
-             type="string"
-          default="eng"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackName"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\Language -->
+            enextes(`Language', `0x22B59C',
+                    `type="string" default="eng"' minmax(1, 1))
+
+                def(`
 Specifies the language of the track in the Matroska languages form; see
 (#language-codes) on language codes. This Element **MUST** be ignored if the
 LanguageIETF Element is used in the same TrackEntry.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackLanguage"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\LanguageIETF -->
-    <element
-             name="LanguageIETF"
-             path="\Segment\Tracks\TrackEntry\LanguageIETF"
-               id="0x22B59D"
-             type="string"
-           minver="4"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackLanguage"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\LanguageIETF -->
+            enextes(`LanguageIETF', `0x22B59D',
+                    `type="string" minver="4" maxOccurs="1"')
+
+                def(`
 Specifies the language of the track according to [@!BCP47] and using the IANA
 Language Subtag Registry [@!IANALangRegistry]. If this Element is used, then any
 Language Elements used in the same TrackEntry **MUST** be ignored.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\CodecID -->
-    <element
-             name="CodecID"
-             path="\Segment\Tracks\TrackEntry\CodecID"
-               id="0x86"
-             type="string"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\CodecID -->
+            enextes(`CodecID', `0x86',
+                    `type="string"' minmax(1, 1))
+
+                def(`
 An ID corresponding to the codec, see [@!MatroskaCodec] for more info.
-        </documentation>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\CodecPrivate -->
-    <element
-             name="CodecPrivate"
-             path="\Segment\Tracks\TrackEntry\CodecPrivate"
-               id="0x63A2"
-             type="binary"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="stream copy" keep="1"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\CodecPrivate -->
+            enextes(`CodecPrivate', `0x63A2',
+                    `type="binary" maxOccurs="1"')
+
+                def(`
 Private data only known to the codec.
-        </documentation>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\CodecName -->
-    <element
-             name="CodecName"
-             path="\Segment\Tracks\TrackEntry\CodecName"
-               id="0x258688"
-             type="utf-8"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="stream copy" keep="1"/>
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\CodecName -->
+            enextes(`CodecName', `0x258688',
+                    `type="utf-8" maxOccurs="1"')
+
+                def(`
 A human-readable string specifying the codec.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\AttachmentLink -->
-    <element
-             name="AttachmentLink"
-             path="\Segment\Tracks\TrackEntry\AttachmentLink"
-               id="0x7446"
-             type="uinteger" range="not 0"
-           maxver="3"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\AttachmentLink -->
+            enextes(`AttachmentLink', `0x7446',
+                    `type="uinteger" range="not 0" maxver="3" maxOccurs="1"')
+
+                def(`
 The UID of an attachment that is used by this codec.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
-The value **MUST** match the `FileUID` value of an attachment found in this
+                ')
+                usage(`
+The value **MUST** match the "FileUID" value of an attachment found in this
 Segment.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackAttachmentLink"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\CodecSettings -->
-    <element
-             name="CodecSettings"
-             path="\Segment\Tracks\TrackEntry\CodecSettings"
-               id="0x3A9697"
-             type="utf-8"
-           minver="0" maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackAttachmentLink"/>
+
+            <!-- \Segment\Tracks\TrackEntry\CodecSettings -->
+            enextes(`CodecSettings', `0x3A9697',
+                    `type="utf-8"' minmaxver(0, 0) `maxOccurs="1"')
+
+                def(`
 A string describing the encoding setting used.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\CodecInfoURL -->
-    <element
-          name="CodecInfoURL"
-          path="\Segment\Tracks\TrackEntry\CodecInfoURL"
-            id="0x3B4040"
-          type="string"
-        minver="0" maxver="0">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\CodecInfoURL -->
+            enextes(`CodecInfoURL', `0x3B4040',
+                    `type="string"' minmaxver(0, 0))
+
+                def(`
 A URL to find information about the codec used.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\CodecDownloadURL -->
-    <element
-          name="CodecDownloadURL"
-          path="\Segment\Tracks\TrackEntry\CodecDownloadURL"
-            id="0x26B240"
-          type="string"
-        minver="0" maxver="0">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\CodecDownloadURL -->
+            enextes(`CodecDownloadURL', `0x26B240',
+                    `type="string"' minmaxver(0, 0))
+
+                def(`
 A URL to download about the codec used.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\CodecDecodeAll -->
-    <element
-             name="CodecDecodeAll"
-             path="\Segment\Tracks\TrackEntry\CodecDecodeAll"
-               id="0xAA"
-             type="uinteger" range="0-1"
-           maxver="0"
-          default="1"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\CodecDecodeAll -->
+            enextes(`CodecDecodeAll', `0xAA',
+                    `type="uinteger" range="0-1" maxver="0" default="1"'
+                    minmax(1, 1))
+
+                def(`
 Set to 1 if the codec can decode potentially damaged data.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackOverlay -->
-    <element
-        name="TrackOverlay"
-        path="\Segment\Tracks\TrackEntry\TrackOverlay"
-          id="0x6FAB"
-        type="uinteger">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\TrackOverlay -->
+            enextes(`TrackOverlay', `0x6FAB',
+                    `type="uinteger"')
+
+                def(`
 Specify that this track is an overlay track for the Track specified (in the
 u-integer). That means when this track has a gap, see (#silenttracks-element)
 on SilentTracks, the overlay track **SHOULD** be used instead. The order of
 multiple TrackOverlay matters, the first one is the one that **SHOULD** be used.
 If not found it **SHOULD** be the second, etc.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\CodecDelay -->
-    <element
-             name="CodecDelay"
-             path="\Segment\Tracks\TrackEntry\CodecDelay"
-               id="0x56AA"
-             type="uinteger"
-           minver="4"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+
+            <!-- \Segment\Tracks\TrackEntry\CodecDelay -->
+            enextes(`CodecDelay', `0x56AA',
+                    `type="uinteger" minver="4" default="0"' minmax(1, 1))
+
+                def(`
 CodecDelay is The codec-built-in delay, expressed in Matroska Ticks -- ie in
 nanoseconds; see (#timestamp-ticks). It represents the amount of codec samples
 that will be discarded by the decoder during playback. This timestamp value
 **MUST** be subtracted from each frame timestamp in order to get the timestamp
 that will be actually played. The value **SHOULD** be small so the muxing of
 tracks with the same actual timestamp are in the same Cluster.
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\SeekPreRoll -->
-    <element
-             name="SeekPreRoll"
-             path="\Segment\Tracks\TrackEntry\SeekPreRoll"
-               id="0x56BB"
-             type="uinteger"
-           minver="4"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="webmproject.org" webm="1"/>
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\SeekPreRoll -->
+            enextes(`SeekPreRoll', `0x56BB',
+                    `type="uinteger" minver="4" default="0"' minmax(1, 1))
+
+                def(`
 After a discontinuity, SeekPreRoll is the duration of the data the decoder
 **MUST** decode before the decoded data is valid, expressed in Matroska Ticks
 -- ie in nanoseconds; see (#timestamp-ticks).
-        </documentation>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackTranslate -->
-    <element
-        name="TrackTranslate"
-        path="\Segment\Tracks\TrackEntry\TrackTranslate"
-          id="0x6624"
-        type="master">
-        <documentation lang="en" purpose="definition">
-The mapping between this `TrackEntry` and a track value in the given Chapter
+                ')
+                <extension type="webmproject.org" webm="1"/>
+                <extension type="stream copy" keep="1"/>
+
+            <!-- \Segment\Tracks\TrackEntry\TrackTranslate -->
+            enextes(`TrackTranslate', `0x6624',
+                    `type="master"')
+
+                def(`
+The mapping between this "TrackEntry" and a track value in the given Chapter
 Codec.
-        </documentation>
-        <documentation lang="en" purpose="rationale">
+                ')
+                <documentation lang="en" purpose="rationale">
 Chapter Codec may need to address content in specific track, but they may not
 know of the way to identify tracks in Matroska. This element and its child
 elements add a way to map the internal tracks known to the Chapter Codec to the
 track IDs in Matroska. This allows remuxing a file with Chapter Codec without
 changing the content of the codec data, just the track mapping.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateTrackID -->
-    <element
-             name="TrackTranslateTrackID"
-             path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateTrackID"
-               id="0x66A5"
-             type="binary"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
-The binary value used to represent this `TrackEntry` in the chapter codec data.
-The format depends on the `ChapProcessCodecID` used; see
+                </documentation>
+
+                <!-- \Segment\Tracks\TrackEntry\TrackTranslate
+                     \TrackTranslateTrackID -->
+                epushes(`TrackTranslateTrackID', `0x66A5',
+                        `type="binary"' minmax(1, 1))
+
+                    def(`
+The binary value used to represent this "TrackEntry" in the chapter codec data.
+The format depends on the "ChapProcessCodecID" used; see
 (#chapprocesscodecid-element).
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateCodec -->
-    <element
-             name="TrackTranslateCodec"
-             path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateCodec"
-               id="0x66BF"
-             type="uinteger"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
-This `TrackTranslate` applies to this chapter codec of the given chapter
+                    ')
+
+                <!-- \Segment\Tracks\TrackEntry\TrackTranslate
+                     \TrackTranslateCodec -->
+                enextes(`TrackTranslateCodec', `0x66BF',
+                        `type="uinteger"' minmax(1, 1))
+
+                    def(`
+This "TrackTranslate" applies to this chapter codec of the given chapter
 edition(s); see (#chapprocesscodecid-element).
-        </documentation>
-        <restriction>
-            <enum value="0" label="Matroska Script">
-                <documentation lang="en" purpose="definition">
+                    ')
+                    <restriction>
+                        enuments(0, `Matroska Script')
+                            def(`
 Chapter commands using the Matroska Script codec.
-                </documentation>
-            </enum>
-            <enum value="1" label="DVD-menu">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(1, `DVD-menu')
+                            def(`
 Chapter commands using the DVD-like codec.
-                </documentation>
-            </enum>
-        </restriction>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateEditionUID -->
-    <element
-        name="TrackTranslateEditionUID"
-        path="\Segment\Tracks\TrackEntry\TrackTranslate\TrackTranslateEditionUID"
-          id="0x66FC"
-        type="uinteger">
-        <documentation lang="en" purpose="definition">
-Specify a chapter edition UID on which this `TrackTranslate` applies.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
-When no `TrackTranslateEditionUID` is specified in the `TrackTranslate`, the
-`TrackTranslate` applies to all chapter editions found in the Segment using the
-given `TrackTranslateCodec`.
-        </documentation>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video -->
-    <element
-             name="Video"
-             path="\Segment\Tracks\TrackEntry\Video"
-               id="0xE0"
-             type="master"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                            ')
+                        enumente()
+                    </restriction>
+
+                <!-- \Segment\Tracks\TrackEntry\TrackTranslate
+                     \TrackTranslateEditionUID -->
+                enextes(`TrackTranslateEditionUID', `0x66FC',
+                        `type="uinteger')
+
+                    def(`
+Specify a chapter edition UID on which this "TrackTranslate" applies.
+                    ')
+                    usage(`
+When no "TrackTranslateEditionUID" is specified in the "TrackTranslate", the
+"TrackTranslate" applies to all chapter editions found in the Segment using the
+given "TrackTranslateCodec".
+                    ')
+
+                epop()
+
+            ppop()
+
+            <!-- \Segment\Tracks\TrackEntry\Video -->
+            pushes(`Video', `0xE0',
+                   `type="master" maxOccurs="1"')
+
+                def(`
 Video settings.
-        </documentation>
-        <extension type="libmatroska" cppname="TrackVideo"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\FlagInterlaced -->
-    <element
-             name="FlagInterlaced"
-             path="\Segment\Tracks\TrackEntry\Video\FlagInterlaced"
-               id="0x9A"
-             type="uinteger"
-           minver="2"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                ')
+                <extension type="libmatroska" cppname="TrackVideo"/>
+                <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\FlagInterlaced -->
+                epushes(`FlagInterlaced', `0x9A',
+                        `type="uinteger" minver="2" default="0"' minmax(1, 1))
+
+                    def(`
 Specify whether the video frames in this track are interlaced or not.
-        </documentation>
-        <restriction>
-            <enum value="0" label="undetermined">
-                <documentation lang="en" purpose="definition">
+                    ')
+                    <restriction>
+                        enuments(0, `undetermined')
+                            def(`
 Unknown status.
-                </documentation>
-                <documentation lang="en" purpose="usage notes">
+                            ')
+                            usage(`
 This value **SHOULD** be avoided.
-                </documentation>
-            </enum>
-            <enum value="1" label="interlaced">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(1, `interlaced')
+                            def(`
 Interlaced frames.
-                </documentation>
-            </enum>
-            <enum value="2" label="progressive">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(2, `progressive')
+                            def(`
 No interlacing.
-                </documentation>
-            </enum>
-        </restriction>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="VideoFlagInterlaced"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\FieldOrder -->
-    <element
-             name="FieldOrder"
-             path="\Segment\Tracks\TrackEntry\Video\FieldOrder"
-               id="0x9D"
-             type="uinteger"
-           minver="4"
-          default="2"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                            ')
+                        enumente()
+                    </restriction>
+                    <extension type="webmproject.org" webm="1"/>
+                    <extension type="libmatroska"
+                        cppname="VideoFlagInterlaced"/>
+                    <extension type="stream copy" keep="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\FieldOrder -->
+                enextes(`FieldOrder', `0x9D',
+                        `type="uinteger" minver="4" default="2"' minmax(1, 1))
+
+                    def(`
 Specify the field ordering of video frames in this track.
-        </documentation>
-        <documentation lang="en" purpose="usage notes">
+                    ')
+                    usage(`
 If FlagInterlaced is not set to 1, this Element **MUST** be ignored.
-        </documentation>
-        <restriction>
-            <enum value="0" label="progressive">
-                <documentation lang="en" purpose="definition">
+                    ')
+                    <restriction>
+                        enuments(0, `progressive')
+                            def(`
 Interlaced frames.
-                </documentation>
-                <documentation lang="en" purpose="usage notes">
+                            ')
+                            usage(`
 This value **SHOULD** be avoided, setting FlagInterlaced to 2 is sufficient.
-                </documentation>
-            </enum>
-            <enum value="1" label="tff">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(1, `tff')
+                            def(`
 Top field displayed first. Top field stored first.
-                </documentation>
-            </enum>
-            <enum value="2" label="undetermined">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(2, `undetermined')
+                            def(`
 Unknown field order.
-                </documentation>
-                <documentation lang="en" purpose="usage notes">
+                            ')
+                            usage(`
 This value **SHOULD** be avoided.
-                </documentation>
-            </enum>
-            <enum value="6" label="bff">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(6, `bff')
+                            def(`
 Bottom field displayed first. Bottom field stored first.
-                </documentation>
-            </enum>
-            <enum value="9" label="bff(swapped)">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(9, `bff(swapped)')
+                            def(`
 Top field displayed first. Fields are interleaved in storage with the top line
 of the top field stored first.
-                </documentation>
-            </enum>
-            <enum value="14" label="tff(swapped)">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(14, `tff(swapped)')
+                            def(`
 Bottom field displayed first. Fields are interleaved in storage with the top
 line of the top field stored first.
-                </documentation>
-            </enum>
-        </restriction>
-        <extension type="libmatroska" cppname="VideoFieldOrder"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\StereoMode -->
-    <element
-             name="StereoMode"
-             path="\Segment\Tracks\TrackEntry\Video\StereoMode"
-               id="0x53B8"
-             type="uinteger"
-           minver="3"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                            ')
+                        enumente()
+                    </restriction>
+                    <extension type="libmatroska" cppname="VideoFieldOrder"/>
+                    <extension type="stream copy" keep="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\StereoMode -->
+                enextes(`StereoMode', `0x53B8',
+                        `type="uinteger" minver="3" default="0"' minmax(1, 1))
+
+                    def(`
 Stereo-3D video mode. There are some more details in
 (#multi-planar-and-3d-videos).
-        </documentation>
-        <restriction>
-            <enum value="0" label="mono"/>
-            <enum value="1" label="side by side (left eye first)"/>
-            <enum value="2" label="top - bottom (right eye is first)"/>
-            <enum value="3" label="top - bottom (left eye is first)"/>
-            <enum value="4" label="checkboard (right eye is first)"/>
-            <enum value="5" label="checkboard (left eye is first)"/>
-            <enum value="6" label="row interleaved (right eye is first)"/>
-            <enum value="7" label="row interleaved (left eye is first)"/>
-            <enum value="8" label="column interleaved (right eye is first)"/>
-            <enum value="9" label="column interleaved (left eye is first)"/>
-            <enum value="10" label="anaglyph (cyan/red)"/>
-            <enum value="11" label="side by side (right eye first)"/>
-            <enum value="12" label="anaglyph (green/magenta)"/>
-            <enum
-                value="13"
-                label="both eyes laced in one Block (left eye is first)"/>
-            <enum
-                value="14"
-                label="both eyes laced in one Block (right eye is first)"/>
-        </restriction>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="VideoStereoMode"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\AlphaMode -->
-    <element
-             name="AlphaMode"
-             path="\Segment\Tracks\TrackEntry\Video\AlphaMode"
-               id="0x53C0"
-             type="uinteger"
-           minver="3"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <restriction>
+                        enument(0, `mono')
+                        enument(1, `side by side (left eye first)')
+                        enument(2, `top - bottom (right eye is first)')
+                        enument(3, `top - bottom (left eye is first)')
+                        enument(4, `checkboard (right eye is first)')
+                        enument(5, `checkboard (left eye is first)')
+                        enument(6, `row interleaved (right eye is first)')
+                        enument(7, `row interleaved (left eye is first)')
+                        enument(8, `column interleaved (right eye is first)')
+                        enument(9, `column interleaved (left eye is first)')
+                        enument(10, `anaglyph (cyan/red)')
+                        enument(11, `side by side (right eye first)')
+                        enument(12, `anaglyph (green/magenta)')
+                        enument(13,
+                                `both eyes laced in one Block (left eye is first)')
+                        enument(14,
+                                `both eyes laced in one Block (right eye is first)')
+                    </restriction>
+                    <extension type="webmproject.org" webm="1"/>
+                    <extension type="libmatroska" cppname="VideoStereoMode"/>
+                    <extension type="stream copy" keep="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\AlphaMode -->
+                enexte(`AlphaMode', `0x53C0',
+                       `type="uinteger" minver="3" default="0"' minmax(1, 1))
+
+                    def(`
 Indicate whether the BlockAdditional Element with BlockAddID of "1" contains
-Alpha data, as defined by to the Codec Mapping for the `CodecID`. Undefined
+Alpha data, as defined by to the Codec Mapping for the "CodecID". Undefined
 values **SHOULD NOT** be used as the behavior of known implementations is
 different (considered either as 0 or 1).
-        </documentation>
-        <restriction>
-            <enum value="0" label="none">
-                <documentation lang="en" purpose="definition">
+                    ')
+                    <restriction>
+                        enuments(0, `none')
+                            def(`
 The BlockAdditional Element with BlockAddID of "1" does not exist or **SHOULD
 NOT** be considered as containing such data.
-                </documentation>
-            </enum>
-            <enum value="1" label="present">
-                <documentation lang="en" purpose="definition">
+                            ')
+                        eenuments(1, `present')
+                            def(`
 The BlockAdditional Element with BlockAddID of "1" contains alpha channel data.
-                </documentation>
-            </enum>
-        </restriction>
-        <extension type="webmproject.org" webm="1"/>
-        <extension type="libmatroska" cppname="VideoAlphaMode"/>
-        <extension type="stream copy" keep="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\OldStereoMode -->
-    <element
-             name="OldStereoMode"
-             path="\Segment\Tracks\TrackEntry\Video\OldStereoMode"
-               id="0x53B9"
-             type="uinteger"
-           maxver="0"
-        maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                            ')
+                        enumente()
+                    </restriction>
+                    <extension type="webmproject.org" webm="1"/>
+                    <extension type="libmatroska" cppname="VideoAlphaMode"/>
+                    <extension type="stream copy" keep="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\OldStereoMode -->
+                enexte(`OldStereoMode', `0x53B9',
+                       `type="uinteger" maxver="0" maxOccurs="1"')
+
+                    def(`
 DEPRECATED, DO NOT USE. Bogus StereoMode value used in old versions of
 libmatroska.
-        </documentation>
-        <restriction>
-            <enum value="0" label="mono"/>
-            <enum value="1" label="right eye"/>
-            <enum value="2" label="left eye"/>
-            <enum value="3" label="both eyes"/>
-        </restriction>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\PixelWidth -->
-    <element
-             name="PixelWidth"
-             path="\Segment\Tracks\TrackEntry\Video\PixelWidth"
-               id="0xB0"
-             type="uinteger" range="not 0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <restriction>
+                        enument(0, `mono')
+                        enument(1, `right eye')
+                        enument(2, `left eye')
+                        enument(3, `both eyes')
+                    </restriction>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\PixelWidth -->
+                enexte(`PixelWidth', `0xB0',
+                       `type="uinteger" range="not 0"' minmax(1, 1))
+
+                    def(`
 Width of the encoded video frames in pixels.
-        </documentation>
-        <extension type="libmatroska" cppname="VideoPixelWidth"/>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\PixelHeight -->
-    <element
-             name="PixelHeight"
-             path="\Segment\Tracks\TrackEntry\Video\PixelHeight"
-               id="0xBA"
-             type="uinteger" range="not 0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="libmatroska" cppname="VideoPixelWidth"/>
+                    <extension type="stream copy" keep="1"/>
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\PixelHeight -->
+                enexte(`PixelHeight', `0xBA',
+                       `type="uinteger" range="not 0"' minmax(1, 1))
+
+                    def(`
 Height of the encoded video frames in pixels.
-        </documentation>
-        <extension type="libmatroska" cppname="VideoPixelHeight"/>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\PixelCropBottom -->
-    <element
-             name="PixelCropBottom"
-             path="\Segment\Tracks\TrackEntry\Video\PixelCropBottom"
-               id="0x54AA"
-             type="uinteger"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="libmatroska" cppname="VideoPixelHeight"/>
+                    <extension type="stream copy" keep="1"/>
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\PixelCropBottom -->
+                enexte(`PixelCropBottom', `0x54AA',
+                       `type="uinteger" default="0"' minmax(1, 1))
+
+                    def(`
 The number of video pixels to remove at the bottom of the image.
-        </documentation>
-        <extension type="libmatroska" cppname="VideoPixelCropBottom"/>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\PixelCropTop -->
-    <element
-             name="PixelCropTop"
-             path="\Segment\Tracks\TrackEntry\Video\PixelCropTop"
-               id="0x54BB"
-             type="uinteger"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="libmatroska"
+                        cppname="VideoPixelCropBottom"/>
+                    <extension type="stream copy" keep="1"/>
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\PixelCropTop -->
+                enexte(`PixelCropTop', `0x54BB',
+                       `type="uinteger" default="0"' minmax(1, 1))
+
+                    def(`
 The number of video pixels to remove at the top of the image.
-        </documentation>
-        <extension type="libmatroska" cppname="VideoPixelCropTop"/>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\PixelCropLeft -->
-    <element
-             name="PixelCropLeft"
-             path="\Segment\Tracks\TrackEntry\Video\PixelCropLeft"
-               id="0x54CC"
-             type="uinteger"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="libmatroska" cppname="VideoPixelCropTop"/>
+                    <extension type="stream copy" keep="1"/>
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\PixelCropLeft -->
+                enexte(`PixelCropLeft', `0x54CC',
+                       `type="uinteger" default="0"' minmax(1, 1))
+
+                    def(`
 The number of video pixels to remove on the left of the image.
-        </documentation>
-        <extension type="libmatroska" cppname="VideoPixelCropLeft"/>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
-    <!-- \Segment\Tracks\TrackEntry\Video\PixelCropRight -->
-    <element
-             name="PixelCropRight"
-             path="\Segment\Tracks\TrackEntry\Video\PixelCropRight"
-               id="0x54DD"
-             type="uinteger"
-          default="0"
-        minOccurs="1" maxOccurs="1">
-        <documentation lang="en" purpose="definition">
+                    ')
+                    <extension type="libmatroska" cppname="VideoPixelCropLeft"/>
+                    <extension type="stream copy" keep="1"/>
+                    <extension type="webmproject.org" webm="1"/>
+
+                <!-- \Segment\Tracks\TrackEntry\Video\PixelCropRight -->
+                enexte(`PixelCropRight', `0x54DD',
+                       `type="uinteger" default="0"' minmax(1, 1))
+
+                    def(`
 The number of video pixels to remove on the right of the image.
-        </documentation>
-        <extension type="libmatroska" cppname="VideoPixelCropRight"/>
-        <extension type="stream copy" keep="1"/>
-        <extension type="webmproject.org" webm="1"/>
-    </element>
+                    ')
+                    <extension type="libmatroska"
+                        cppname="VideoPixelCropRight"/>
+                    <extension type="stream copy" keep="1"/>
+                    <extension type="webmproject.org" webm="1"/>
+
     <!-- \Segment\Tracks\TrackEntry\Video\DisplayWidth -->
     <element
              name="DisplayWidth"
