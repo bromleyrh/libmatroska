@@ -20,7 +20,11 @@ Makefile.in
 *.stamp
 stamp-h1
 
+matroska_schema.xml
+
 version.c
+
+/schema_parse
 
 .libs
 

@@ -8,8 +8,8 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = include
 
-EXTRA_DIST = bootstrap build-aux libmatroskalite.map libmatroskalite.pc.in \
-	matroska_schema.xml .version
+EXTRA_DIST = bootstrap build-aux doc libmatroskalite.map libmatroskalite.pc.in \
+	matroska_schema.m4 .version
 
 build_date = "$(shell date)"
 build_vers = "$(shell git rev-parse HEAD)"
@@ -39,12 +39,15 @@ $(pkgconfig_DATA): config.status
 
 noinst_HEADERS = common.h element.h util.h vint.h
 
-BUILT_SOURCES = version.c
+BUILT_SOURCES = matroska_schema.xml version.c
 
-CLEANFILES = version.c
+CLEANFILES = matroska_schema.xml version.c
 
 build_date_str = "build_date=$(build_date)"
 build_vers_str = "build_git_commit_id=$(build_vers)"
+
+matroska_schema.xml: matroska_schema.m4
+	m4 matroska_schema.m4 >|$@
 
 version.c:
 	echo "const char build_date[] = \"$(build_date_str)\";" >|$@
@@ -58,6 +61,13 @@ matroskalite_link_dep = @libmatroskalite_link_dep@
 if LD_VERSION_SCRIPT
 version_script = -Wl,--version-script=libmatroskalite.map
 endif
+
+noinst_PROGRAMS = schema_parse
+
+schema_parse_SOURCES = schema_parse.c
+schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @expat_cppflags@
+schema_parse_CFLAGS = $(AM_CFLAGS)
+schema_parse_LDADD = @expat_link_dep@
 
 libmatroskalite_la_SOURCES = element.c matroska.c util.c vint.c
 libmatroskalite_la_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
@@ -80,6 +90,8 @@ vint_test_CFLAGS = $(AM_CFLAGS)
 vint_test_LDADD = $(matroskalite_link) $(matroskalite_link_dep)
 vint_test_LDFLAGS = -rpath @abs_top_builddir@/.libs
 vint_test_DEPENDENCIES = libmatroskalite.la
+
+include scripts/Makefile.am
 
 install-exec-hook:
 	@if ldc=`which ldconfig 2>/dev/null` && test -x ${ldc}; then \

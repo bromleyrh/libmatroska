@@ -138,7 +138,7 @@ A filename corresponding to this Segment.
             ')
 
         <!-- \Segment\Info\PrevUID -->
-        enextes(`PrevUID', `0x3CB923'
+        enextes(`PrevUID', `0x3CB923',
                 `type="binary" length="16" maxOccurs="1"')
 
             def(`
@@ -268,7 +268,7 @@ the given "ChapterTranslateCodec".
         ppop()
 
         <!-- \Segment\Info\TimestampScale -->
-        epushes(`TimestampScale', `0x2AD7B1',
+        pushes(`TimestampScale', `0x2AD7B1',
                `type="uinteger" range="not 0" default="1000000"' minmax(1, 1))
 
             def(`
@@ -347,7 +347,7 @@ The Top-Level Element containing the (monolithic) Block structure.
         <extension type="webmproject.org" webm="1"/>
 
         <!-- \Segment\Cluster\Timestamp -->
-        epushes(`Timestamp', `0xE7'
+        epushes(`Timestamp', `0xE7',
                 `type="uinteger"' minmax(1, 1))
 
             def(`
@@ -470,7 +470,7 @@ Contain the BlockAdditional and some parameters.
                          \BlockAddID -->
                     epushes(`BlockAddID', `0xEE',
                             `type="uinteger" range="not 0" default="1"'
-                            minmax(1, 1)')
+                            minmax(1, 1))
 
                         def(`
 An ID to identify the BlockAdditional level. If BlockAddIDType of the
@@ -714,7 +714,7 @@ Block are Transformed (encrypt and/or signed).
     ppop()
 
     <!-- \Segment\Tracks -->
-    pushes(`Tracks', `0x1654AE6B'
+    pushes(`Tracks', `0x1654AE6B',
            `type="master" maxOccurs="1" recurring="1"')
 
         def(`
@@ -1227,7 +1227,7 @@ Chapter commands using the DVD-like codec.
                 <!-- \Segment\Tracks\TrackEntry\TrackTranslate
                      \TrackTranslateEditionUID -->
                 enextes(`TrackTranslateEditionUID', `0x66FC',
-                        `type="uinteger')
+                        `type="uinteger"')
 
                     def(`
 Specify a chapter edition UID on which this "TrackTranslate" applies.
@@ -1362,8 +1362,8 @@ Stereo-3D video mode. There are some more details in
                     <extension type="stream copy" keep="1"/>
 
                 <!-- \Segment\Tracks\TrackEntry\Video\AlphaMode -->
-                enexte(`AlphaMode', `0x53C0',
-                       `type="uinteger" minver="3" default="0"' minmax(1, 1))
+                enextes(`AlphaMode', `0x53C0',
+                        `type="uinteger" minver="3" default="0"' minmax(1, 1))
 
                     def(`
 Indicate whether the BlockAdditional Element with BlockAddID of "1" contains
@@ -1388,8 +1388,8 @@ The BlockAdditional Element with BlockAddID of "1" contains alpha channel data.
                     <extension type="stream copy" keep="1"/>
 
                 <!-- \Segment\Tracks\TrackEntry\Video\OldStereoMode -->
-                enexte(`OldStereoMode', `0x53B9',
-                       `type="uinteger" maxver="0" maxOccurs="1"')
+                enextes(`OldStereoMode', `0x53B9',
+                        `type="uinteger" maxver="0" maxOccurs="1"')
 
                     def(`
 DEPRECATED, DO NOT USE. Bogus StereoMode value used in old versions of
@@ -1403,8 +1403,8 @@ libmatroska.
                     </restriction>
 
                 <!-- \Segment\Tracks\TrackEntry\Video\PixelWidth -->
-                enexte(`PixelWidth', `0xB0',
-                       `type="uinteger" range="not 0"' minmax(1, 1))
+                enextes(`PixelWidth', `0xB0',
+                        `type="uinteger" range="not 0"' minmax(1, 1))
 
                     def(`
 Width of the encoded video frames in pixels.
@@ -1414,8 +1414,8 @@ Width of the encoded video frames in pixels.
                     <extension type="webmproject.org" webm="1"/>
 
                 <!-- \Segment\Tracks\TrackEntry\Video\PixelHeight -->
-                enexte(`PixelHeight', `0xBA',
-                       `type="uinteger" range="not 0"' minmax(1, 1))
+                enextes(`PixelHeight', `0xBA',
+                        `type="uinteger" range="not 0"' minmax(1, 1))
 
                     def(`
 Height of the encoded video frames in pixels.
@@ -1425,8 +1425,8 @@ Height of the encoded video frames in pixels.
                     <extension type="webmproject.org" webm="1"/>
 
                 <!-- \Segment\Tracks\TrackEntry\Video\PixelCropBottom -->
-                enexte(`PixelCropBottom', `0x54AA',
-                       `type="uinteger" default="0"' minmax(1, 1))
+                enextes(`PixelCropBottom', `0x54AA',
+                        `type="uinteger" default="0"' minmax(1, 1))
 
                     def(`
 The number of video pixels to remove at the bottom of the image.
@@ -1437,8 +1437,8 @@ The number of video pixels to remove at the bottom of the image.
                     <extension type="webmproject.org" webm="1"/>
 
                 <!-- \Segment\Tracks\TrackEntry\Video\PixelCropTop -->
-                enexte(`PixelCropTop', `0x54BB',
-                       `type="uinteger" default="0"' minmax(1, 1))
+                enextes(`PixelCropTop', `0x54BB',
+                        `type="uinteger" default="0"' minmax(1, 1))
 
                     def(`
 The number of video pixels to remove at the top of the image.
@@ -1448,8 +1448,8 @@ The number of video pixels to remove at the top of the image.
                     <extension type="webmproject.org" webm="1"/>
 
                 <!-- \Segment\Tracks\TrackEntry\Video\PixelCropLeft -->
-                enexte(`PixelCropLeft', `0x54CC',
-                       `type="uinteger" default="0"' minmax(1, 1))
+                enextes(`PixelCropLeft', `0x54CC',
+                        `type="uinteger" default="0"' minmax(1, 1))
 
                     def(`
 The number of video pixels to remove on the left of the image.
@@ -1459,8 +1459,8 @@ The number of video pixels to remove on the left of the image.
                     <extension type="webmproject.org" webm="1"/>
 
                 <!-- \Segment\Tracks\TrackEntry\Video\PixelCropRight -->
-                enexte(`PixelCropRight', `0x54DD',
-                       `type="uinteger" default="0"' minmax(1, 1))
+                enextes(`PixelCropRight', `0x54DD',
+                        `type="uinteger" default="0"' minmax(1, 1))
 
                     def(`
 The number of video pixels to remove on the right of the image.
@@ -2063,7 +2063,7 @@ formats.
                     <!-- \Segment\Tracks\TrackEntry\Video\Projection
                          \ProjectionPoseYaw -->
                     enextes(`ProjectionPoseYaw', `0x7673',
-                            `type="float" range="&gt;= -0xB4p+0, &lt;= 0xB4p+0" minver="4" default="0x0p+0"'
+                            `type="float" range="&gt;= -0xB4p+0; &lt;= 0xB4p+0" minver="4" default="0x0p+0"'
                             minmax(1, 1))
 
                         def(`
@@ -2086,7 +2086,7 @@ horizontally.
                     <!-- \Segment\Tracks\TrackEntry\Video\Projection
                          \ProjectionPosePitch -->
                     enextes(`ProjectionPosePitch', `0x7674',
-                            `type="float" range="&gt;= -0x5Ap+0, &lt;= 0x5Ap+0" minver="4" default="0x0p+0"'
+                            `type="float" range="&gt;= -0x5Ap+0; &lt;= 0x5Ap+0" minver="4" default="0x0p+0"'
                             minmax(1, 1))
 
                         def(`
@@ -2105,7 +2105,7 @@ in the -90 to 90 degree range, both included.
                     <!-- \Segment\Tracks\TrackEntry\Video\Projection
                          \ProjectionPoseRoll -->
                     enextes(`ProjectionPoseRoll', `0x7675',
-                            `type="float" range="&gt;= -0xB4p+0, &lt;= 0xB4p+0" minver="4" default="0x0p+0"'
+                            `type="float" range="&gt;= -0xB4p+0; &lt;= 0xB4p+0" minver="4" default="0x0p+0"'
                             minmax(1, 1))
 
                         def(`
@@ -2690,7 +2690,7 @@ stream (see #livestreaming).
 
         <!-- \Segment\Cues\CuePoint -->
         epushes(`CuePoint', `0xBB',
-                type="master" minOccurs="1"')
+                `type="master" minOccurs="1"')
 
             def(`
 Contains all information relative to a seek point in the Segment.

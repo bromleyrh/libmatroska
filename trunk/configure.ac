@@ -60,7 +60,15 @@ AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
 AC_CHECK_FUNCS_ONCE([fls])
 
+PKG_CHECK_MODULES([expat], [expat],
+    [expat_cppflags=$expat_CFLAGS
+     expat_link_dep=$expat_LIBS]
+)
+
+AC_SUBST([expat_cppflags])
 AC_SUBST([libmatroskalite_cppflags], [""])
+
+AC_SUBST([expat_link_dep])
 AC_SUBST([libmatroskalite_link_dep], [""])
 
 AC_ARG_WITH([pkgconfigdir],
