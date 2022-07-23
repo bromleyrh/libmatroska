@@ -65,9 +65,9 @@ endif
 noinst_PROGRAMS = schema_parse
 
 schema_parse_SOURCES = schema_parse.c
-schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @expat_cppflags@
+schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @libxml2_cppflags@
 schema_parse_CFLAGS = $(AM_CFLAGS)
-schema_parse_LDADD = @expat_link_dep@
+schema_parse_LDADD = @libxml2_link_dep@
 
 libmatroskalite_la_SOURCES = element.c matroska.c util.c vint.c
 libmatroskalite_la_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude

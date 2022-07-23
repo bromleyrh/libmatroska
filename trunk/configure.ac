@@ -60,15 +60,21 @@ AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
 AC_CHECK_FUNCS_ONCE([fls])
 
-PKG_CHECK_MODULES([expat], [expat],
-    [expat_cppflags=$expat_CFLAGS
-     expat_link_dep=$expat_LIBS]
+AS_IF(
+    [test x$platform = xdarwin],
+    [xcode_dir=/Applications/Xcode.app
+     platforms_dir=$xcode_dir/Contents/Developer/Platforms/MacOSX.platform
+     sdk_dir=$platforms_dir/Developer/SDKs/MacOSX.sdk
+     includedir_libxml2=$sdk_dir/usr/include/libxml2
+     libxml2_cppflags="-I\"$includedir_libxml2\""
+     libxml2_link_dep="-lxml2"],
+    [AC_MSG_ERROR([unsupported platform], [1])]
 )
 
-AC_SUBST([expat_cppflags])
+AC_SUBST([libxml2_cppflags])
 AC_SUBST([libmatroskalite_cppflags], [""])
 
-AC_SUBST([expat_link_dep])
+AC_SUBST([libxml2_link_dep])
 AC_SUBST([libmatroskalite_link_dep], [""])
 
 AC_ARG_WITH([pkgconfigdir],
