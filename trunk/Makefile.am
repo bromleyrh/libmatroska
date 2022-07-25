@@ -39,15 +39,15 @@ $(pkgconfig_DATA): config.status
 
 noinst_HEADERS = common.h element.h util.h vint.h
 
-BUILT_SOURCES = matroska_schema.xml version.c
+BUILT_SOURCES = matroska_schema.h version.c
 
-CLEANFILES = matroska_schema.xml version.c
+CLEANFILES = matroska_schema.h version.c
 
 build_date_str = "build_date=$(build_date)"
 build_vers_str = "build_git_commit_id=$(build_vers)"
 
-matroska_schema.xml: matroska_schema.m4
-	m4 matroska_schema.m4 >|$@
+matroska_schema.h: schema_parse ebmlsch_schema.xml matroska_schema.m4
+	m4 matroska_schema.m4 | ./schema_parse ebmlsch_schema.xml >|$@
 
 version.c:
 	echo "const char build_date[] = \"$(build_date_str)\";" >|$@

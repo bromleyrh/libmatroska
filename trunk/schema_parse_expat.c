@@ -14,6 +14,8 @@
 #include <wchar.h>
 #endif
 
+#include <sys/param.h>
+
 #ifdef XML_LARGE_SIZE
 #define PRI_XML_LINENO "llu"
 #else
@@ -28,7 +30,8 @@
 
 static const char tabs[] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 
-#define TABS(level) (&tabs[sizeof(tabs) - 1 - (level)])
+#define TABS(level) \
+    (&tabs[sizeof(tabs) - 1 - MIN((int)sizeof(tabs) - 1, level)])
 
 static void XMLCALL start_element_cb(void *, const XML_Char *,
                                      const XML_Char **);

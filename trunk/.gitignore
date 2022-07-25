@@ -20,7 +20,7 @@ Makefile.in
 *.stamp
 stamp-h1
 
-matroska_schema.xml
+matroska_schema.h
 
 version.c
 
