@@ -1546,14 +1546,14 @@ This value is similar in scope to the biCompression value of AVIs "BITMAPINFO"
 [@?AVIFormat]. See the YUV video formats [@?FourCC-YUV] and RGB video formats
 [@?FourCC-RGB] for common values.
                     ')
-                    <implementation_note note_attribute="minOccurs">
-UncompressedFourCC **MUST** be set (minOccurs=1) in TrackEntry, when the
-CodecID Element of the TrackEntry is set to "V_UNCOMPRESSED".
-                    </implementation_note>
                     usage(`
 This Element **MUST NOT** be used if the CodecID Element of the TrackEntry is
 set to "V_UNCOMPRESSED".
                     ')
+                    <implementation_note note_attribute="minOccurs">
+UncompressedFourCC **MUST** be set (minOccurs=1) in TrackEntry, when the
+CodecID Element of the TrackEntry is set to "V_UNCOMPRESSED".
+                    </implementation_note>
                     <extension type="libmatroska" cppname="VideoColourSpace"/>
                     <extension type="stream copy" keep="1"/>
 
@@ -2460,6 +2460,14 @@ seeking.
                             def(`
 The compression algorithm used.
                             ')
+                            usage(`
+Compression method "1" (bzlib) and "2" (lzo1x) are lacking proper documentation
+on the format which limits implementation possibilities. Due to licensing
+conflicts on commonly available libraries compression methods "2" (lzo1x) does
+not offer widespread interoperability. Decoding implementations **MAY** support
+methods "1" and "2" as possible. The use of these compression methods **SHOULD
+NOT** be used as a default.
+                            ')
                             <restriction>
                                 enuments(0, `zlib')
                                     def(`
@@ -2467,11 +2475,11 @@ zlib compression [@!RFC1950].
                                     ')
                                 eenuments(1, `bzlib')
                                     def(`
-bzip2 compression [@!BZIP2], **SHOULD NOT** be used; see usage notes.
+bzip2 compression [@!BZIP2], **SHOULD NOT** be used; see `usage' notes.
                                     ')
                                 eenuments(2, `lzo1x')
                                     def(`
-Lempel-Ziv-Oberhumer compression [@!LZO], **SHOULD NOT** be used; see usage
+Lempel-Ziv-Oberhumer compression [@!LZO], **SHOULD NOT** be used; see `usage'
 notes.
                                     ')
                                 eenuments(3, `Header Stripping')
@@ -2481,14 +2489,6 @@ stripped from each frame.
                                     ')
                                 enumente()
                             </restriction>
-                            usage(`
-Compression method "1" (bzlib) and "2" (lzo1x) are lacking proper documentation
-on the format which limits implementation possibilities. Due to licensing
-conflicts on commonly available libraries compression methods "2" (lzo1x) does
-not offer widespread interoperability. Decoding implementations **MAY** support
-methods "1" and "2" as possible. The use of these compression methods **SHOULD
-NOT** be used as a default.
-                            ')
                             <extension type="stream copy" keep="1"/>
 
                         <!-- \Segment\Tracks\TrackEntry\ContentEncodings
