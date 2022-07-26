@@ -37,7 +37,7 @@ pkgconfig_DATA = libmatroskalite.pc
 
 $(pkgconfig_DATA): config.status
 
-noinst_HEADERS = common.h element.h util.h vint.h
+noinst_HEADERS = common.h element.h radix_tree.h util.h vint.h
 
 BUILT_SOURCES = matroska_schema.h version.c
 
@@ -64,10 +64,10 @@ endif
 
 noinst_PROGRAMS = schema_parse
 
-schema_parse_SOURCES = schema_parse.c
-schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @libxml2_cppflags@
+schema_parse_SOURCES = radix_tree.c schema_parse.c
+schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @libxml2_cppflags@
 schema_parse_CFLAGS = $(AM_CFLAGS)
-schema_parse_LDADD = @libxml2_link_dep@
+schema_parse_LDADD = @libutil_link_dep@ @libxml2_link_dep@
 
 libmatroskalite_la_SOURCES = element.c matroska.c util.c vint.c
 libmatroskalite_la_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude

@@ -60,6 +60,13 @@ AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
 AC_CHECK_FUNCS_ONCE([fls])
 
+PKG_CHECK_MODULES([libutil], [libutil],
+                  [libutil_cppflags=$libutil_CFLAGS
+                   libutil_link_dep=$libutil_LIBS]
+)
+AC_SUBST([libutil_cppflags])
+AC_SUBST([libutil_link_dep])
+
 AS_IF(
     [test x$platform = xdarwin],
     [xcode_dir=/Applications/Xcode.app

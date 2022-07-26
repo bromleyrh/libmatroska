@@ -2,6 +2,10 @@
  * schema_parse.c
  */
 
+#include "radix_tree.h"
+
+#include <strings_ext.h>
+
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/xmlschemas.h>
@@ -13,97 +17,163 @@
 
 #include <sys/param.h>
 
-static int parse_EBMLSchema(xmlNode *);
-static int parse_element(xmlNode *);
-static int parse_enum(xmlNode *);
-static int parse_restriction(xmlNode *);
-static int parse_documentation(xmlNode *);
-static int parse_implementation_note(xmlNode *);
-static int parse_extension(xmlNode *);
+struct id_node {
+    char *name;
+};
 
-static int _output_parser_data(xmlNode *, int);
+static int parse_EBMLSchema(xmlNode *, struct radix_tree *);
+static int parse_element(xmlNode *, struct radix_tree *);
+static int parse_enum(xmlNode *, struct radix_tree *);
+static int parse_restriction(xmlNode *, struct radix_tree *);
+static int parse_documentation(xmlNode *, struct radix_tree *);
+static int parse_implementation_note(xmlNode *, struct radix_tree *);
+static int parse_extension(xmlNode *, struct radix_tree *);
+
+static int walk_fn(const char *, void *, void *);
+static int free_fn(const char *, void *, void *);
+
+static int do_radix_tree_free(struct radix_tree *);
+
+static int _output_parser_data(xmlNode *, int, struct radix_tree *);
 
 static int output_parser_data(xmlDocPtr);
 
 static int
-parse_EBMLSchema(xmlNode *node)
+parse_EBMLSchema(xmlNode *node, struct radix_tree *rt)
 {
     (void)node;
+    (void)rt;
 
     return 0;
 }
 
 static int
-parse_element(xmlNode *node)
+parse_element(xmlNode *node, struct radix_tree *rt)
 {
+    char idstr[7];
     char *endptr;
     int err;
-    union {
-        unsigned long l;
-        unsigned char b[4];
-    } val;
+    struct id_node idnode;
+    unsigned long id;
     xmlChar *prop;
+
+    idnode.name = (char *)xmlGetProp(node, (unsigned char *)"name");
+    if (idnode.name == NULL) {
+        fputs("Element is missing name\n", stderr);
+        return -EINVAL;
+    }
 
     prop = xmlGetProp(node, (unsigned char *)"id");
     if (prop == NULL) {
         fputs("Element is missing ID\n", stderr);
-        return -EINVAL;
+        err = -EINVAL;
+        goto err;
     }
 
     errno = 0;
-    val.l = strtoul((const char *)prop, &endptr, 16);
+    id = strtoul((const char *)prop, &endptr, 16);
     err = -errno;
     if (!err && *endptr != '\0')
         err = -EINVAL;
 
     xmlFree(prop);
 
-    if (err)
+    if (err) {
         fputs("Invalid element ID\n", stderr);
-    else
-        printf("%hhu %hhu %hhu %hhu\n", val.b[0], val.b[1], val.b[2], val.b[3]);
+        goto err;
+    }
 
+    err = l64a_r(id, idstr, sizeof(idstr));
+    if (err)
+        goto err;
+
+    err = radix_tree_insert(rt, idstr, &idnode);
+    if (err)
+        goto err;
+
+    fprintf(stderr, "ID %s\n", idstr);
+
+    return 0;
+
+err:
+    free(idnode.name);
     return err;
 }
 
 static int
-parse_enum(xmlNode *node)
+parse_enum(xmlNode *node, struct radix_tree *rt)
 {
     (void)node;
+    (void)rt;
 
     return 0;
 }
 
 static int
-parse_restriction(xmlNode *node)
+parse_restriction(xmlNode *node, struct radix_tree *rt)
 {
     (void)node;
+    (void)rt;
 
     return 0;
 }
 
 static int
-parse_documentation(xmlNode *node)
+parse_documentation(xmlNode *node, struct radix_tree *rt)
 {
     (void)node;
+    (void)rt;
 
     return 1;
 }
 
 static int
-parse_implementation_note(xmlNode *node)
+parse_implementation_note(xmlNode *node, struct radix_tree *rt)
 {
     (void)node;
+    (void)rt;
 
     return 1;
 }
 
 static int
-parse_extension(xmlNode *node)
+parse_extension(xmlNode *node, struct radix_tree *rt)
 {
     (void)node;
+    (void)rt;
 
     return 0;
+}
+
+static int
+walk_fn(const char *str, void *val, void *ctx)
+{
+    struct id_node *node = val;
+
+    (void)ctx;
+
+    printf("%-6s -> %s\n", str, node->name);
+
+    return 0;
+}
+
+static int
+free_fn(const char *str, void *val, void *ctx)
+{
+    struct id_node *node = val;
+
+    (void)str;
+    (void)ctx;
+
+    xmlFree(node->name);
+
+    return 0;
+}
+
+static int
+do_radix_tree_free(struct radix_tree *rt)
+{
+    return radix_tree_walk(rt, &free_fn, NULL);
 }
 
 #define INIT_ENTRY(key1, key2, name) \
@@ -111,14 +181,14 @@ parse_extension(xmlNode *node)
         = {#name, &parse_##name}
 
 static int
-_output_parser_data(xmlNode *node, int level)
+_output_parser_data(xmlNode *node, int level, struct radix_tree *rt)
 {
     int ret;
     xmlNode *cur;
 
     static const struct ent {
         const char  *name;
-        int         (*fn)(xmlNode *);
+        int         (*fn)(xmlNode *, struct radix_tree *);
     } elem_map[256 * 256] = {
         INIT_ENTRY('E', 'B', EBMLSchema),
         INIT_ENTRY('e', 'l', element),
@@ -143,7 +213,7 @@ _output_parser_data(xmlNode *node, int level)
         if (ent->name == NULL)
             goto inval_err;
 
-        ret = (*ent->fn)(cur);
+        ret = (*ent->fn)(cur, rt);
         if (ret != 0) {
             if (ret != 1)
                 return ret;
@@ -154,7 +224,7 @@ _output_parser_data(xmlNode *node, int level)
                 &tabs[sizeof(tabs) - 1 - MIN((int)sizeof(tabs) - 1, level)],
                 cur->name);
 
-        ret = _output_parser_data(cur->children, level + 1);
+        ret = _output_parser_data(cur->children, level + 1, rt);
         if (ret != 0)
             return ret;
     }
@@ -171,7 +241,20 @@ inval_err:
 static int
 output_parser_data(xmlDocPtr doc)
 {
-    return _output_parser_data(xmlDocGetRootElement(doc), 0);
+    int err;
+    struct radix_tree *rt;
+
+    err = radix_tree_new(&rt, sizeof(struct id_node));
+    if (err)
+        return err;
+
+    err = _output_parser_data(xmlDocGetRootElement(doc), 0, rt);
+    if (!err)
+        err = radix_tree_walk(rt, &walk_fn, NULL);
+
+    do_radix_tree_free(rt);
+
+    return err;
 }
 
 int
