@@ -77,6 +77,7 @@ static int pop_label(struct dynamic_array *, int);
 static int process_children(struct walk_info *, struct dynamic_array *,
                             struct dynamic_array *, int *);
 static int do_walk(struct radix_tree_node *, radix_tree_walk_cb_t, void *);
+static int do_serialize(struct radix_tree_node *, radix_tree_sr_cb_t, void *);
 
 static int
 check_nchildren(struct radix_tree_node *node)
@@ -537,7 +538,7 @@ do_walk(struct radix_tree_node *node, radix_tree_walk_cb_t fn, void *ctx)
             if (ret != 0)
                 return ret;
             ++info->lenlabel;
-            ret = (*fn)(dynamic_array_buf(str), &info->node->val, ctx);
+            ret = (*fn)(dynamic_array_buf(str), info->node->val, ctx);
             if (ret != 0)
                 return ret;
         } else if ((ret = process_children(info, str, nodestack, &level))
@@ -545,6 +546,90 @@ do_walk(struct radix_tree_node *node, radix_tree_walk_cb_t fn, void *ctx)
             if (ret == 1)
                 continue;
             return ret;
+        }
+
+        ret = pop_label(str, info->lenlabel);
+        if (ret != 0)
+            return ret;
+
+        ret = dynamic_array_pop_back(nodestack);
+        if (ret != 0)
+            return ret;
+        --level;
+    }
+
+    dynamic_array_free(nodestack);
+    dynamic_array_free(str);
+
+    return 0;
+
+err:
+    dynamic_array_free(nodestack);
+    dynamic_array_free(str);
+    return ret;
+}
+
+static int
+do_serialize(struct radix_tree_node *node, radix_tree_sr_cb_t fn, void *ctx)
+{
+    int level;
+    int ret;
+    struct dynamic_array *nodestack, *str;
+    struct walk_info tmp;
+
+    ret = dynamic_array_new(&nodestack, 32, sizeof(struct walk_info));
+    if (ret != 0)
+        return ret;
+    ret = dynamic_array_new(&str, 32, sizeof(char));
+    if (ret != 0) {
+        dynamic_array_free(nodestack);
+        return ret;
+    }
+
+    tmp.node = node;
+    tmp.childidx = 0;
+    tmp.lenlabel = 0;
+    ret = dynamic_array_push_back(nodestack, &tmp);
+    if (ret != 0)
+        goto err;
+    level = 0;
+
+    while (level >= 0) {
+        struct walk_info *info;
+
+        info = &((struct walk_info *)dynamic_array_buf(nodestack))[level];
+
+        DEBUG {
+            if (!NODE_VALID(info->node))
+                return -EIO;
+            ret = check_nchildren(info->node);
+            if (ret != 0) {
+                fputs("nchildren invalid\n", stderr);
+                return -EIO;
+            }
+        }
+
+        if (info->node->type == NODE_TYPE_INFORMATION) {
+            const char nullchar = '\0';
+
+            ret = dynamic_array_push_back(str, &nullchar);
+            if (ret != 0)
+                return ret;
+            ++info->lenlabel;
+            ret = (*fn)(info->node, dynamic_array_buf(str), info->node->val,
+                        ctx);
+            if (ret != 0)
+                return ret;
+        } else {
+            ret = process_children(info, str, nodestack, &level);
+            if (ret != 0) {
+                if (ret == 1)
+                    continue;
+                return ret;
+            }
+            ret = (*fn)(info->node, NULL, NULL, ctx);
+            if (ret != 0)
+                return ret;
         }
 
         ret = pop_label(str, info->lenlabel);
@@ -675,6 +760,16 @@ radix_tree_walk(const struct radix_tree *rt, radix_tree_walk_cb_t fn, void *ctx)
         return -EINVAL;
 
     return do_walk(rt->root, fn, ctx);
+}
+
+int
+radix_tree_serialize(const struct radix_tree *rt, radix_tree_sr_cb_t fn,
+                     void *ctx)
+{
+    if (rt == NULL || !TREE_VALID(rt) || fn == NULL)
+        return -EINVAL;
+
+    return do_serialize(rt->root, fn, ctx);
 }
 
 int

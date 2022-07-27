@@ -8,7 +8,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct radix_tree_node;
+
 typedef int (*radix_tree_walk_cb_t)(const char *str, void *val, void *ctx);
+
+typedef int (*radix_tree_sr_cb_t)(const struct radix_tree_node *,
+                                  const char *str, void *val, void *ctx);
 
 typedef struct radix_tree_stats {
 #ifdef NDEBUG
@@ -63,6 +68,9 @@ int radix_tree_delete(struct radix_tree *rt, const char *str);
 
 int radix_tree_walk(const struct radix_tree *rt, radix_tree_walk_cb_t fn,
                     void *ctx);
+
+int radix_tree_serialize(const struct radix_tree *rt, radix_tree_sr_cb_t fn,
+                         void *ctx);
 
 int radix_tree_stats(const struct radix_tree *rt,
                      struct radix_tree_stats *stats);

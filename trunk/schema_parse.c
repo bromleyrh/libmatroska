@@ -2,6 +2,7 @@
  * schema_parse.c
  */
 
+#include "common.h"
 #include "radix_tree.h"
 
 #include <strings_ext.h>
@@ -29,7 +30,7 @@ static int parse_documentation(xmlNode *, struct radix_tree *);
 static int parse_implementation_note(xmlNode *, struct radix_tree *);
 static int parse_extension(xmlNode *, struct radix_tree *);
 
-static int walk_fn(const char *, void *, void *);
+static int sr_fn(const struct radix_tree_node *, const char *, void *, void *);
 static int free_fn(const char *, void *, void *);
 
 static int do_radix_tree_free(struct radix_tree *);
@@ -146,13 +147,35 @@ parse_extension(xmlNode *node, struct radix_tree *rt)
 }
 
 static int
-walk_fn(const char *str, void *val, void *ctx)
+sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
 {
-    struct id_node *node = val;
-
     (void)ctx;
 
-    printf("%-6s -> %s\n", str, node->name);
+    printf("static const struct trie_node trie_node_%jx = {\n",
+           (uintmax_t)(uintptr_t)node);
+
+    fputs("\t.label = ", stdout);
+    if (node->label == NULL)
+        fputs("NULL", stdout);
+    else
+        printf("\"%s\"", node->label);
+
+    if (val == NULL) {
+        size_t i;
+
+        for (i = 0; i < ARRAY_SIZE(node->children); i++) {
+            if (node->children[i] != NULL) {
+                printf(",\n\t.children[(unsigned char)'%c'] = &trie_node_%jx",
+                       (int)i, (uintmax_t)(uintptr_t)node->children[i]);
+            }
+        }
+    } else {
+        struct id_node *idnode = val;
+
+        printf(",\n\t.val = \"%s -> %s\"", str, idnode->name);
+    }
+
+    fputs("\n};\n\n", stdout);
 
     return 0;
 }
@@ -249,8 +272,12 @@ output_parser_data(xmlDocPtr doc)
         return err;
 
     err = _output_parser_data(xmlDocGetRootElement(doc), 0, rt);
-    if (!err)
-        err = radix_tree_walk(rt, &walk_fn, NULL);
+    if (!err) {
+        printf("#define TRIE_ROOT (&trie_node_%jx)\n\n",
+               (uintmax_t)(uintptr_t)rt->root);
+
+        err = radix_tree_serialize(rt, &sr_fn, NULL);
+    }
 
     do_radix_tree_free(rt);
 
