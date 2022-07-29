@@ -273,6 +273,8 @@ output_parser_data(xmlDocPtr doc)
 
     err = _output_parser_data(xmlDocGetRootElement(doc), 0, rt);
     if (!err) {
+        printf("#include \"parser_defs.h\"\n\n");
+
         printf("#define TRIE_ROOT (&trie_node_%jx)\n\n",
                (uintmax_t)(uintptr_t)rt->root);
 
