@@ -1,7 +1,11 @@
 LIBMATROSKALITE_1 {
     global:
+        ebml_close;
+        ebml_dump;
+        ebml_open;
         edatasz_to_u64;
         eid_to_u64;
+        matroska_parser;
         u64_to_edatasz;
         u64_to_edatasz_l;
         u64_to_eid;

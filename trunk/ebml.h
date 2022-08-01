@@ -20,7 +20,7 @@ typedef struct {
 } ebml_io_fns_t;
 
 struct ebml_file_args {
-    int         dfd;
+    int         fd;
     const char  *pathname;
 };
 

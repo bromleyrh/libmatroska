@@ -36,6 +36,8 @@ version.c
 *.o
 *.so
 
+/mkv_dump
+
 /element_test
 /vint_test
 
@@ -44,3 +46,5 @@ version.c
 \#*\#
 .\#*\#
 *.sw[a-z]
+
+test.mkv

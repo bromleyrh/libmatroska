@@ -2,6 +2,7 @@
  * parser.c
  */
 
+#include "common.h"
 #include "parser.h"
 #include "parser_defs.h"
 
@@ -11,7 +12,7 @@ struct parser {
     const struct trie_node *id_root;
 };
 
-const struct parser matroska_parser = {
+EXPORTED const struct parser matroska_parser = {
     .id_root = TRIE_ROOT
 };
 

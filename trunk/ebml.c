@@ -2,6 +2,7 @@
  * ebml.c
  */
 
+#include "common.h"
 #include "ebml.h"
 #include "parser.h"
 
@@ -49,11 +50,15 @@ ebml_file_open(void **ctx, void *args)
 
     a = args;
 
-    ret->fd = openat(a->dfd, a->pathname, O_CLOEXEC | O_RDONLY);
-    if (ret->fd == -1) {
-        err = -errno;
-        free(ret);
-        return err;
+    if (a->pathname == NULL)
+        ret->fd = a->fd;
+    else {
+        ret->fd = openat(a->fd, a->pathname, O_CLOEXEC | O_RDONLY);
+        if (ret->fd == -1) {
+            err = -errno;
+            free(ret);
+            return err;
+        }
     }
 
     *ctx = ret;
@@ -91,7 +96,7 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
     return 0;
 }
 
-int
+EXPORTED int
 ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
           const struct parser *parser, void *args)
 {
@@ -114,7 +119,7 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     return 0;
 }
 
-int
+EXPORTED int
 ebml_close(ebml_hdl_t hdl)
 {
     int err;
@@ -126,7 +131,7 @@ ebml_close(ebml_hdl_t hdl)
     return err;
 }
 
-int
+EXPORTED int
 ebml_dump(FILE *f, ebml_hdl_t hdl)
 {
     (void)f;

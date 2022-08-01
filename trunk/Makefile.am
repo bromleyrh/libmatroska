@@ -62,7 +62,14 @@ if LD_VERSION_SCRIPT
 version_script = -Wl,--version-script=libmatroskalite.map
 endif
 
-noinst_PROGRAMS = schema_parse
+noinst_PROGRAMS = mkv_dump schema_parse
+
+mkv_dump_SOURCES = mkv_dump.c
+mkv_dump_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
+mkv_dump_CFLAGS = $(AM_CFLAGS)
+mkv_dump_LDADD = $(matroskalite_link) $(matroskalite_link_dep)
+mkv_dump_LDFLAGS = -rpath @abs_top_builddir@/.libs
+mkv_dump_DEPENDENCIES = libmatroskalite.la
 
 schema_parse_SOURCES = radix_tree.c schema_parse.c
 schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @libxml2_cppflags@
