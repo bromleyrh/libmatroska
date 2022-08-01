@@ -5,6 +5,7 @@
 #include "common.h"
 #include "radix_tree.h"
 
+#include <crypto.h>
 #include <strings_ext.h>
 
 #include <libxml/parser.h>
@@ -12,9 +13,13 @@
 #include <libxml/xmlschemas.h>
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
 #include <sys/param.h>
 
@@ -29,6 +34,8 @@ static int parse_restriction(xmlNode *, struct radix_tree *);
 static int parse_documentation(xmlNode *, struct radix_tree *);
 static int parse_implementation_note(xmlNode *, struct radix_tree *);
 static int parse_extension(xmlNode *, struct radix_tree *);
+
+static uint64_t get_node_id(const struct radix_tree_node *);
 
 static int sr_fn(const struct radix_tree_node *, const char *, void *, void *);
 static int free_fn(const char *, void *, void *);
@@ -146,36 +153,50 @@ parse_extension(xmlNode *node, struct radix_tree *rt)
     return 0;
 }
 
+static uint64_t
+get_node_id(const struct radix_tree_node *node)
+{
+    size_t i;
+    static int init;
+    static uint32_t key[4];
+
+    if (!init) {
+        srand(time(NULL) + getpid());
+        for (i = 0; i < ARRAY_SIZE(key); i++)
+            key[i] = (uint32_t)rand();
+    }
+
+    return xtea_encrypt((uint64_t)(uintptr_t)node, key);
+}
+
 static int
 sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
 {
     (void)ctx;
 
-    printf("static const struct trie_node trie_node_%jx = {\n",
-           (uintmax_t)(uintptr_t)node);
-
-    fputs("\t.label = ", stdout);
-    if (node->label == NULL)
-        fputs("NULL", stdout);
-    else
-        printf("\"%s\"", node->label);
-
     if (val == NULL) {
         size_t i;
 
+        printf("DEF_TRIE_NODE_BRANCH(%016" PRIx64 ", \"%s\"",
+               get_node_id(node), node->label == NULL ? "NULL" : node->label);
+
         for (i = 0; i < ARRAY_SIZE(node->children); i++) {
             if (node->children[i] != NULL) {
-                printf(",\n\t.children[(unsigned char)'%c'] = &trie_node_%jx",
-                       (int)i, (uintmax_t)(uintptr_t)node->children[i]);
+                printf(",\n\tENTRY('%c', %016" PRIx64 ")",
+                       (int)i, get_node_id(node->children[i]));
             }
         }
+
+        putchar('\n');
     } else {
         struct id_node *idnode = val;
 
-        printf(",\n\t.val = \"%s -> %s\"", str, idnode->name);
+        printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
+               "\t\"%s -> %s\"\n",
+               get_node_id(node), node->label, str, idnode->name);
     }
 
-    fputs("\n};\n\n", stdout);
+    fputs(");\n\n", stdout);
 
     return 0;
 }
@@ -275,8 +296,8 @@ output_parser_data(xmlDocPtr doc)
     if (!err) {
         printf("#include \"parser_defs.h\"\n\n");
 
-        printf("#define TRIE_ROOT (&trie_node_%jx)\n\n",
-               (uintmax_t)(uintptr_t)rt->root);
+        printf("#define TRIE_ROOT (&trie_node_%016" PRIx64 ")\n\n",
+               get_node_id(rt->root));
 
         err = radix_tree_serialize(rt, &sr_fn, NULL);
     }

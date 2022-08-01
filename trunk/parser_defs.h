@@ -13,6 +13,20 @@ struct trie_node {
     const char              *val;
 };
 
+#define DEF_TRIE_NODE_BRANCH(nm, lbl, ...) \
+    static const struct trie_node trie_node_##nm = { \
+        .label = lbl, \
+        __VA_ARGS__ \
+    }
+
+#define DEF_TRIE_NODE_INFORMATION(nm, lbl, value) \
+    static const struct trie_node trie_node_##nm = { \
+        .label = lbl, \
+        .val = value \
+    }
+
+#define ENTRY(key, nm) .children[(unsigned char)key] = &trie_node_##nm
+
 #endif
 
 /* vi: set expandtab sw=4 ts=4: */
