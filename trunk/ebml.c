@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "ebml.h"
+#include "element.h"
 #include "parser.h"
 
 #include <malloc_ext.h>
@@ -27,10 +28,14 @@ struct ebml_file_ctx {
     int fd;
 };
 
+#define EBML_ELEMENT_ID 0xa45dfa3
+
 static int ebml_file_open(void **, void *);
 static int ebml_file_close(void *);
 
 static int ebml_file_read(void *, void *, ssize_t *);
+
+static int parse_header(struct ebml_hdl *);
 
 const ebml_io_fns_t ebml_file_fns = {
     .open   = &ebml_file_open,
@@ -96,6 +101,33 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
     return 0;
 }
 
+static int
+parse_header(struct ebml_hdl *hdl)
+{
+    char buf[4096], *di, *si;
+    int err;
+    size_t sz;
+    ssize_t nbytes;
+    uint64_t eid;
+
+    di = buf + sizeof(buf);
+    for (si = buf; si < di; si += nbytes) {
+        nbytes = di - si;
+        err = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
+        if (err)
+            return err;
+    }
+
+    /* parse EBML element ID */
+    err = eid_to_u64(buf, &eid, &sz);
+    if (err)
+        return err;
+    if (eid != EBML_ELEMENT_ID)
+        return -EILSEQ;
+
+    return 0;
+}
+
 EXPORTED int
 ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
           const struct parser *parser, void *args)
@@ -134,10 +166,15 @@ ebml_close(ebml_hdl_t hdl)
 EXPORTED int
 ebml_dump(FILE *f, ebml_hdl_t hdl)
 {
-    (void)f;
-    (void)hdl;
+    int err;
 
-    return -ENOSYS;
+    (void)f;
+
+    err = parse_header(hdl);
+    if (err)
+        return err;
+
+    return 0;
 }
 
 /* vi: set expandtab sw=4 ts=4: */

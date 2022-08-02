@@ -107,7 +107,7 @@ dnl FIXME: Replace with wrapper script or utility
 postlink_cmds=:
 AS_IF(
     [test x$platform = xdarwin],
-    [libpath="$(pwd | sed -e 's/\//\\\//g')\/.libs\/libn.dylib"
+    [libpath="$(pwd | sed -e 's/\//\\\//g')\/.libs\/libmatroskalite.dylib"
      postlink_cmds="${postlink_cmds}; scripts\/fix_up_linking_os_x.sh"
      postlink_cmds="$postlink_cmds @OUTPUT@ $libpath"]
 )
