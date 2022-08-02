@@ -6,11 +6,13 @@
 #include "ebml.h"
 #include "element.h"
 #include "parser.h"
+#include "vint.h"
 
 #include <malloc_ext.h>
 
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -108,7 +110,7 @@ parse_header(struct ebml_hdl *hdl)
     int err;
     size_t sz;
     ssize_t nbytes;
-    uint64_t eid;
+    uint64_t eid, elen;
 
     di = buf + sizeof(buf);
     for (si = buf; si < di; si += nbytes) {
@@ -124,6 +126,51 @@ parse_header(struct ebml_hdl *hdl)
         return err;
     if (eid != EBML_ELEMENT_ID)
         return -EILSEQ;
+    si = buf + sz;
+
+    /* parse EBML element length */
+    err = edatasz_to_u64(si, &elen, &sz);
+    if (err)
+        return err;
+    si += sz;
+
+    fprintf(stderr, "EBML header is %" PRIu64 " bytes long\n", elen);
+
+    di = si + elen;
+    while (si < di) {
+        int byteidx;
+        uint64_t totlen = 0;
+        union {
+            uint64_t    eid;
+            char        bytes[8];
+        } conv;
+
+        /* parse EBML element ID */
+        err = eid_to_u64(si, &eid, &sz);
+        if (err)
+            return err;
+        totlen += sz;
+        si += sz;
+
+        /* reenable marker bit in EBML element ID */
+        byteidx = (sz - 1) / 8;
+        conv.eid = eid;
+        conv.bytes[sz - 1 - byteidx] |= 1 << (8 - (sz % 8));
+
+        /* parse EBML element length */
+        err = edatasz_to_u64(si, &elen, &sz);
+        if (err)
+            return err;
+        totlen += sz + elen;
+        si += sz;
+
+        fprintf(stderr, "Found header element 0x%" PRIx64 " containing %" PRIu64
+                        " byte%s of data (total length %" PRIu64 " byte%s)\n",
+                conv.eid, elen, elen == 1 ? "" : "s", totlen,
+                totlen == 1 ? "" : "s");
+
+        si += elen;
+    }
 
     return 0;
 }
