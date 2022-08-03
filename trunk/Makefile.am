@@ -65,9 +65,10 @@ endif
 noinst_PROGRAMS = mkv_dump schema_parse
 
 mkv_dump_SOURCES = mkv_dump.c
-mkv_dump_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
+mkv_dump_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libutil_cppflags@
 mkv_dump_CFLAGS = $(AM_CFLAGS)
-mkv_dump_LDADD = $(matroskalite_link) $(matroskalite_link_dep)
+mkv_dump_LDADD = $(matroskalite_link) $(matroskalite_link_dep) \
+	@libutil_link_dep@
 mkv_dump_LDFLAGS = -rpath @abs_top_builddir@/.libs
 mkv_dump_DEPENDENCIES = libmatroskalite.la
 

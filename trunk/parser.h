@@ -10,6 +10,9 @@ struct parser;
 extern const struct parser matroska_parser;
 #define MATROSKA_PARSER (&matroska_parser)
 
+int parser_look_up(const struct parser *parser, const char *str,
+                   const char **val);
+
 #endif
 
 /* vi: set expandtab sw=4 ts=4: */

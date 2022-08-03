@@ -9,6 +9,7 @@
 #include "vint.h"
 
 #include <malloc_ext.h>
+#include <strings_ext.h>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -107,7 +108,7 @@ static int
 parse_header(struct ebml_hdl *hdl)
 {
     char buf[4096], *di, *si;
-    int err;
+    int res;
     size_t sz;
     ssize_t nbytes;
     uint64_t eid, elen;
@@ -115,29 +116,31 @@ parse_header(struct ebml_hdl *hdl)
     di = buf + sizeof(buf);
     for (si = buf; si < di; si += nbytes) {
         nbytes = di - si;
-        err = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
-        if (err)
-            return err;
+        res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
+        if (res != 0)
+            return res;
     }
 
     /* parse EBML element ID */
-    err = eid_to_u64(buf, &eid, &sz);
-    if (err)
-        return err;
+    res = eid_to_u64(buf, &eid, &sz);
+    if (res != 0)
+        return res;
     if (eid != EBML_ELEMENT_ID)
         return -EILSEQ;
     si = buf + sz;
 
     /* parse EBML element length */
-    err = edatasz_to_u64(si, &elen, &sz);
-    if (err)
-        return err;
+    res = edatasz_to_u64(si, &elen, &sz);
+    if (res != 0)
+        return res;
     si += sz;
 
     fprintf(stderr, "EBML header is %" PRIu64 " bytes long\n", elen);
 
     di = si + elen;
     while (si < di) {
+        char idstr[7];
+        const char *val;
         int byteidx;
         uint64_t totlen = 0;
         union {
@@ -146,9 +149,9 @@ parse_header(struct ebml_hdl *hdl)
         } conv;
 
         /* parse EBML element ID */
-        err = eid_to_u64(si, &eid, &sz);
-        if (err)
-            return err;
+        res = eid_to_u64(si, &eid, &sz);
+        if (res != 0)
+            return res;
         totlen += sz;
         si += sz;
 
@@ -158,16 +161,28 @@ parse_header(struct ebml_hdl *hdl)
         conv.bytes[sz - 1 - byteidx] |= 1 << (8 - (sz % 8));
 
         /* parse EBML element length */
-        err = edatasz_to_u64(si, &elen, &sz);
-        if (err)
-            return err;
+        res = edatasz_to_u64(si, &elen, &sz);
+        if (res != 0)
+            return res;
         totlen += sz + elen;
         si += sz;
 
-        fprintf(stderr, "Found header element 0x%" PRIx64 " containing %" PRIu64
-                        " byte%s of data (total length %" PRIu64 " byte%s)\n",
-                conv.eid, elen, elen == 1 ? "" : "s", totlen,
+        res = l64a_r(conv.eid, idstr, sizeof(idstr));
+        if (res != 0)
+            return res;
+
+        res = parser_look_up(hdl->parser, idstr, &val);
+        if (res < 0)
+            return res;
+
+        fprintf(stderr, "Found header element %s (%" PRIx64 ") containing %"
+                        PRIu64 " byte%s " "of data (total length %" PRIu64
+                        " byte%s)",
+                idstr, conv.eid, elen, elen == 1 ? "" : "s", totlen,
                 totlen == 1 ? "" : "s");
+        if (res == 1)
+            fprintf(stderr, " (%s)", val);
+        fputc('\n', stderr);
 
         si += elen;
     }
