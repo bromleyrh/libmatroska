@@ -20,6 +20,7 @@ Makefile.in
 *.stamp
 stamp-h1
 
+ebml_schema.h
 matroska_schema.h
 
 version.c

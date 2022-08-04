@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "parser_defs.h"
 
+#include "ebml_schema.h"
 #include "matroska_schema.h"
 
 #include <errno.h>
@@ -21,8 +22,12 @@ struct trie_edge {
     const struct trie_node  *dst;
 };
 
+EXPORTED const struct parser ebml_parser = {
+    .id_root = EBML_TRIE_ROOT
+};
+
 EXPORTED const struct parser matroska_parser = {
-    .id_root = TRIE_ROOT
+    .id_root = MATROSKA_TRIE_ROOT
 };
 
 static int find_trie_edge(const struct trie_node *, unsigned char,

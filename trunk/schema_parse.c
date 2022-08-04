@@ -12,12 +12,16 @@
 #include <libxml/tree.h>
 #include <libxml/xmlschemas.h>
 
+#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <setjmp.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -26,6 +30,8 @@
 struct id_node {
     char *name;
 };
+
+static int do_printf(jmp_buf *, const char *, ...);
 
 static int parse_EBMLSchema(xmlNode *, struct radix_tree *);
 static int parse_element(xmlNode *, struct radix_tree *);
@@ -44,7 +50,23 @@ static int do_radix_tree_free(struct radix_tree *);
 
 static int _output_parser_data(xmlNode *, int, struct radix_tree *);
 
-static int output_parser_data(xmlDocPtr);
+static int output_parser_data(xmlDocPtr, const char *);
+
+static int
+do_printf(jmp_buf *env, const char *fmt, ...)
+{
+    int ret;
+    va_list ap;
+
+    va_start(ap, fmt);
+    ret = vprintf(fmt, ap);
+    va_end(ap);
+
+    if (ret < 0)
+        longjmp(*env, -EIO);
+
+    return 0;
+}
 
 static int
 parse_EBMLSchema(xmlNode *node, struct radix_tree *rt)
@@ -177,28 +199,37 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
     if (val == NULL) {
         size_t i;
 
-        printf("DEF_TRIE_NODE_BRANCH(%016" PRIx64 ", \"%s\"",
-               get_node_id(node), node->label == NULL ? "NULL" : node->label);
+        if (printf("DEF_TRIE_NODE_BRANCH(%016" PRIx64 ", \"%s\"",
+                   get_node_id(node),
+                   node->label == NULL ? "NULL" : node->label)
+            < 0)
+            goto err;
 
         for (i = 0; i < ARRAY_SIZE(node->children); i++) {
-            if (node->children[i] != NULL) {
-                printf(",\n\tENTRY('%c', %016" PRIx64 ")",
-                       (int)i, get_node_id(node->children[i]));
-            }
+            if (node->children[i] != NULL
+                && printf(",\n\tENTRY('%c', %016" PRIx64 ")",
+                          (int)i, get_node_id(node->children[i]))
+                   < 0)
+                goto err;
         }
 
-        putchar('\n');
+        if (putchar('\n') == EOF)
+            goto err;
     } else {
         struct id_node *idnode = val;
 
-        printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
-               "\t\"%s -> %s\"\n",
-               get_node_id(node), node->label, str, idnode->name);
+        if (printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
+                   "\t\"%s -> %s\"\n",
+                   get_node_id(node), node->label, str, idnode->name)
+            < 0)
+            goto err;
     }
 
-    fputs(");\n\n", stdout);
+    if (fputs(");\n\n", stdout) != EOF)
+        return 0;
 
-    return 0;
+err:
+    return -EIO;
 }
 
 static int
@@ -283,9 +314,12 @@ inval_err:
 #undef INIT_ENTRY
 
 static int
-output_parser_data(xmlDocPtr doc)
+output_parser_data(xmlDocPtr doc, const char *doctype)
 {
+    char *prefix, *s;
+    const char *tmp;
     int err;
+    jmp_buf env;
     struct radix_tree *rt;
 
     err = radix_tree_new(&rt, sizeof(struct id_node));
@@ -293,23 +327,49 @@ output_parser_data(xmlDocPtr doc)
         return err;
 
     err = _output_parser_data(xmlDocGetRootElement(doc), 0, rt);
-    if (!err) {
-        printf("#include \"parser_defs.h\"\n\n");
+    if (err)
+        goto err;
 
-        printf("#define TRIE_ROOT (&trie_node_%016" PRIx64 ")\n\n",
-               get_node_id(rt->root));
-
-        err = radix_tree_serialize(rt, &sr_fn, NULL);
+    prefix = malloc(strlen(doctype) + 1);
+    if (prefix == NULL) {
+        err = -errno;
+        goto err;
     }
 
-    do_radix_tree_free(rt);
+    s = prefix;
+    tmp = doctype;
+    while (*tmp != '\0')
+        *s++ = toupper(*tmp++);
+    *s = '\0';
 
+    err = setjmp(env);
+    if (err)
+        goto err;
+
+    do_printf(&env, "#include \"parser_defs.h\"\n\n");
+
+    do_printf(&env, "#define TRIE_NODE_PREFIX %s\n\n", doctype);
+
+    do_printf(&env, "#define %s_TRIE_ROOT (&%s_trie_node_%016" PRIx64 ")\n\n",
+              prefix, doctype, get_node_id(rt->root));
+
+    free(prefix);
+
+    err = radix_tree_serialize(rt, &sr_fn, NULL);
+    if (err)
+        goto err;
+
+    return printf("#undef TRIE_NODE_PREFIX\n\n") < 0 ? -EIO : 0;
+
+err:
+    do_radix_tree_free(rt);
     return err;
 }
 
 int
 main(int argc, char **argv)
 {
+    const char *doctype;
     const char *schemaf;
     int ret, status;
     xmlDocPtr doc, schemadoc;
@@ -321,7 +381,12 @@ main(int argc, char **argv)
         fputs("Must specify XML schema path\n", stderr);
         return EXIT_FAILURE;
     }
+    if (argc < 3) {
+        fputs("Must specify EBML document type name\n", stderr);
+        return EXIT_FAILURE;
+    }
     schemaf = argv[1];
+    doctype = argv[2];
 
     LIBXML_TEST_VERSION
 
@@ -366,7 +431,7 @@ main(int argc, char **argv)
 
     if (ret == 0) {
         setlinebuf(stdout);
-        if (output_parser_data(doc) != 0) {
+        if (output_parser_data(doc, doctype) != 0) {
             status = EXIT_FAILURE;
             fputs("Parsing error\n", stderr);
         }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    ebmlsch_schema.xml
+    ebml_schema.xml
 -->
 
 <xs:schema xmlns="urn:ietf:rfc:8794"

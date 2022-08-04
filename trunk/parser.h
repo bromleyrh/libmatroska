@@ -7,6 +7,9 @@
 
 struct parser;
 
+extern const struct parser ebml_parser;
+#define EBML_PARSER (&ebml_parser)
+
 extern const struct parser matroska_parser;
 #define MATROSKA_PARSER (&matroska_parser)
 

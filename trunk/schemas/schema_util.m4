@@ -1,5 +1,5 @@
 dnl
-dnl matroska_schema.m4
+dnl schema_util.m4
 dnl
 
 define(`push', `define(`$1', defn(`$1')/$2)')
@@ -15,4 +15,4 @@ define(`_canonicalize_name', `patsubst(`$1', `^+', `')')
 
 define(`bname', `_canonicalize_name(_rm_dirname(`$1'))')
 
-dnl vi: set noexpandtab sw=4 ts=4:
+dnl vi: set expandtab sw=4 ts=4:
