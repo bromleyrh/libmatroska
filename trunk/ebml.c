@@ -23,7 +23,8 @@
 
 struct ebml_hdl {
     const ebml_io_fns_t *fns;
-    const struct parser *parser;
+    const struct parser *parser_ebml;
+    const struct parser *parser_doc;
     void                *ctx;
 };
 
@@ -171,23 +172,34 @@ parse_header(struct ebml_hdl *hdl)
         if (res != 0)
             return res;
 
-        res = parser_look_up(hdl->parser, idstr, &val);
-        if (res < 0)
-            return res;
-
         fprintf(stderr, "Found header element %s (%" PRIx64 ") containing %"
                         PRIu64 " byte%s " "of data (total length %" PRIu64
                         " byte%s)",
                 idstr, conv.eid, elen, elen == 1 ? "" : "s", totlen,
                 totlen == 1 ? "" : "s");
+
+        res = parser_look_up(hdl->parser_ebml, idstr, &val);
+        if (res < 0)
+            goto err;
         if (res == 1)
-            fprintf(stderr, " (%s)", val);
+            fprintf(stderr, " (%s: %s)", parser_desc(hdl->parser_ebml), val);
+
+        res = parser_look_up(hdl->parser_doc, idstr, &val);
+        if (res < 0)
+            goto err;
+        if (res == 1)
+            fprintf(stderr, " (%s: %s)", parser_desc(hdl->parser_doc), val);
+
         fputc('\n', stderr);
 
         si += elen;
     }
 
     return 0;
+
+err:
+    fputc('\n', stderr);
+    return res;
 }
 
 EXPORTED int
@@ -207,7 +219,8 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     }
 
     ret->fns = fns;
-    ret->parser = parser;
+    ret->parser_ebml = EBML_PARSER;
+    ret->parser_doc = parser;
 
     *hdl = ret;
     return 0;

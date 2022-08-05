@@ -12,7 +12,6 @@
 #include <libxml/tree.h>
 #include <libxml/xmlschemas.h>
 
-#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <setjmp.h>
@@ -316,8 +315,6 @@ inval_err:
 static int
 output_parser_data(xmlDocPtr doc, const char *doctype)
 {
-    char *prefix, *s;
-    const char *tmp;
     int err;
     jmp_buf env;
     struct radix_tree *rt;
@@ -330,18 +327,6 @@ output_parser_data(xmlDocPtr doc, const char *doctype)
     if (err)
         goto err;
 
-    prefix = malloc(strlen(doctype) + 1);
-    if (prefix == NULL) {
-        err = -errno;
-        goto err;
-    }
-
-    s = prefix;
-    tmp = doctype;
-    while (*tmp != '\0')
-        *s++ = toupper(*tmp++);
-    *s = '\0';
-
     err = setjmp(env);
     if (err)
         goto err;
@@ -351,15 +336,11 @@ output_parser_data(xmlDocPtr doc, const char *doctype)
     do_printf(&env, "#define TRIE_NODE_PREFIX %s\n\n", doctype);
 
     do_printf(&env, "#define %s_TRIE_ROOT (&%s_trie_node_%016" PRIx64 ")\n\n",
-              prefix, doctype, get_node_id(rt->root));
-
-    free(prefix);
+              doctype, doctype, get_node_id(rt->root));
 
     err = radix_tree_serialize(rt, &sr_fn, NULL);
-    if (err)
-        goto err;
-
-    return printf("#undef TRIE_NODE_PREFIX\n\n") < 0 ? -EIO : 0;
+    if (!err)
+        return printf("#undef TRIE_NODE_PREFIX\n\n") < 0 ? -EIO : 0;
 
 err:
     do_radix_tree_free(rt);

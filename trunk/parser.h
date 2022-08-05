@@ -13,6 +13,8 @@ extern const struct parser ebml_parser;
 extern const struct parser matroska_parser;
 #define MATROSKA_PARSER (&matroska_parser)
 
+const char *parser_desc(const struct parser *parser);
+
 int parser_look_up(const struct parser *parser, const char *str,
                    const char **val);
 

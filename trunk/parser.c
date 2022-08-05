@@ -14,7 +14,8 @@
 #include <string.h>
 
 struct parser {
-    const struct trie_node *id_root;
+    const struct trie_node  *id_root;
+    const char              *desc;
 };
 
 struct trie_edge {
@@ -22,13 +23,19 @@ struct trie_edge {
     const struct trie_node  *dst;
 };
 
-EXPORTED const struct parser ebml_parser = {
-    .id_root = EBML_TRIE_ROOT
-};
+#define DEF_PARSER(nm, descr) \
+    EXPORTED const struct parser nm##_parser = { \
+        .id_root    = TRIE_ROOT(nm), \
+        .desc       = descr \
+    };
 
-EXPORTED const struct parser matroska_parser = {
-    .id_root = MATROSKA_TRIE_ROOT
-};
+#define LIST_PARSERS() \
+    _X(ebml,        "EBML") \
+    _X(matroska,    "Matroska")
+
+#define _X DEF_PARSER
+LIST_PARSERS()
+#undef _X
 
 static int find_trie_edge(const struct trie_node *, unsigned char,
                           struct trie_edge *);
@@ -97,6 +104,12 @@ do_trie_search(const struct trie_node *node, const char *str, const char **val)
     *val = edge.dst->val;
 
     return 1;
+}
+
+const char *
+parser_desc(const struct parser *parser)
+{
+    return parser->desc;
 }
 
 int

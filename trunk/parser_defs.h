@@ -44,6 +44,8 @@ struct trie_node {
 
 #define ENTRY(...) _ENTRY(TRIE_NODE_PREFIX, __VA_ARGS__)
 
+#define TRIE_ROOT(doctype) doctype##_TRIE_ROOT
+
 #endif
 
 /* vi: set expandtab sw=4 ts=4: */
