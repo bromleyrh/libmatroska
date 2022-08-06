@@ -87,4 +87,34 @@ u64_to_edatasz_l(uint64_t x, char *y, size_t bufsz)
     return u64_to_vint_l(x, y, bufsz);
 }
 
+const char *
+etype_to_str(enum etype etype)
+{
+    static const char *const typemap[] = {
+#define _X(type, name, hash) \
+        [type] = name,
+        LIST_ETYPES()
+#undef _X
+    };
+
+    return etype >= ARRAY_SIZE(typemap) ? NULL : typemap[etype];
+}
+
+enum etype
+str_to_etype(const char *str)
+{
+    static const struct {
+        const char  *str;
+        enum etype  etype;
+    } typemap[256 * 256] = {
+#define _X(type, name, hash) \
+        [hash] = {.str = name, .etype = type},
+        LIST_ETYPES()
+#undef _X
+    };
+
+    return str[0] == '\0' || str[1] == '\0'
+           ? ETYPE_NONE : typemap[ETYPE_HASH(str[0], str[1])].etype;
+}
+
 /* vi: set expandtab sw=4 ts=4: */

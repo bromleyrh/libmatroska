@@ -3,6 +3,7 @@
  */
 
 #include "common.h"
+#include "element.h"
 #include "radix_tree.h"
 
 #include <crypto.h>
@@ -27,7 +28,8 @@
 #include <sys/param.h>
 
 struct id_node {
-    char *name;
+    char        *name;
+    enum etype  type;
 };
 
 static int do_printf(jmp_buf *, const char *, ...);
@@ -109,6 +111,22 @@ parse_element(xmlNode *node, struct radix_tree *rt)
 
     if (err) {
         fputs("Invalid element ID\n", stderr);
+        goto err;
+    }
+
+    prop = xmlGetProp(node, (unsigned char *)"type");
+    if (prop == NULL) {
+        fputs("Element is missing type\n", stderr);
+        err = -EINVAL;
+        goto err;
+    }
+
+    idnode.type = str_to_etype((const char *)prop);
+
+    xmlFree(prop);
+
+    if (idnode.type == ETYPE_NONE) {
+        fputs("Invalid element type\n", stderr);
         goto err;
     }
 
@@ -218,8 +236,9 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
         struct id_node *idnode = val;
 
         if (printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
-                   "\t\"%s -> %s\"\n",
-                   get_node_id(node), node->label, str, idnode->name)
+                   "\t\"%s -> %s\", %d\n",
+                   get_node_id(node), node->label, str, idnode->name,
+                   idnode->type)
             < 0)
             goto err;
     }

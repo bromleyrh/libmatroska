@@ -77,7 +77,7 @@ mkv_dump_LDADD = $(matroskalite_link) $(matroskalite_link_dep) \
 mkv_dump_LDFLAGS = -rpath @abs_top_builddir@/.libs
 mkv_dump_DEPENDENCIES = libmatroskalite.la
 
-schema_parse_SOURCES = radix_tree.c schema_parse.c
+schema_parse_SOURCES = element.c radix_tree.c schema_parse.c vint.c
 schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @libxml2_cppflags@
 schema_parse_CFLAGS = $(AM_CFLAGS)
 schema_parse_LDADD = @libutil_link_dep@ @libxml2_link_dep@

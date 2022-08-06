@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <sys/param.h>
 #include <sys/types.h>
 
 struct ebml_hdl {
@@ -31,6 +32,9 @@ struct ebml_hdl {
 struct ebml_file_ctx {
     int fd;
 };
+
+#define EID_MAX_LEN 8
+#define EDATASZ_MAX_LEN 8
 
 #define EBML_ELEMENT_ID 0xa45dfa3
 
@@ -142,6 +146,7 @@ parse_header(struct ebml_hdl *hdl)
     while (si < di) {
         char idstr[7];
         const char *val;
+        enum etype etype;
         int byteidx;
         uint64_t totlen = 0;
         union {
@@ -153,7 +158,7 @@ parse_header(struct ebml_hdl *hdl)
         res = eid_to_u64(si, &eid, &sz);
         if (res != 0)
             return res;
-        totlen += sz;
+        totlen = sz;
         si += sz;
 
         /* reenable marker bit in EBML element ID */
@@ -173,18 +178,18 @@ parse_header(struct ebml_hdl *hdl)
             return res;
 
         fprintf(stderr, "Found header element %s (%" PRIx64 ") containing %"
-                        PRIu64 " byte%s " "of data (total length %" PRIu64
+                        PRIu64 " byte%s of data (total length %" PRIu64
                         " byte%s)",
                 idstr, conv.eid, elen, elen == 1 ? "" : "s", totlen,
                 totlen == 1 ? "" : "s");
 
-        res = parser_look_up(hdl->parser_ebml, idstr, &val);
+        res = parser_look_up(hdl->parser_ebml, idstr, &val, &etype);
         if (res < 0)
             goto err;
         if (res == 1)
             fprintf(stderr, " (%s: %s)", parser_desc(hdl->parser_ebml), val);
 
-        res = parser_look_up(hdl->parser_doc, idstr, &val);
+        res = parser_look_up(hdl->parser_doc, idstr, &val, &etype);
         if (res < 0)
             goto err;
         if (res == 1)
@@ -200,6 +205,93 @@ parse_header(struct ebml_hdl *hdl)
 err:
     fputc('\n', stderr);
     return res;
+}
+
+static int
+parse_body(struct ebml_hdl *hdl)
+{
+    for (;;) {
+        char buf[4096], *di, *si;
+        char idstr[7];
+        const char *val;
+        enum etype etype;
+        int byteidx;
+        int res;
+        size_t sz;
+        ssize_t nbytes;
+        uint64_t eid, elen;
+        uint64_t totlen = 0;
+        union {
+            uint64_t    eid;
+            char        bytes[8];
+        } conv;
+
+        /* read EBML element ID and length */
+        di = buf + EID_MAX_LEN + EDATASZ_MAX_LEN;
+        for (si = buf; si < di; si += nbytes) {
+            nbytes = di - si;
+            res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
+            if (res != 0)
+                return res;
+        }
+
+        /* parse EBML element ID */
+        res = eid_to_u64(buf, &eid, &sz);
+        if (res != 0)
+            return res;
+        if (sz > EID_MAX_LEN)
+            return -EIO;
+        totlen = sz;
+        si = buf + sz;
+
+        /* reenable marker bit in EBML element ID */
+        byteidx = (sz - 1) / 8;
+        conv.eid = eid;
+        conv.bytes[sz - 1 - byteidx] |= 1 << (8 - (sz % 8));
+
+        /* parse EBML element length */
+        res = edatasz_to_u64(si, &elen, &sz);
+        if (res != 0)
+            return res;
+        if (sz > EDATASZ_MAX_LEN)
+            return -EIO;
+        totlen += sz + elen;
+        si += sz;
+
+        res = l64a_r(conv.eid, idstr, sizeof(idstr));
+        if (res != 0)
+            return res;
+
+        fprintf(stderr, "Found element %s (%" PRIx64 ") containing %" PRIu64
+                        "byte%s of data (total length %" PRIu64 " bytes%s)",
+                idstr, conv.eid, elen, elen == 1 ? "" : "s", totlen,
+                totlen == 1 ? "" : "s");
+
+        res = parser_look_up(hdl->parser_doc, idstr, &val, &etype);
+        if (res < 0)
+            return res;
+        if (res == 1)
+            fprintf(stderr, " (%s: %s)", parser_desc(hdl->parser_doc), val);
+
+        fputc('\n', stderr);
+
+        if (etype == ETYPE_MASTER)
+            continue;
+
+        /* read EBML element data */
+        for (elen = elen - (si - buf); elen > 0; elen -= sz) {
+            sz = MIN(elen, sizeof(buf));
+            di = buf + sz;
+            for (si = buf; si < di; si += nbytes) {
+                nbytes = di - si;
+                res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
+                if (res != 0)
+                    return res;
+            }
+        }
+    }
+
+    return 0;
 }
 
 EXPORTED int
@@ -246,10 +338,7 @@ ebml_dump(FILE *f, ebml_hdl_t hdl)
     (void)f;
 
     err = parse_header(hdl);
-    if (err)
-        return err;
-
-    return 0;
+    return err ? err : parse_body(hdl);
 }
 
 /* vi: set expandtab sw=4 ts=4: */

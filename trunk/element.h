@@ -8,6 +8,28 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define ETYPE_HASH(c1, c2) ((unsigned)(256 * (c1) + (c2)))
+
+#define _LIST_ETYPE(type, name, hash) _X(ETYPE_##type, name, hash)
+
+#define LIST_ETYPES() \
+    _LIST_ETYPE(INTEGER,    "integer",  ETYPE_HASH('i', 'n')) \
+    _LIST_ETYPE(UINTEGER,   "uinteger", ETYPE_HASH('u', 'i')) \
+    _LIST_ETYPE(FLOAT,      "float",    ETYPE_HASH('f', 'l')) \
+    _LIST_ETYPE(STRING,     "string",   ETYPE_HASH('s', 't')) \
+    _LIST_ETYPE(UTF8,       "utf-8",    ETYPE_HASH('u', 't')) \
+    _LIST_ETYPE(DATE,       "date",     ETYPE_HASH('d', 'a')) \
+    _LIST_ETYPE(MASTER,     "master",   ETYPE_HASH('m', 'a')) \
+    _LIST_ETYPE(BINARY,     "binary",   ETYPE_HASH('b', 'i'))
+
+enum etype {
+    ETYPE_NONE,
+#define _X(type, name, hash) \
+    type,
+    LIST_ETYPES()
+#undef _X
+};
+
 #define EDATASZ_UNKNOWN (~0ull)
 
 int eid_to_u64(const char *x, uint64_t *y, size_t *sz);
@@ -21,6 +43,10 @@ int edatasz_to_u64(const char *x, uint64_t *y, size_t *sz);
 int u64_to_edatasz(uint64_t x, char *y, size_t *bufsz);
 
 int u64_to_edatasz_l(uint64_t x, char *y, size_t bufsz);
+
+const char *etype_to_str(enum etype etype);
+
+enum etype str_to_etype(const char *str);
 
 #endif
 

@@ -3,6 +3,7 @@
  */
 
 #include "common.h"
+#include "element.h"
 #include "parser.h"
 #include "parser_defs.h"
 
@@ -43,7 +44,7 @@ static int find_trie_edge(const struct trie_node *, unsigned char,
 static int traverse_trie_edge(const struct trie_edge *, const char **);
 
 static int do_trie_search(const struct trie_node *, const char *,
-                          const char **);
+                          const char **, enum etype *);
 
 static int
 find_trie_edge(const struct trie_node *src, unsigned char digit,
@@ -80,7 +81,8 @@ traverse_trie_edge(const struct trie_edge *edge, const char **str)
 }
 
 static int
-do_trie_search(const struct trie_node *node, const char *str, const char **val)
+do_trie_search(const struct trie_node *node, const char *str, const char **val,
+               enum etype *etype)
 {
     struct trie_edge edge;
 
@@ -102,6 +104,7 @@ do_trie_search(const struct trie_node *node, const char *str, const char **val)
     }
 
     *val = edge.dst->val;
+    *etype = edge.dst->etype;
 
     return 1;
 }
@@ -113,9 +116,10 @@ parser_desc(const struct parser *parser)
 }
 
 int
-parser_look_up(const struct parser *parser, const char *str, const char **val)
+parser_look_up(const struct parser *parser, const char *str, const char **val,
+               enum etype *etype)
 {
-    return do_trie_search(parser->id_root, str, val);
+    return do_trie_search(parser->id_root, str, val, etype);
 }
 
 /* vi: set expandtab sw=4 ts=4: */
