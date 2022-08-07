@@ -17,6 +17,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <sys/param.h>
@@ -112,13 +113,14 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
 static int
 parse_header(struct ebml_hdl *hdl)
 {
-    char buf[4096], *di, *si;
+    char buf[4096], *di, *si, *tmp;
     int res;
     size_t sz;
     ssize_t nbytes;
     uint64_t eid, elen;
 
-    di = buf + sizeof(buf);
+    /* read EBML element ID and length */
+    di = buf + EID_MAX_LEN + EDATASZ_MAX_LEN;
     for (si = buf; si < di; si += nbytes) {
         nbytes = di - si;
         res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
@@ -138,10 +140,24 @@ parse_header(struct ebml_hdl *hdl)
     res = edatasz_to_u64(si, &elen, &sz);
     if (res != 0)
         return res;
+    if (elen == EDATASZ_UNKNOWN)
+        return -ENOSYS;
     si += sz;
 
     fprintf(stderr, "EBML header is %" PRIu64 " bytes long\n", elen);
 
+    /* read remaining EBML element data */
+    tmp = si;
+    si = di;
+    di = tmp + elen;
+    for (; si < di; si += nbytes) {
+        nbytes = di - si;
+        res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
+        if (res != 0)
+            return res;
+    }
+
+    si = tmp;
     di = si + elen;
     while (si < di) {
         char idstr[7];
@@ -170,6 +186,8 @@ parse_header(struct ebml_hdl *hdl)
         res = edatasz_to_u64(si, &elen, &sz);
         if (res != 0)
             return res;
+        if (elen == EDATASZ_UNKNOWN)
+            return -ENOSYS;
         totlen += sz + elen;
         si += sz;
 
@@ -210,8 +228,10 @@ err:
 static int
 parse_body(struct ebml_hdl *hdl)
 {
+    char buf[4096], *di, *si, *tmp;
+
+    di = si = buf;
     for (;;) {
-        char buf[4096], *di, *si;
         char idstr[7];
         const char *val;
         enum etype etype;
@@ -227,8 +247,10 @@ parse_body(struct ebml_hdl *hdl)
         } conv;
 
         /* read EBML element ID and length */
-        di = buf + EID_MAX_LEN + EDATASZ_MAX_LEN;
-        for (si = buf; si < di; si += nbytes) {
+        tmp = si;
+        si = di;
+        di = tmp + EID_MAX_LEN + EDATASZ_MAX_LEN;
+        for (; si < di; si += nbytes) {
             nbytes = di - si;
             res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
             if (res != 0)
@@ -236,13 +258,13 @@ parse_body(struct ebml_hdl *hdl)
         }
 
         /* parse EBML element ID */
-        res = eid_to_u64(buf, &eid, &sz);
+        res = eid_to_u64(tmp, &eid, &sz);
         if (res != 0)
             return res;
         if (sz > EID_MAX_LEN)
             return -EIO;
         totlen = sz;
-        si = buf + sz;
+        si = tmp + sz;
 
         /* reenable marker bit in EBML element ID */
         byteidx = (sz - 1) / 8;
@@ -255,6 +277,8 @@ parse_body(struct ebml_hdl *hdl)
             return res;
         if (sz > EDATASZ_MAX_LEN)
             return -EIO;
+        if (elen == EDATASZ_UNKNOWN)
+            return -ENOSYS;
         totlen += sz + elen;
         si += sz;
 
@@ -263,7 +287,7 @@ parse_body(struct ebml_hdl *hdl)
             return res;
 
         fprintf(stderr, "Found element %s (%" PRIx64 ") containing %" PRIu64
-                        "byte%s of data (total length %" PRIu64 " bytes%s)",
+                        " byte%s of data (total length %" PRIu64 " byte%s)",
                 idstr, conv.eid, elen, elen == 1 ? "" : "s", totlen,
                 totlen == 1 ? "" : "s");
 
@@ -275,11 +299,19 @@ parse_body(struct ebml_hdl *hdl)
 
         fputc('\n', stderr);
 
-        if (etype == ETYPE_MASTER)
+        if (etype == ETYPE_MASTER) {
+            memmove(buf, si, di - si);
             continue;
+        }
 
-        /* read EBML element data */
-        for (elen = elen - (si - buf); elen > 0; elen -= sz) {
+        sz = di - si;
+        if (elen < sz) {
+            si += elen;
+            continue;
+        }
+
+        /* read remaining EBML element data */
+        for (elen = elen - sz; elen > 0; elen -= sz) {
             sz = MIN(elen, sizeof(buf));
             di = buf + sz;
             for (si = buf; si < di; si += nbytes) {
@@ -289,6 +321,8 @@ parse_body(struct ebml_hdl *hdl)
                     return res;
             }
         }
+
+        si = buf;
     }
 
     return 0;
