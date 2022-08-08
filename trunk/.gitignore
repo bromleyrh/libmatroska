@@ -43,6 +43,7 @@ version.c
 /vint_test
 
 .gdbinit
+.lldbinit
 
 \#*\#
 .\#*\#
