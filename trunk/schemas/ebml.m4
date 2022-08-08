@@ -41,6 +41,14 @@ pushe(`EBML', `0x1A45DFA3',
 
 ppop()
 
+pushe(`CRC-32', `0xBF',
+      `type="binary" length="4" maxOccurs="1"')
+
+nexte(`Void', `0xEC',
+      `type="binary"')
+
+ppop()
+
 </EBMLSchema>
 
 <!-- vi: set filetype=xml: -->

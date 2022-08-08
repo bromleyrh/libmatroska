@@ -221,8 +221,10 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
 {
     char idstr[7];
     const char *val;
+    const struct parser *parsers[2];
     enum etype ret;
     int res;
+    size_t i;
 
     res = l64a_r(eid, idstr, sizeof(idstr));
     if (res != 0)
@@ -233,19 +235,16 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
             idstr, eid, elen, elen == 1 ? "" : "s", totlen,
             totlen == 1 ? "" : "s");
 
-    if (ebml) {
-        res = parser_look_up(hdl->parser_ebml, idstr, &val, &ret);
+    parsers[!ebml] = hdl->parser_ebml;
+    parsers[ebml] = hdl->parser_doc;
+
+    for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+        res = parser_look_up(parsers[i], idstr, &val, &ret);
         if (res < 0)
             goto err;
         if (res == 1)
-            fprintf(stderr, " (%s: %s)", parser_desc(hdl->parser_ebml), val);
+            fprintf(stderr, " (%s: %s)", parser_desc(parsers[i]), val);
     }
-
-    res = parser_look_up(hdl->parser_doc, idstr, &val, &ret);
-    if (res < 0)
-        goto err;
-    if (res == 1)
-        fprintf(stderr, " (%s: %s)", parser_desc(hdl->parser_doc), val);
 
     fputc('\n', stderr);
 
