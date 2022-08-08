@@ -45,7 +45,7 @@ static int ebml_file_close(void *);
 static int ebml_file_read(void *, void *, ssize_t *);
 
 static int read_elem_hdr(struct ebml_hdl *, char **, char *);
-static int read_elem_data(struct ebml_hdl *, char *, char *, uint64_t, size_t);
+static int read_elem_data(struct ebml_hdl *, char *, uint64_t, size_t);
 
 static int parse_eid(uint64_t *, size_t *, char *);
 static int parse_edatasz(uint64_t *, size_t *, char *);
@@ -141,20 +141,18 @@ read_elem_hdr(struct ebml_hdl *hdl, char **buf, char *bufp)
 }
 
 static int
-read_elem_data(struct ebml_hdl *hdl, char *buf, char *bufp, uint64_t elen,
-               size_t bufsz)
+read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen, size_t bufsz)
 {
-    char *si;
+    char *di, *si;
     int res;
     size_t sz;
     ssize_t nbytes;
 
-    sz = bufp - buf;
-    for (elen = elen - sz; elen > 0; elen -= sz) {
+    for (; elen > 0; elen -= sz) {
         sz = MIN(elen, bufsz);
-        bufp = buf + sz;
-        for (si = buf; si < bufp; si += nbytes) {
-            nbytes = bufp - si;
+        di = buf + sz;
+        for (si = buf; si < di; si += nbytes) {
+            nbytes = di - si;
             res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
             if (res != 0)
                 return res;
@@ -377,10 +375,10 @@ parse_body(struct ebml_hdl *hdl)
         }
 
         /* read remaining EBML element data */
-        res = read_elem_data(hdl, buf, si, elen, sizeof(buf));
+        res = read_elem_data(hdl, buf, elen - sz, sizeof(buf));
         if (res != 0)
             return res;
-        si = buf;
+        di = si = buf;
     }
 
     return 0;
