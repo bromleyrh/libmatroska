@@ -17,6 +17,7 @@ typedef struct {
     int (*open)(void **, void *);
     int (*close)(void *);
     int (*read)(void *, void *, ssize_t *);
+    int (*get_fpos)(void *, off_t *);
 } ebml_io_fns_t;
 
 struct ebml_file_args {

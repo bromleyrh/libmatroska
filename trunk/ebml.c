@@ -44,6 +44,8 @@ static int ebml_file_close(void *);
 
 static int ebml_file_read(void *, void *, ssize_t *);
 
+static int ebml_file_get_fpos(void *, off_t *);
+
 static int read_elem_hdr(struct ebml_hdl *, char **, char *);
 static int read_elem_data(struct ebml_hdl *, char *, uint64_t, size_t);
 
@@ -58,9 +60,10 @@ static int parse_header(struct ebml_hdl *);
 static int parse_body(struct ebml_hdl *);
 
 const ebml_io_fns_t ebml_file_fns = {
-    .open   = &ebml_file_open,
-    .close  = &ebml_file_close,
-    .read   = &ebml_file_read
+    .open       = &ebml_file_open,
+    .close      = &ebml_file_close,
+    .read       = &ebml_file_read,
+    .get_fpos   = &ebml_file_get_fpos
 };
 
 static int
@@ -122,22 +125,41 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
 }
 
 static int
+ebml_file_get_fpos(void *ctx, off_t *offset)
+{
+    off_t ret;
+    struct ebml_file_ctx *fctx = ctx;
+
+    ret = lseek(fctx->fd, 0, SEEK_CUR);
+    if (ret == -1)
+        return -errno;
+
+    *offset = ret;
+    return 0;
+}
+
+static int
 read_elem_hdr(struct ebml_hdl *hdl, char **buf, char *bufp)
 {
-    char *di;
+    char *di, *si;
     int res;
     ssize_t nbytes;
 
+    si = bufp;
     di = *buf + EID_MAX_LEN + EDATASZ_MAX_LEN;
     for (; bufp < di; bufp += nbytes) {
         nbytes = di - bufp;
         res = (*hdl->fns->read)(hdl->ctx, bufp, &nbytes);
         if (res != 0)
             return res;
+        if (nbytes == 0) {
+            di = bufp;
+            break;
+        }
     }
 
     *buf = di;
-    return 0;
+    return bufp == si;
 }
 
 static int
@@ -336,6 +358,7 @@ parse_body(struct ebml_hdl *hdl)
     di = si = buf;
     for (;;) {
         enum etype etype;
+        off_t off;
         size_t sz;
         uint64_t eid;
         uint64_t elen, totlen;
@@ -345,8 +368,13 @@ parse_body(struct ebml_hdl *hdl)
         si = di;
         di = tmp;
         res = read_elem_hdr(hdl, &di, si);
-        if (res != 0)
-            return res;
+        if (res != 0) {
+            if (res != 1)
+                return res;
+            if ((*hdl->fns->get_fpos)(hdl->ctx, &off) == 0)
+                fprintf(stderr, "End of file (%lld bytes)\n", off);
+            break;
+        }
 
         /* parse EBML element ID */
         res = parse_eid(&eid, &sz, tmp);
