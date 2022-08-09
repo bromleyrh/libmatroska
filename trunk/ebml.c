@@ -300,7 +300,7 @@ parse_header(struct ebml_hdl *hdl)
     di = si + elen;
     for (; si < di; si += elen) {
         enum etype etype;
-        uint64_t totlen = 0;
+        uint64_t totlen;
 
         /* parse EBML element ID */
         res = parse_eid(&eid, &sz, si);
@@ -363,12 +363,15 @@ parse_body(struct ebml_hdl *hdl)
         if (res != 0)
             return res;
 
+        sz = di - si;
+
         if (etype == ETYPE_MASTER) {
-            memmove(buf, si, di - si);
+            memmove(buf, si, sz);
+            si = buf;
+            di = si + sz;
             continue;
         }
 
-        sz = di - si;
         if (elen <= sz) {
             si += elen;
             continue;

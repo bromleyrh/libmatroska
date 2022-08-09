@@ -70,6 +70,7 @@ vint_to_u64(const char *x, uint64_t *y, size_t *sz)
 EXPORTED int
 u64_to_vint(uint64_t x, char *y, size_t *bufsz)
 {
+    int err;
     size_t len;
     uint64_t bnd;
 
@@ -86,9 +87,25 @@ u64_to_vint(uint64_t x, char *y, size_t *bufsz)
     }
     if (*bufsz < len)
         return -EINVAL;
-    *bufsz = len;
 
-    return y == NULL ? 0 : _u64_to_vint(x, y, len);
+    if (y == NULL)
+        goto end;
+
+    err = _u64_to_vint(x, y, len);
+    if (err) {
+        if (err != -ERANGE)
+            return err;
+        ++len;
+        if (*bufsz < len)
+            return -EINVAL;
+        err = _u64_to_vint(x, y, len);
+        if (err)
+            return err;
+    }
+
+end:
+    *bufsz = len;
+    return 0;
 }
 
 EXPORTED int
