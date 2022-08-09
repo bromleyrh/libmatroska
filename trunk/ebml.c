@@ -175,11 +175,14 @@ parse_eid(uint64_t *eid, size_t *sz, char *bufp)
     } conv;
 
     res = eid_to_u64(bufp, &ret, &retsz);
-    if (res != 0)
+    if (res != 0 && res != -ENOTSUP)
         return res;
 
     if (retsz > EID_MAX_LEN)
         return -EIO;
+
+    if (res == -ENOTSUP)
+        fputs("Error resilience: found invalid all-zero element ID\n", stderr);
 
     /* reenable marker bit in EBML element ID */
     byteidx = (retsz - 1) / 8;

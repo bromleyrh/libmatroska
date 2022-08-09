@@ -15,6 +15,7 @@ eid_to_u64(const char *x, uint64_t *y, size_t *sz)
 {
     char buf[8];
     int err;
+    int fixup = 0;
     size_t bufsz, tmpsz;
     uint64_t tmp;
 
@@ -22,9 +23,10 @@ eid_to_u64(const char *x, uint64_t *y, size_t *sz)
     if (err)
         return err;
 
-    if (tmp == 0 /* VINT_DATA must not be set to all 0 */
-        || tmp == VINT_MAX_VAL(tmpsz)) /* VINT_DATA must not be set to all 1 */
+    if (tmp == VINT_MAX_VAL(tmpsz)) /* VINT_DATA must not be set to all 1 */
         return -EINVAL;
+    if (tmp == 0) /* VINT_DATA must not be set to all 0 */
+        fixup = 1;
 
     bufsz = sizeof(buf);
     err = u64_to_vint(tmp, buf, &bufsz);
@@ -38,7 +40,7 @@ eid_to_u64(const char *x, uint64_t *y, size_t *sz)
 
     *y = tmp;
     *sz = tmpsz;
-    return 0;
+    return fixup ? -ENOTSUP : 0;
 }
 
 EXPORTED int
