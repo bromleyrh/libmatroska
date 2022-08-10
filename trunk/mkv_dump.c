@@ -37,6 +37,7 @@ dump_mkv(int infd, int outfd)
         errmsg = "Error opening output file";
         goto err2;
     }
+    setlinebuf(f);
 
     err = ebml_dump(f, hdl);
     if (err) {

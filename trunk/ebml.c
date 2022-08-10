@@ -53,11 +53,11 @@ static int parse_eid(uint64_t *, size_t *, char *);
 static int parse_edatasz(uint64_t *, size_t *, char *);
 
 static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t,
-                        enum etype *, int);
+                        enum etype *, int, uint64_t, FILE *);
 
-static int parse_header(struct ebml_hdl *);
+static int parse_header(FILE *, struct ebml_hdl *);
 
-static int parse_body(struct ebml_hdl *);
+static int parse_body(FILE *, struct ebml_hdl *);
 
 const ebml_io_fns_t ebml_file_fns = {
     .open       = &ebml_file_open,
@@ -240,7 +240,7 @@ parse_edatasz(uint64_t *elen, size_t *sz, char *bufp)
 
 static int
 look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
-             enum etype *etype, int ebml)
+             enum etype *etype, int ebml, uint64_t n, FILE *f)
 {
     char idstr[7];
     const char *val;
@@ -253,10 +253,10 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
     if (res != 0)
         return res;
 
-    fprintf(stderr, "Found element %s (%" PRIx64 ") containing %" PRIu64
-                    " byte%s of data (total length %" PRIu64 " byte%s)",
-            idstr, eid, elen, elen == 1 ? "" : "s", totlen,
-            totlen == 1 ? "" : "s");
+    if (f != NULL
+        && fprintf(f, "%" PRIu64 "\t%s\t%" PRIx64 "\t%" PRIu64 "\t%" PRIu64,
+                   n, idstr, eid, elen, totlen) < 0)
+        return -EIO;
 
     parsers[!ebml] = hdl->parser_ebml;
     parsers[ebml] = hdl->parser_doc;
@@ -265,28 +265,32 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
         res = parser_look_up(parsers[i], idstr, &val, &ret);
         if (res < 0)
             goto err;
-        if (res == 1)
-            fprintf(stderr, " (%s: %s)", parser_desc(parsers[i]), val);
+        if (f != NULL && res == 1
+            && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), val) < 0)
+            return -EIO;
     }
 
-    fputc('\n', stderr);
+    if (f != NULL && fputc('\n', f) == EOF)
+        return -EIO;
 
     *etype = ret;
     return 0;
 
 err:
-    fputc('\n', stderr);
+    if (f != NULL)
+        fputc('\n', f);
     return res;
 }
 
 static int
-parse_header(struct ebml_hdl *hdl)
+parse_header(FILE *f, struct ebml_hdl *hdl)
 {
     char buf[4096], *di, *si, *tmp;
     int res;
     size_t sz;
     ssize_t nbytes;
     uint64_t eid, elen;
+    uint64_t n;
 
     /* read EBML element ID and length */
     di = buf;
@@ -308,7 +312,8 @@ parse_header(struct ebml_hdl *hdl)
         return res;
     si += sz;
 
-    fprintf(stderr, "EBML header is %" PRIu64 " bytes long\n", elen);
+    if (f != NULL && fprintf(f, "header\t\t\t%" PRIu64 "\n", elen) < 0)
+        return -EIO;
 
     /* read remaining EBML element data */
     tmp = si;
@@ -321,6 +326,7 @@ parse_header(struct ebml_hdl *hdl)
             return res;
     }
 
+    n = 2;
     si = tmp;
     di = si + elen;
     for (; si < di; si += elen) {
@@ -341,22 +347,25 @@ parse_header(struct ebml_hdl *hdl)
         totlen += sz + elen;
         si += sz;
 
-        res = look_up_elem(hdl, eid, elen, totlen, &etype, 1);
+        res = look_up_elem(hdl, eid, elen, totlen, &etype, 1, n, f);
         if (res != 0)
             return res;
+
+        ++n;
     }
 
     return 0;
 }
 
 static int
-parse_body(struct ebml_hdl *hdl)
+parse_body(FILE *f, struct ebml_hdl *hdl)
 {
     char buf[4096], *di, *si, *tmp;
     int res;
+    uint64_t n;
 
     di = si = buf;
-    for (;;) {
+    for (n = 1;; n++) {
         enum etype etype;
         off_t off;
         size_t sz;
@@ -371,8 +380,9 @@ parse_body(struct ebml_hdl *hdl)
         if (res != 0) {
             if (res != 1)
                 return res;
-            if ((*hdl->fns->get_fpos)(hdl->ctx, &off) == 0)
-                fprintf(stderr, "End of file (%lld bytes)\n", off);
+            if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
+                && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
+                return -EIO;
             break;
         }
 
@@ -390,7 +400,11 @@ parse_body(struct ebml_hdl *hdl)
         si += sz;
         totlen += sz + elen;
 
-        res = look_up_elem(hdl, eid, elen, totlen, &etype, 0);
+        if (f != NULL && n == 1
+            && fprintf(f, "body\t\t\t%" PRIu64 "\n", elen) < 0)
+            return -EIO;
+
+        res = look_up_elem(hdl, eid, elen, totlen, &etype, 0, n, f);
         if (res != 0)
             return res;
 
@@ -459,10 +473,8 @@ ebml_dump(FILE *f, ebml_hdl_t hdl)
 {
     int err;
 
-    (void)f;
-
-    err = parse_header(hdl);
-    return err ? err : parse_body(hdl);
+    err = parse_header(f, hdl);
+    return err ? err : parse_body(f, hdl);
 }
 
 /* vi: set expandtab sw=4 ts=4: */
