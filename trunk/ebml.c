@@ -291,6 +291,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
     ssize_t nbytes;
     uint64_t eid, elen;
     uint64_t n;
+    uint64_t totlen;
 
     /* read EBML element ID and length */
     di = buf;
@@ -304,15 +305,21 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
         return res;
     if (eid != EBML_ELEMENT_ID)
         return -EILSEQ;
+    totlen = sz;
     si = buf + sz;
 
     /* parse EBML element length */
     res = parse_edatasz(&elen, &sz, si);
     if (res != 0)
         return res;
+    totlen += sz + elen;
     si += sz;
 
-    if (f != NULL && fprintf(f, "header\t\t\t%" PRIu64 "\n", elen) < 0)
+    if (f != NULL
+        && (fprintf(f, "header\t\t\t%" PRIu64 "\n", elen) < 0
+            || fprintf(f,
+                       "1\t\t%" PRIx64 "\t%" PRIu64 "\t%" PRIu64 "\tEBML\t\n",
+                       (uint64_t)EBML_ELEMENT_ID, elen, totlen) < 0))
         return -EIO;
 
     /* read remaining EBML element data */
@@ -331,7 +338,6 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
     di = si + elen;
     for (; si < di; si += elen) {
         enum etype etype;
-        uint64_t totlen;
 
         /* parse EBML element ID */
         res = parse_eid(&eid, &sz, si);
