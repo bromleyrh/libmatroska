@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <time.h>
 
 #define ETYPE_HASH(c1, c2) ((unsigned)(256 * (c1) + (c2)))
 
@@ -30,6 +31,18 @@ enum etype {
 #undef _X
 };
 
+typedef struct {
+    enum etype      type;
+    union {
+        int64_t     integer;
+        uint64_t    uinteger;
+        double      floatpt;
+        time_t      date;
+        char        *ptr;
+        char        bytes[8];
+    };
+} edata_t;
+
 #define EDATASZ_UNKNOWN (~0ull)
 
 int eid_to_u64(const char *x, uint64_t *y, size_t *sz);
@@ -47,6 +60,8 @@ int u64_to_edatasz_l(uint64_t x, char *y, size_t bufsz);
 const char *etype_to_str(enum etype etype);
 
 enum etype str_to_etype(const char *str);
+
+int edata_unpack(const char *x, edata_t *y, enum etype etype, size_t sz);
 
 #endif
 
