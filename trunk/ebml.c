@@ -372,9 +372,12 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
 
     di = si = buf;
     for (n = 1;; n++) {
+        char valbuf[8];
+        edata_t val;
         enum etype etype;
         off_t off;
         size_t sz;
+        ssize_t nbytes;
         uint64_t eid;
         uint64_t elen, totlen;
 
@@ -423,15 +426,44 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             continue;
         }
 
-        if (elen <= sz) {
-            si += elen;
-            continue;
+        if (etype == ETYPE_INTEGER || etype == ETYPE_UINTEGER) {
+            if (elen > 8)
+                return -EINVAL;
+            if (elen > sz) {
+                memcpy(valbuf, si, sz);
+                di = valbuf + elen;
+                for (si = valbuf + sz; si < di; si += nbytes) {
+                    nbytes = di - si;
+                    res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
+                    if (res != 0)
+                        return res;
+                }
+                si = valbuf;
+            }
+            res = edata_unpack(si, &val, etype, elen);
+            if (res == 0) {
+                fputs("value\t", f);
+                if (etype == ETYPE_INTEGER)
+                    fprintf(f, "%" PRIi64, val.integer);
+                else
+                    fprintf(f, "%" PRIu64, val.uinteger);
+                fputc('\n', f);
+            } else if (res != -EINVAL)
+                return res;
+            if (elen <= sz) {
+                si += elen;
+                continue;
+            }
+        } else {
+            if (elen <= sz) {
+                si += elen;
+                continue;
+            }
+            /* read remaining EBML element data */
+            res = read_elem_data(hdl, buf, elen - sz, sizeof(buf));
+            if (res != 0)
+                return res;
         }
-
-        /* read remaining EBML element data */
-        res = read_elem_data(hdl, buf, elen - sz, sizeof(buf));
-        if (res != 0)
-            return res;
         di = si = buf;
     }
 
