@@ -264,22 +264,14 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
     for (i = 0; i < ARRAY_SIZE(parsers); i++) {
         res = parser_look_up(parsers[i], idstr, &val, &ret);
         if (res < 0)
-            goto err;
+            return res;
         if (f != NULL && res == 1
             && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), val) < 0)
             return -EIO;
     }
 
-    if (f != NULL && fputc('\n', f) == EOF)
-        return -EIO;
-
     *etype = ret;
     return 0;
-
-err:
-    if (f != NULL)
-        fputc('\n', f);
-    return res;
 }
 
 static int
@@ -357,6 +349,9 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
         if (res != 0)
             return res;
 
+        if (f != NULL && fputc('\n', f) == EOF)
+            return -EIO;
+
         ++n;
     }
 
@@ -420,6 +415,8 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         sz = di - si;
 
         if (etype == ETYPE_MASTER) {
+            if (f != NULL && fputc('\n', f) == EOF)
+                return -EIO;
             memmove(buf, si, sz);
             si = buf;
             di = si + sz;
@@ -442,7 +439,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             }
             res = edata_unpack(si, &val, etype, elen);
             if (res == 0) {
-                fputs("value\t", f);
+                fputc('\t', f);
                 if (etype == ETYPE_INTEGER)
                     fprintf(f, "%" PRIi64, val.integer);
                 else
@@ -450,11 +447,15 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
                 fputc('\n', f);
             } else if (res != -EINVAL)
                 return res;
+            else if (f != NULL && fputc('\n', f) == EOF)
+                return -EIO;
             if (elen <= sz) {
                 si += elen;
                 continue;
             }
         } else {
+            if (f != NULL && fputc('\n', f) == EOF)
+                return -EIO;
             if (elen <= sz) {
                 si += elen;
                 continue;
