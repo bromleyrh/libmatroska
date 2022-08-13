@@ -11,22 +11,33 @@
 
 #define ETYPE_HASH(c1, c2) ((unsigned)(256 * (c1) + (c2)))
 
-#define _LIST_ETYPE(type, name, hash) _X(ETYPE_##type, name, hash)
+#define _LIST_ETYPE(type, val, name, hash) _X(ETYPE_##type, val, name, hash)
 
 #define LIST_ETYPES() \
-    _LIST_ETYPE(INTEGER,    "integer",  ETYPE_HASH('i', 'n')) \
-    _LIST_ETYPE(UINTEGER,   "uinteger", ETYPE_HASH('u', 'i')) \
-    _LIST_ETYPE(FLOAT,      "float",    ETYPE_HASH('f', 'l')) \
-    _LIST_ETYPE(STRING,     "string",   ETYPE_HASH('s', 't')) \
-    _LIST_ETYPE(UTF8,       "utf-8",    ETYPE_HASH('u', 't')) \
-    _LIST_ETYPE(DATE,       "date",     ETYPE_HASH('d', 'a')) \
-    _LIST_ETYPE(MASTER,     "master",   ETYPE_HASH('m', 'a')) \
-    _LIST_ETYPE(BINARY,     "binary",   ETYPE_HASH('b', 'i'))
+    _LIST_ETYPE(INTEGER,    1,      "integer",  ETYPE_HASH('i', 'n')) \
+    _LIST_ETYPE(UINTEGER,   2,      "uinteger", ETYPE_HASH('u', 'i')) \
+    _LIST_ETYPE(FLOAT,      4,      "float",    ETYPE_HASH('f', 'l')) \
+    _LIST_ETYPE(STRING,     8,      "string",   ETYPE_HASH('s', 't')) \
+    _LIST_ETYPE(UTF8,       16,     "utf-8",    ETYPE_HASH('u', 't')) \
+    _LIST_ETYPE(DATE,       32,     "date",     ETYPE_HASH('d', 'a')) \
+    _LIST_ETYPE(MASTER,     64,     "master",   ETYPE_HASH('m', 'a')) \
+    _LIST_ETYPE(BINARY,     128,    "binary",   ETYPE_HASH('b', 'i'))
+
+#define ETYPE_IS_NUMERIC(type) \
+    ((type) & (ETYPE_INTEGER | ETYPE_UINTEGER | ETYPE_FLOAT))
+
+#define ETYPE_IS_FIXED_WIDTH(type) \
+    (ETYPE_IS_NUMERIC(type) || (type) & ETYPE_DATE)
+
+#define ETYPE_IS_STRING(type) \
+    ((type) & (ETYPE_STRING | ETYPE_UTF8))
+
+#define ETYPE_MAX_FIXED_WIDTH 8
 
 enum etype {
     ETYPE_NONE,
-#define _X(type, name, hash) \
-    type,
+#define _X(type, val, name, hash) \
+    type = val,
     LIST_ETYPES()
 #undef _X
 };
@@ -37,7 +48,7 @@ typedef struct {
         int64_t     integer;
         uint64_t    uinteger;
         double      floatpt;
-        time_t      date;
+        int64_t     date;
         char        *ptr;
         char        bytes[8];
     };
@@ -62,6 +73,8 @@ const char *etype_to_str(enum etype etype);
 enum etype str_to_etype(const char *str);
 
 int edata_unpack(const char *x, edata_t *y, enum etype etype, size_t sz);
+
+int edata_to_timespec(edata_t *x, struct timespec *y);
 
 #endif
 

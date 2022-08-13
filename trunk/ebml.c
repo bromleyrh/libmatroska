@@ -423,8 +423,8 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             continue;
         }
 
-        if (etype == ETYPE_INTEGER || etype == ETYPE_UINTEGER) {
-            if (elen > 8)
+        if (ETYPE_IS_FIXED_WIDTH(etype)) {
+            if (elen > ETYPE_MAX_FIXED_WIDTH)
                 return -EINVAL;
             if (elen > sz) {
                 memcpy(valbuf, si, sz);
@@ -440,32 +440,51 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             res = edata_unpack(si, &val, etype, elen);
             if (res == 0) {
                 fputc('\t', f);
-                if (etype == ETYPE_INTEGER)
+                if (val.type == ETYPE_INTEGER)
                     fprintf(f, "%" PRIi64, val.integer);
-                else
+                else if (val.type == ETYPE_UINTEGER)
                     fprintf(f, "%" PRIu64, val.uinteger);
+                else if (val.type == ETYPE_FLOAT)
+                    fprintf(f, "%f", val.floatpt);
+                else if (val.type == ETYPE_DATE) {
+                    char buf[26];
+                    struct timespec tm;
+
+                    res = edata_to_timespec(&val, &tm);
+                    if (res != 0)
+                        return res;
+                    fprintf(f, "%s", ctime_r(&tm.tv_sec, buf));
+                }
                 fputc('\n', f);
             } else if (res != -EINVAL)
                 return res;
             else if (f != NULL && fputc('\n', f) == EOF)
                 return -EIO;
-            if (elen <= sz) {
-                si += elen;
-                continue;
-            }
         } else {
             if (f != NULL && fputc('\n', f) == EOF)
                 return -EIO;
-            if (elen <= sz) {
-                si += elen;
-                continue;
+            if (elen > sz) { /* read remaining EBML element data */
+                memmove(buf, si, sz);
+                res = read_elem_data(hdl, buf + sz, elen - sz,
+                                     sizeof(buf) - sz);
+                if (res != 0)
+                    return res;
+                if (elen > sizeof(buf)) {
+                    di = si = buf;
+                    continue;
+                }
             }
-            /* read remaining EBML element data */
-            res = read_elem_data(hdl, buf, elen - sz, sizeof(buf));
+            res = edata_unpack(buf, &val, etype, elen);
             if (res != 0)
                 return res;
+            if (ETYPE_IS_STRING(val.type))
+                fprintf(f, "%s\n", val.ptr);
+            free(val.ptr);
         }
-        di = si = buf;
+        if (elen > sz)
+            di = si = buf;
+        else
+            si += elen;
     }
 
     return 0;

@@ -10,43 +10,39 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-typedef int unpack_fn_t(const char *, edata_t *);
+typedef int unpack_fn_t(const char *, edata_t *, size_t);
 
-static unpack_fn_t unpack_integer_1;
-static unpack_fn_t unpack_integer_2;
-static unpack_fn_t unpack_integer_4;
-static unpack_fn_t unpack_integer_8;
+#define TIME_T_MIN (~(time_t)0)
+#define TIME_T_MAX (TIME_T_MIN >> 1)
 
-static unpack_fn_t unpack_uinteger_1;
-static unpack_fn_t unpack_uinteger_2;
-static unpack_fn_t unpack_uinteger_4;
-static unpack_fn_t unpack_uinteger_8;
+#define TM_YEAR(year) ((year) - 1900)
+
+#define REFERENCE_TIME \
+    { \
+        .tm_mday    = 1, \
+        .tm_mon     = 1, \
+        .tm_year    = TM_YEAR(2001), \
+        .tm_isdst   = -1 \
+    }
+
+#define TIME_GRAN 1000000000
+
+static unpack_fn_t unpack_integer;
+
+static unpack_fn_t unpack_uinteger;
 
 static unpack_fn_t unpack_float_4;
 static unpack_fn_t unpack_float_8;
 
 static unpack_fn_t unpack_string;
 
-static unpack_fn_t unpack_utf8;
-
-static unpack_fn_t unpack_date_4;
+static unpack_fn_t unpack_date_8;
 
 static unpack_fn_t unpack_binary;
-
-static unpack_fn_t *const integer_fns[] = {
-    [1] = &unpack_integer_1,
-    [2] = &unpack_integer_2,
-    [4] = &unpack_integer_4,
-    [8] = &unpack_integer_8
-};
-
-static unpack_fn_t *const uinteger_fns[] = {
-    [1] = &unpack_uinteger_1,
-    [2] = &unpack_uinteger_2,
-    [4] = &unpack_uinteger_4,
-    [8] = &unpack_uinteger_8
-};
 
 static unpack_fn_t *const float_fns[] = {
     [4] = &unpack_float_4,
@@ -54,41 +50,76 @@ static unpack_fn_t *const float_fns[] = {
 };
 
 static unpack_fn_t *const date_fns[] = {
-    [4] = &unpack_date_4
+    [8] = &unpack_date_8
 };
 
 static int
-unpack_integer_1(const char *x, edata_t *y)
+unpack_integer(const char *x, edata_t *y, size_t sz)
 {
-    y->integer = (int64_t)*x;
+    size_t i;
+
+    --sz;
+    for (i = 0; i <= sz; i++)
+        y->bytes[i] = x[~i & sz];
+    for (; i < sizeof(y->integer); i++)
+        y->bytes[i] = 0;
 
     return 0;
 }
 
 static int
-unpack_integer_2(const char *x, edata_t *y)
+unpack_uinteger(const char *x, edata_t *y, size_t sz)
 {
-    y->bytes[0] = x[1];
-    y->bytes[1] = x[0];
+    size_t i;
+
+    --sz;
+    for (i = 0; i <= sz; i++)
+        y->bytes[i] = x[~i & sz];
+    for (; i < sizeof(y->uinteger); i++)
+        y->bytes[i] = 0;
 
     return 0;
 }
 
 static int
-unpack_integer_4(const char *x, edata_t *y)
+unpack_float_4(const char *x, edata_t *y, size_t sz)
 {
-    int i;
+    (void)sz;
 
-    for (i = 0; i < 4; i++)
-        y->bytes[i] = x[~i & 3];
-
+    y->floatpt = *(float *)x;
     return 0;
 }
 
 static int
-unpack_integer_8(const char *x, edata_t *y)
+unpack_float_8(const char *x, edata_t *y, size_t sz)
 {
-    int i;
+    (void)sz;
+
+    y->floatpt = *(double *)x;
+    return 0;
+}
+
+static int
+unpack_string(const char *x, edata_t *y, size_t sz)
+{
+    char *ret;
+
+    ret = malloc(sz + 1);
+    if (ret == NULL)
+        return -errno;
+
+    ret[sz] = '\0';
+
+    y->ptr = memcpy(ret, x, sz);
+    return 0;
+}
+
+static int
+unpack_date_8(const char *x, edata_t *y, size_t sz)
+{
+    size_t i;
+
+    (void)sz;
 
     for (i = 0; i < 8; i++)
         y->bytes[i] = x[~i & 7];
@@ -97,95 +128,15 @@ unpack_integer_8(const char *x, edata_t *y)
 }
 
 static int
-unpack_uinteger_1(const char *x, edata_t *y)
+unpack_binary(const char *x, edata_t *y, size_t sz)
 {
-    y->integer = (uint64_t)*x;
+    char *ret;
 
-    return 0;
-}
+    ret = malloc(sz);
+    if (ret == NULL)
+        return -errno;
 
-static int
-unpack_uinteger_2(const char *x, edata_t *y)
-{
-    y->bytes[0] = x[1];
-    y->bytes[1] = x[0];
-
-    return 0;
-}
-
-static int
-unpack_uinteger_4(const char *x, edata_t *y)
-{
-    int i;
-
-    for (i = 0; i < 4; i++)
-        y->bytes[i] = x[~i & 3];
-
-    return 0;
-}
-
-static int
-unpack_uinteger_8(const char *x, edata_t *y)
-{
-    int i;
-
-    for (i = 0; i < 8; i++)
-        y->bytes[i] = x[~i & 7];
-
-    return 0;
-}
-
-static int
-unpack_float_4(const char *x, edata_t *y)
-{
-    (void)x;
-    (void)y;
-
-    return 0;
-}
-
-static int
-unpack_float_8(const char *x, edata_t *y)
-{
-    (void)x;
-    (void)y;
-
-    return 0;
-}
-
-static int
-unpack_string(const char *x, edata_t *y)
-{
-    (void)x;
-    (void)y;
-
-    return 0;
-}
-
-static int
-unpack_utf8(const char *x, edata_t *y)
-{
-    (void)x;
-    (void)y;
-
-    return 0;
-}
-
-static int
-unpack_date_4(const char *x, edata_t *y)
-{
-    (void)x;
-    (void)y;
-
-    return 0;
-}
-
-static int
-unpack_binary(const char *x, edata_t *y)
-{
-    (void)x;
-    (void)y;
-
+    y->ptr = memcpy(ret, x, sz);
     return 0;
 }
 
@@ -272,7 +223,7 @@ const char *
 etype_to_str(enum etype etype)
 {
     static const char *const typemap[] = {
-#define _X(type, name, hash) \
+#define _X(type, val, name, hash) \
         [type] = name,
         LIST_ETYPES()
 #undef _X
@@ -288,7 +239,7 @@ str_to_etype(const char *str)
         const char  *str;
         enum etype  etype;
     } typemap[256 * 256] = {
-#define _X(type, name, hash) \
+#define _X(type, val, name, hash) \
         [hash] = {.str = name, .etype = type},
         LIST_ETYPES()
 #undef _X
@@ -311,14 +262,12 @@ edata_unpack(const char *x, edata_t *y, enum etype etype, size_t sz)
         };
         int             nfns;
     } fns[] = {
-        [ETYPE_INTEGER]     = {.fns = integer_fns,
-                               .nfns = ARRAY_SIZE(integer_fns)},
-        [ETYPE_UINTEGER]    = {.fns = uinteger_fns,
-                               .nfns = ARRAY_SIZE(uinteger_fns)},
+        [ETYPE_INTEGER]     = {.fn  = &unpack_integer,  .nfns = -1},
+        [ETYPE_UINTEGER]    = {.fn  = &unpack_uinteger, .nfns = -1},
         [ETYPE_FLOAT]       = {.fns = float_fns,
                                .nfns = ARRAY_SIZE(float_fns)},
         [ETYPE_STRING]      = {.fn  = &unpack_string,   .nfns = -1},
-        [ETYPE_UTF8]        = {.fn  = &unpack_utf8,     .nfns = -1},
+        [ETYPE_UTF8]        = {.fn  = &unpack_string,   .nfns = -1},
         [ETYPE_DATE]        = {.fns = date_fns,
                                .nfns = ARRAY_SIZE(date_fns)},
         [ETYPE_BINARY]      = {.fn  = &unpack_binary,   .nfns = -1}
@@ -341,11 +290,33 @@ edata_unpack(const char *x, edata_t *y, enum etype etype, size_t sz)
             return -EINVAL;
     }
 
-    err = (*fn)(x, y);
+    err = (*fn)(x, y, sz);
     if (!err)
         y->type = etype;
 
     return err;
+}
+
+int
+edata_to_timespec(edata_t *x, struct timespec *y)
+{
+    struct tm tm = REFERENCE_TIME;
+    time_t reftm;
+    uint64_t s;
+
+    reftm = mktime(&tm);
+
+    s = x->date / TIME_GRAN;
+
+    if (s >= 0) {
+        if ((uint64_t)(TIME_T_MAX - reftm) < s)
+            return -EOVERFLOW;
+    } else if ((uint64_t)(TIME_T_MIN - reftm) > s)
+        return -EOVERFLOW;
+
+    y->tv_sec = reftm + s;
+    y->tv_nsec = x->date % TIME_GRAN;
+    return 0;
 }
 
 /* vi: set expandtab sw=4 ts=4: */
