@@ -376,6 +376,18 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         uint64_t eid;
         uint64_t elen, totlen;
 
+        static const char *const typestrmap[] = {
+            [ETYPE_NONE]        = "-",
+            [ETYPE_INTEGER]     = "d",
+            [ETYPE_UINTEGER]    = "u",
+            [ETYPE_FLOAT]       = "f",
+            [ETYPE_STRING]      = "s",
+            [ETYPE_UTF8]        = "w",
+            [ETYPE_DATE]        = "t",
+            [ETYPE_MASTER]      = "m",
+            [ETYPE_BINARY]      = "b"
+        };
+
         /* read EBML element ID and length */
         tmp = si;
         si = di;
@@ -412,6 +424,9 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         if (res != 0)
             return res;
 
+        if (f != NULL && fprintf(f, "\t%s\t", typestrmap[etype]) < 0)
+            return -EIO;
+
         sz = di - si;
 
         if (etype == ETYPE_MASTER) {
@@ -439,30 +454,27 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             }
             res = edata_unpack(si, &val, etype, elen);
             if (res == 0) {
-                fputc('\t', f);
                 if (val.type == ETYPE_INTEGER)
-                    fprintf(f, "%" PRIi64, val.integer);
+                    res = fprintf(f, "%" PRIi64, val.integer);
                 else if (val.type == ETYPE_UINTEGER)
-                    fprintf(f, "%" PRIu64, val.uinteger);
-                else if (val.type == ETYPE_FLOAT)
-                    fprintf(f, "%f", val.floatpt);
-                else if (val.type == ETYPE_DATE) {
+                    res = fprintf(f, "%" PRIu64, val.uinteger);
+                else if (val.type == ETYPE_FLOAT) {
+                    res = fprintf(f, "%f",
+                                  val.dbl ? val.floatd : (double)val.floats);
+                } else if (val.type == ETYPE_DATE) {
                     char buf[26];
                     struct timespec tm;
 
                     res = edata_to_timespec(&val, &tm);
                     if (res != 0)
                         return res;
-                    fprintf(f, "%s", ctime_r(&tm.tv_sec, buf));
+                    res = fprintf(f, "%s", ctime_r(&tm.tv_sec, buf));
                 }
-                fputc('\n', f);
+                if (res < 0)
+                    return -EIO;
             } else if (res != -EINVAL)
                 return res;
-            else if (f != NULL && fputc('\n', f) == EOF)
-                return -EIO;
         } else {
-            if (f != NULL && fputc('\n', f) == EOF)
-                return -EIO;
             if (elen > sz) { /* read remaining EBML element data */
                 memmove(buf, si, sz);
                 res = read_elem_data(hdl, buf + sz, elen - sz,
@@ -470,17 +482,26 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
                 if (res != 0)
                     return res;
                 if (elen > sizeof(buf)) {
+                    if (f != NULL && fputc('\n', f) == EOF)
+                        return -EIO;
                     di = si = buf;
                     continue;
                 }
+                si = buf;
             }
-            res = edata_unpack(buf, &val, etype, elen);
+            res = edata_unpack(si, &val, etype, elen);
             if (res != 0)
                 return res;
             if (ETYPE_IS_STRING(val.type))
-                fprintf(f, "%s\n", val.ptr);
+                res = fprintf(f, "%s", val.ptr);
             free(val.ptr);
+            if (res < 0)
+                return -EIO;
         }
+
+        if (f != NULL && fputc('\n', f) == EOF)
+            return -EIO;
+
         if (elen > sz)
             di = si = buf;
         else

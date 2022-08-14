@@ -9,7 +9,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = include
 
 EXTRA_DIST = bootstrap build-aux doc libmatroskalite.map libmatroskalite.pc.in \
-	schemas .version
+	lsmkv schemas .version
 
 build_date = "$(shell date)"
 build_vers = "$(shell git rev-parse HEAD)"
@@ -67,7 +67,7 @@ if LD_VERSION_SCRIPT
 version_script = -Wl,--version-script=libmatroskalite.map
 endif
 
-noinst_PROGRAMS = mkv_dump schema_parse
+bin_PROGRAMS = mkv_dump
 
 mkv_dump_SOURCES = mkv_dump.c
 mkv_dump_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libutil_cppflags@
@@ -76,6 +76,10 @@ mkv_dump_LDADD = $(matroskalite_link) $(matroskalite_link_dep) \
 	@libutil_link_dep@
 mkv_dump_LDFLAGS = -rpath @abs_top_builddir@/.libs
 mkv_dump_DEPENDENCIES = libmatroskalite.la
+
+bin_SCRIPTS = lsmkv
+
+noinst_PROGRAMS = schema_parse
 
 schema_parse_SOURCES = element.c radix_tree.c schema_parse.c vint.c
 schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @libxml2_cppflags@

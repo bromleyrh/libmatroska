@@ -1,0 +1,9 @@
+#!/bin/sh
+
+{
+	if [ -z "$1" ]; then
+		mkv_dump
+	else
+		mkv_dump <"$1"
+	fi
+} | column -s "$(printf "\t")" -t

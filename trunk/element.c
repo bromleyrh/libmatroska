@@ -84,18 +84,31 @@ unpack_uinteger(const char *x, edata_t *y, size_t sz)
 static int
 unpack_float_4(const char *x, edata_t *y, size_t sz)
 {
+    size_t i;
+
     (void)sz;
 
-    y->floatpt = *(float *)x;
+    for (i = 0; i < 4; i++)
+        y->bytes[i] = x[~i & 3];
+    *(uint32_t *)&y->bytes[4] = 0;
+
+    y->dbl = 0;
+
     return 0;
 }
 
 static int
 unpack_float_8(const char *x, edata_t *y, size_t sz)
 {
+    size_t i;
+
     (void)sz;
 
-    y->floatpt = *(double *)x;
+    for (i = 0; i < 8; i++)
+        y->bytes[i] = x[~i & 7];
+
+    y->dbl = 1;
+
     return 0;
 }
 

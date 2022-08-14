@@ -43,11 +43,13 @@ enum etype {
 };
 
 typedef struct {
-    enum etype      type;
+    enum etype      type:8;
+    unsigned        dbl:1;
     union {
         int64_t     integer;
         uint64_t    uinteger;
-        double      floatpt;
+        float       floats;
+        double      floatd;
         int64_t     date;
         char        *ptr;
         char        bytes[8];
