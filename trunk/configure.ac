@@ -75,7 +75,9 @@ AS_IF(
      includedir_libxml2=$sdk_dir/usr/include/libxml2
      libxml2_cppflags="-I\"$includedir_libxml2\""
      libxml2_link_dep="-lxml2"],
-    [AC_MSG_ERROR([unsupported platform], [1])]
+    [PKG_CHECK_MODULES([libxml2], [libxml-2.0],
+                       [libxml2_cppflags=$libxml2_CFLAGS
+                        libxml2_link_dep=$libxml2_LIBS])]
 )
 
 AC_SUBST([libxml2_cppflags])

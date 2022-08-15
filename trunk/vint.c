@@ -11,7 +11,43 @@
 #include <stddef.h>
 #include <stdint.h>
 
+static int fmss(int);
+
 static int _u64_to_vint(uint64_t, char *, size_t);
+
+static int
+fmss(int i)
+{
+    int pos;
+    unsigned val;
+
+    if (!i)
+        return 0;
+
+    val = (unsigned)i;
+
+    pos = 32;
+    if (!(val & 0xffff0000)) {
+        val <<= 16;
+        pos -= 16;
+    }
+    if (!(val & 0xff000000)) {
+        val <<= 8;
+        pos -= 8;
+    }
+    if (!(val & 0xf0000000)) {
+        val <<= 4;
+        pos -= 4;
+    }
+    if (!(val & 0xc0000000)) {
+        val <<= 2;
+        pos -= 2;
+    }
+    if (!(val & 0x80000000))
+        pos -= 1;
+
+    return pos;
+}
 
 static int
 _u64_to_vint(uint64_t x, char *y, size_t bufsz)
@@ -50,7 +86,7 @@ vint_to_u64(const char *x, uint64_t *y, size_t *sz)
     d = (unsigned char)*x;
 
     /* determine VINT_WIDTH */
-    len = CHAR_BIT + 1 - fls(d);
+    len = CHAR_BIT + 1 - fmss(d);
     if (sz != NULL)
         *sz = len;
 

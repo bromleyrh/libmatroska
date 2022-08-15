@@ -17,7 +17,7 @@
 typedef int unpack_fn_t(const char *, edata_t *, size_t);
 
 #define TIME_T_MIN (~(time_t)0)
-#define TIME_T_MAX (TIME_T_MIN >> 1)
+#define TIME_T_MAX ((time_t)((unsigned)TIME_T_MIN >> 1))
 
 #define TM_YEAR(year) ((year) - 1900)
 
@@ -313,18 +313,18 @@ edata_unpack(const char *x, edata_t *y, enum etype etype, size_t sz)
 int
 edata_to_timespec(edata_t *x, struct timespec *y)
 {
+    int64_t s;
     struct tm tm = REFERENCE_TIME;
     time_t reftm;
-    uint64_t s;
 
     reftm = mktime(&tm);
 
     s = x->date / TIME_GRAN;
 
     if (s >= 0) {
-        if ((uint64_t)(TIME_T_MAX - reftm) < s)
+        if ((int64_t)(TIME_T_MAX - reftm) < s)
             return -EOVERFLOW;
-    } else if ((uint64_t)(TIME_T_MIN - reftm) > s)
+    } else if ((int64_t)(TIME_T_MIN - reftm) > s)
         return -EOVERFLOW;
 
     y->tv_sec = reftm + s;

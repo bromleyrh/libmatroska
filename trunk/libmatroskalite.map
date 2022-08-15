@@ -1,6 +1,7 @@
 LIBMATROSKALITE_1 {
     global:
         ebml_close;
+        ebml_file_fns;
         ebml_dump;
         ebml_open;
         edatasz_to_u64;

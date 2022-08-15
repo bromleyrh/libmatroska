@@ -2,6 +2,8 @@
  * ebml.c
  */
 
+#define _FILE_OFFSET_BITS 64
+
 #include "common.h"
 #include "ebml.h"
 #include "element.h"
@@ -59,7 +61,7 @@ static int parse_header(FILE *, struct ebml_hdl *);
 
 static int parse_body(FILE *, struct ebml_hdl *);
 
-const ebml_io_fns_t ebml_file_fns = {
+EXPORTED const ebml_io_fns_t ebml_file_fns = {
     .open       = &ebml_file_open,
     .close      = &ebml_file_close,
     .read       = &ebml_file_read,
