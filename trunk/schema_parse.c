@@ -29,6 +29,7 @@
 
 struct id_node {
     char        *name;
+    char        *handler;
     enum etype  type;
 };
 
@@ -98,7 +99,7 @@ parse_element(xmlNode *node, struct radix_tree *rt)
     if (prop == NULL) {
         fputs("Element is missing ID\n", stderr);
         err = -EINVAL;
-        goto err;
+        goto err1;
     }
 
     errno = 0;
@@ -111,14 +112,14 @@ parse_element(xmlNode *node, struct radix_tree *rt)
 
     if (err) {
         fputs("Invalid element ID\n", stderr);
-        goto err;
+        goto err1;
     }
 
     prop = xmlGetProp(node, (unsigned char *)"type");
     if (prop == NULL) {
         fputs("Element is missing type\n", stderr);
         err = -EINVAL;
-        goto err;
+        goto err1;
     }
 
     idnode.type = str_to_etype((const char *)prop);
@@ -127,23 +128,28 @@ parse_element(xmlNode *node, struct radix_tree *rt)
 
     if (idnode.type == ETYPE_NONE) {
         fputs("Invalid element type\n", stderr);
-        goto err;
+        goto err1;
     }
+
+    idnode.handler = (char *)xmlGetProp(node, (unsigned char *)"handler");
 
     err = l64a_r(id, idstr, sizeof(idstr));
     if (err)
-        goto err;
+        goto err2;
 
     err = radix_tree_insert(rt, idstr, &idnode);
     if (err)
-        goto err;
+        goto err2;
 
     fprintf(stderr, "ID %s\n", idstr);
 
     return 0;
 
-err:
-    free(idnode.name);
+err2:
+    if (idnode.handler != NULL)
+        xmlFree(idnode.handler);
+err1:
+    xmlFree(idnode.name);
     return err;
 }
 
@@ -235,10 +241,15 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
     } else {
         struct id_node *idnode = val;
 
+        if (idnode->handler != NULL
+            && printf("int %s(const char *, void *);\n\n", idnode->handler) < 0)
+            goto err;
+
         if (printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
-                   "\t\"%s -> %s\", %d\n",
+                   "\t\"%s -> %s\", %d, %s%s\n",
                    get_node_id(node), node->label, str, idnode->name,
-                   idnode->type)
+                   idnode->type, idnode->handler == NULL ? "" : "&",
+                   idnode->handler == NULL ? "NULL" : idnode->handler)
             < 0)
             goto err;
     }
@@ -259,6 +270,7 @@ free_fn(const char *str, void *val, void *ctx)
     (void)ctx;
 
     xmlFree(node->name);
+    xmlFree(node->handler);
 
     return 0;
 }

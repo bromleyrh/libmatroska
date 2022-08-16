@@ -10,11 +10,18 @@
 #include "ebml_schema.h"
 #include "matroska_schema.h"
 
+#include "matroska_semantics.h"
+
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
 
 struct parser {
+    const struct trie_node  *id_root;
+    const char              *desc;
+};
+
+struct semantic_processor {
     const struct trie_node  *id_root;
     const char              *desc;
 };
@@ -30,12 +37,25 @@ struct trie_edge {
         .desc       = descr \
     };
 
+#define DEF_SEMANTIC_PROCESSOR(nm, descr) \
+    EXPORTED const struct semantic_processor nm##_semantic_processor = { \
+        .id_root    = TRIE_ROOT(nm##_semantics), \
+        .desc       = descr \
+    };
+
 #define LIST_PARSERS() \
     _X(ebml,        "EBML") \
     _X(matroska,    "Matroska")
 
+#define LIST_SEMANTIC_PROCESSORS() \
+    _X(matroska, "Matroska semantics")
+
 #define _X DEF_PARSER
 LIST_PARSERS()
+#undef _X
+
+#define _X DEF_SEMANTIC_PROCESSOR
+LIST_SEMANTIC_PROCESSORS()
 #undef _X
 
 static int find_trie_edge(const struct trie_node *, unsigned char,

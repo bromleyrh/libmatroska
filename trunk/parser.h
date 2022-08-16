@@ -9,11 +9,16 @@
 
 struct parser;
 
+struct semantic_processor;
+
 extern const struct parser ebml_parser;
 #define EBML_PARSER (&ebml_parser)
 
 extern const struct parser matroska_parser;
 #define MATROSKA_PARSER (&matroska_parser)
+
+extern const struct semantic_processor matroska_semantic_processor;
+#define MATROSKA_SEMANTIC_PROCESSOR (&matroska_semantic_processor)
 
 const char *parser_desc(const struct parser *parser);
 

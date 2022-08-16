@@ -23,6 +23,8 @@ stamp-h1
 ebml_schema.h
 matroska_schema.h
 
+matroska_semantics.h
+
 version.c
 
 /schema_parse

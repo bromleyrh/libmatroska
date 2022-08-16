@@ -14,6 +14,7 @@ struct trie_node {
     const struct trie_node  *children[256];
     const char              *val;
     enum etype              etype;
+    int                     (*handler)(const char *, void *);
 };
 
 #define __DEF_TRIE_NODE_BRANCH(prefix, nm, lbl, ...) \
@@ -22,11 +23,12 @@ struct trie_node {
         __VA_ARGS__ \
     }
 
-#define __DEF_TRIE_NODE_INFORMATION(prefix, nm, lbl, value, typ) \
+#define __DEF_TRIE_NODE_INFORMATION(prefix, nm, lbl, value, typ, hdlr) \
     static const struct trie_node prefix##_trie_node_##nm = { \
-        .label = lbl, \
-        .val = value, \
-        .etype = typ \
+        .label      = lbl, \
+        .val        = value, \
+        .etype      = typ, \
+        .handler    = hdlr \
     }
 
 #define __ENTRY(prefix, key, nm) \

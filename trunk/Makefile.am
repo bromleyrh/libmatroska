@@ -39,20 +39,26 @@ $(pkgconfig_DATA): config.status
 
 noinst_HEADERS = common.h ebml.h element.h parser.h radix_tree.h util.h vint.h
 
-BUILT_SOURCES = ebml_schema.h matroska_schema.h version.c
+BUILT_SOURCES = ebml_schema.h matroska_schema.h matroska_semantics.h version.c
 
-CLEANFILES = ebml_schema.h matroska_schema.h version.c
+CLEANFILES = ebml_schema.h matroska_schema.h matroska_semantics.h version.c
 
 build_date_str = "build_date=$(build_date)"
 build_vers_str = "build_git_commit_id=$(build_vers)"
 
 ebml_schema = schemas/ebml_schema.xml
+ebml_semantics_schema = schemas/ebml_semantics_schema.xml
 
 ebml_schema.h: schema_parse $(ebml_schema) schemas/ebml.m4
 	m4 schemas/ebml.m4 | ./schema_parse $(ebml_schema) ebml >|$@
 
 matroska_schema.h: schema_parse $(ebml_schema) schemas/matroska.m4
 	m4 schemas/matroska.m4 | ./schema_parse $(ebml_schema) matroska >|$@
+
+matroska_semantics.h: schema_parse $(ebml_semantics_schema) \
+	schemas/matroska_semantics.m4
+	m4 schemas/matroska_semantics.m4 \
+		| ./schema_parse $(ebml_semantics_schema) matroska_semantics >|$@
 
 version.c:
 	echo "const char build_date[] = \"$(build_date_str)\";" >|$@
