@@ -64,8 +64,7 @@ static int find_trie_edge(const struct trie_node *, unsigned char,
 static int traverse_trie_edge(const struct trie_edge *, const char **);
 
 static int do_trie_search(const struct trie_node *, const char *,
-                          const char **, int (**)(const char *, void *),
-                          enum etype *);
+                          const char **, semantic_action_t **, enum etype *);
 
 static int
 find_trie_edge(const struct trie_node *src, unsigned char digit,
@@ -103,7 +102,7 @@ traverse_trie_edge(const struct trie_edge *edge, const char **str)
 
 static int
 do_trie_search(const struct trie_node *node, const char *str, const char **val,
-               int (**handler)(const char *, void *), enum etype *etype)
+               semantic_action_t **act, enum etype *etype)
 {
     struct trie_edge edge;
 
@@ -126,8 +125,8 @@ do_trie_search(const struct trie_node *node, const char *str, const char **val,
 
     if (val != NULL)
         *val = edge.dst->val;
-    if (handler != NULL)
-        *handler = edge.dst->handler;
+    if (act != NULL)
+        *act = edge.dst->act;
     if (etype != NULL)
         *etype = edge.dst->etype;
 
@@ -149,10 +148,9 @@ parser_look_up(const struct parser *parser, const char *str, const char **val,
 
 int
 semantic_processor_look_up(const struct semantic_processor *sproc,
-                           const char *str,
-                           int (**handler)(const char *, void *))
+                           const char *str, semantic_action_t **act)
 {
-    return do_trie_search(sproc->id_root, str, NULL, handler, NULL);
+    return do_trie_search(sproc->id_root, str, NULL, act, NULL);
 }
 
 /* vi: set expandtab sw=4 ts=4: */

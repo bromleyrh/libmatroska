@@ -7,9 +7,13 @@
 
 #include "element.h"
 
+#include <stddef.h>
+
 struct parser;
 
 struct semantic_processor;
+
+typedef int semantic_action_t(const char *, const void *, size_t, void *);
 
 extern const struct parser ebml_parser;
 #define EBML_PARSER (&ebml_parser)
@@ -26,8 +30,7 @@ int parser_look_up(const struct parser *parser, const char *str,
                    const char **val, enum etype *etype);
 
 int semantic_processor_look_up(const struct semantic_processor *sproc,
-                               const char *str,
-                               int (**handler)(const char *, void *));
+                               const char *str, semantic_action_t **act);
 
 #endif
 

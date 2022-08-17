@@ -242,14 +242,17 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
         struct id_node *idnode = val;
 
         if (idnode->handler != NULL
-            && printf("int %s(const char *, void *);\n\n", idnode->handler) < 0)
+            && printf("int %s(const char *, const void *, size_t, void *);\n\n",
+                      idnode->handler)
+               < 0)
             goto err;
 
         if (printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
-                   "\t\"%s -> %s\", %d, %s%s\n",
+                   "\t\"%s -> %s\", %s%s, %d\n",
                    get_node_id(node), node->label, str, idnode->name,
-                   idnode->type, idnode->handler == NULL ? "" : "&",
-                   idnode->handler == NULL ? "NULL" : idnode->handler)
+                   idnode->handler == NULL ? "" : "&",
+                   idnode->handler == NULL ? "NULL" : idnode->handler,
+                   idnode->type)
             < 0)
             goto err;
     }
@@ -363,6 +366,8 @@ output_parser_data(xmlDocPtr doc, const char *doctype)
         goto err;
 
     do_printf(&env, "#include \"parser_defs.h\"\n\n");
+
+    do_printf(&env, "#include <stddef.h>\n\n");
 
     do_printf(&env, "#define TRIE_NODE_PREFIX %s\n\n", doctype);
 

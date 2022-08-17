@@ -6,6 +6,7 @@
 #define _PARSER_DEFS_H
 
 #include "element.h"
+#include "parser.h"
 
 #include <stddef.h>
 
@@ -13,8 +14,8 @@ struct trie_node {
     const char              *label;
     const struct trie_node  *children[256];
     const char              *val;
+    semantic_action_t       *act;
     enum etype              etype;
-    int                     (*handler)(const char *, void *);
 };
 
 #define __DEF_TRIE_NODE_BRANCH(prefix, nm, lbl, ...) \
@@ -23,12 +24,12 @@ struct trie_node {
         __VA_ARGS__ \
     }
 
-#define __DEF_TRIE_NODE_INFORMATION(prefix, nm, lbl, value, typ, hdlr) \
+#define __DEF_TRIE_NODE_INFORMATION(prefix, nm, lbl, value, action, typ) \
     static const struct trie_node prefix##_trie_node_##nm = { \
         .label      = lbl, \
         .val        = value, \
-        .etype      = typ, \
-        .handler    = hdlr \
+        .act        = action, \
+        .etype      = typ \
     }
 
 #define __ENTRY(prefix, key, nm) \
