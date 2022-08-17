@@ -206,9 +206,9 @@ get_node_id(const struct radix_tree_node *node)
     static uint32_t key[4];
 
     if (!init) {
-        srand(time(NULL) + getpid());
         for (i = 0; i < ARRAY_SIZE(key); i++)
             key[i] = (uint32_t)rand();
+        init = 1;
     }
 
     return xtea_encrypt((uint64_t)(uintptr_t)node, key);
@@ -384,6 +384,7 @@ main(int argc, char **argv)
     const char *doctype;
     const char *schemaf;
     int ret, status;
+    unsigned seed;
     xmlDocPtr doc, schemadoc;
     xmlSchemaParserCtxtPtr ctx;
     xmlSchemaPtr schema;
@@ -399,8 +400,11 @@ main(int argc, char **argv)
     }
     schemaf = argv[1];
     doctype = argv[2];
+    seed = argc == 4 ? atoi(argv[3]) : time(NULL) + getpid();
 
     LIBXML_TEST_VERSION
+
+    srand(seed);
 
     schemadoc = xmlParseFile(schemaf);
     if (schemadoc == NULL)
@@ -451,6 +455,9 @@ main(int argc, char **argv)
 
     xmlFreeDoc(doc);
     xmlCleanupParser();
+
+    if (status == EXIT_SUCCESS)
+        fprintf(stderr, "Seed: %u\n", seed);
 
     return status;
 
