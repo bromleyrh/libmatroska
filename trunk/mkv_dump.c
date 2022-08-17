@@ -25,7 +25,8 @@ dump_mkv(int infd, int outfd)
 
     args.fd = infd;
     args.pathname = NULL;
-    err = ebml_open(&hdl, EBML_FILE_FNS, MATROSKA_PARSER, &args);
+    err = ebml_open(&hdl, EBML_FILE_FNS, MATROSKA_PARSER,
+                    MATROSKA_SEMANTIC_PROCESSOR, &args, NULL);
     if (err) {
         errmsg = "Error opening input file";
         goto err1;

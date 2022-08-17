@@ -64,7 +64,8 @@ static int find_trie_edge(const struct trie_node *, unsigned char,
 static int traverse_trie_edge(const struct trie_edge *, const char **);
 
 static int do_trie_search(const struct trie_node *, const char *,
-                          const char **, enum etype *);
+                          const char **, int (**)(const char *, void *),
+                          enum etype *);
 
 static int
 find_trie_edge(const struct trie_node *src, unsigned char digit,
@@ -102,7 +103,7 @@ traverse_trie_edge(const struct trie_edge *edge, const char **str)
 
 static int
 do_trie_search(const struct trie_node *node, const char *str, const char **val,
-               enum etype *etype)
+               int (**handler)(const char *, void *), enum etype *etype)
 {
     struct trie_edge edge;
 
@@ -123,8 +124,12 @@ do_trie_search(const struct trie_node *node, const char *str, const char **val,
         node = edge.dst;
     }
 
-    *val = edge.dst->val;
-    *etype = edge.dst->etype;
+    if (val != NULL)
+        *val = edge.dst->val;
+    if (handler != NULL)
+        *handler = edge.dst->handler;
+    if (etype != NULL)
+        *etype = edge.dst->etype;
 
     return 1;
 }
@@ -139,7 +144,15 @@ int
 parser_look_up(const struct parser *parser, const char *str, const char **val,
                enum etype *etype)
 {
-    return do_trie_search(parser->id_root, str, val, etype);
+    return do_trie_search(parser->id_root, str, val, NULL, etype);
+}
+
+int
+semantic_processor_look_up(const struct semantic_processor *sproc,
+                           const char *str,
+                           int (**handler)(const char *, void *))
+{
+    return do_trie_search(sproc->id_root, str, NULL, handler, NULL);
 }
 
 /* vi: set expandtab sw=4 ts=4: */

@@ -25,6 +25,10 @@ const char *parser_desc(const struct parser *parser);
 int parser_look_up(const struct parser *parser, const char *str,
                    const char **val, enum etype *etype);
 
+int semantic_processor_look_up(const struct semantic_processor *sproc,
+                               const char *str,
+                               int (**handler)(const char *, void *));
+
 #endif
 
 /* vi: set expandtab sw=4 ts=4: */

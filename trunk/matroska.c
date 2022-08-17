@@ -4,11 +4,14 @@
 
 #include "matroska.h"
 
+#include <stdio.h>
+
 int
 matroska_tracknumber_handler(const char *val, void *ctx)
 {
-    (void)val;
     (void)ctx;
+
+    fprintf(stderr, "%s(): %s\n", __FUNCTION__, val);
 
     return 0;
 }
@@ -16,8 +19,9 @@ matroska_tracknumber_handler(const char *val, void *ctx)
 int
 matroska_simpleblock_handler(const char *val, void *ctx)
 {
-    (void)val;
     (void)ctx;
+
+    fprintf(stderr, "%s(): %s\n", __FUNCTION__, val);
 
     return 0;
 }

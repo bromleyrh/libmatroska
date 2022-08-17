@@ -26,10 +26,12 @@
 #include <sys/types.h>
 
 struct ebml_hdl {
-    const ebml_io_fns_t *fns;
-    const struct parser *parser_ebml;
-    const struct parser *parser_doc;
-    void                *ctx;
+    const ebml_io_fns_t             *fns;
+    const struct parser             *parser_ebml;
+    const struct parser             *parser_doc;
+    const struct semantic_processor *sproc;
+    void                            *ctx;
+    void                            *sproc_ctx;
 };
 
 struct ebml_file_ctx {
@@ -248,6 +250,7 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
     const char *val;
     const struct parser *parsers[2];
     enum etype ret;
+    int (*handler)(const char *, void *);
     int res;
     size_t i;
 
@@ -270,6 +273,16 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
         if (f != NULL && res == 1
             && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), val) < 0)
             return -EIO;
+    }
+
+    res = semantic_processor_look_up(hdl->sproc, idstr, &handler);
+    if (res != 0) {
+        if (res != 1)
+            return res;
+
+        res = (*handler)(val, hdl->sproc_ctx);
+        if (res != 0)
+            return res;
     }
 
     *etype = ret;
@@ -515,7 +528,8 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
 
 EXPORTED int
 ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
-          const struct parser *parser, void *args)
+          const struct parser *parser, const struct semantic_processor *sproc,
+          void *args, void *sproc_ctx)
 {
     int err;
     struct ebml_hdl *ret;
@@ -532,6 +546,8 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     ret->fns = fns;
     ret->parser_ebml = EBML_PARSER;
     ret->parser_doc = parser;
+    ret->sproc = sproc;
+    ret->sproc_ctx = sproc_ctx;
 
     *hdl = ret;
     return 0;

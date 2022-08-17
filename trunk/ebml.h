@@ -29,7 +29,9 @@ extern const ebml_io_fns_t ebml_file_fns;
 #define EBML_FILE_FNS (&ebml_file_fns)
 
 int ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
-              const struct parser *parser, void *args);
+              const struct parser *parser,
+              const struct semantic_processor *sproc, void *args,
+              void *sproc_ctx);
 
 int ebml_close(ebml_hdl_t hdl);
 
