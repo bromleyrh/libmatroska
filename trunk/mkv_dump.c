@@ -3,6 +3,7 @@
  */
 
 #include "ebml.h"
+#include "matroska.h"
 #include "parser.h"
 
 #include <errno.h>
@@ -22,11 +23,12 @@ dump_mkv(int infd, int outfd)
     FILE *f;
     int err;
     struct ebml_file_args args;
+    struct matroska_state state = {0};
 
     args.fd = infd;
     args.pathname = NULL;
     err = ebml_open(&hdl, EBML_FILE_FNS, MATROSKA_PARSER,
-                    MATROSKA_SEMANTIC_PROCESSOR, &args, NULL);
+                    MATROSKA_SEMANTIC_PROCESSOR, &args, &state);
     if (err) {
         errmsg = "Error opening input file";
         goto err1;

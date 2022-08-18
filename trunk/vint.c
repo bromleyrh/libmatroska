@@ -83,12 +83,18 @@ vint_to_u64(const char *x, uint64_t *y, size_t *sz)
     if (*x == 0)
         return -EINVAL;
 
+    if (sz == NULL && y == NULL)
+        return 0;
+
     d = (unsigned char)*x;
 
     /* determine VINT_WIDTH */
     len = CHAR_BIT + 1 - fmss(d);
-    if (sz != NULL)
+    if (sz != NULL) {
         *sz = len;
+        if (y == NULL)
+            return 0;
+    }
 
     /* scan VINT_DATA */
     ret = d & 0xff >> len;
