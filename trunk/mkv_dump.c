@@ -6,6 +6,9 @@
 #include "matroska.h"
 #include "parser.h"
 
+#include <avl_tree.h>
+#include <malloc_ext.h>
+
 #include <errno.h>
 #include <inttypes.h>
 #include <stddef.h>
@@ -15,31 +18,146 @@
 #include <string.h>
 #include <unistd.h>
 
+struct track_cb {
+    uint64_t    trackno;
+    char        *path;
+    FILE        *f;
+};
+
+static int parse_cmdline(int, char **, struct avl_tree **);
+
+static int track_cb_cmp(const void *, const void *, void *);
+static int track_cb_free(const void *, void *);
+
+static int free_tcb(struct avl_tree *);
+
 static matroska_bitstream_cb_t bitstream_cb;
 
-static int dump_mkv(int, int);
+static int dump_mkv(int, int, struct avl_tree *);
 
 static int
-bitstream_cb(uint64_t trackno, const void *buf, size_t len, void *ctx)
+parse_cmdline(int argc, char **argv, struct avl_tree **tcb)
 {
-    (void)buf;
+    int err;
+    int i;
+    struct avl_tree *ret;
+    struct track_cb e;
+
+    err = avl_tree_new(&ret, sizeof(struct track_cb), &track_cb_cmp, 0, NULL,
+                       NULL, NULL);
+    if (err)
+        return err;
+
+    for (i = 1; i < argc; i++) {
+        char *sep;
+
+        sep = strchr(argv[i], ':');
+        if (sep == NULL)
+            goto err1;
+        *sep = '\0';
+
+        e.path = strdup(sep + 1);
+        if (e.path == NULL)
+            goto err1;
+
+        e.f = fopen(e.path, "w");
+        if (e.f == NULL)
+            goto err2;
+
+        e.trackno = strtoull(argv[i], NULL, 10);
+
+        err = avl_tree_insert(ret, &e);
+        if (err)
+            goto err3;
+    }
+
+    *tcb = ret;
+    return 0;
+
+err3:
+    fclose(e.f);
+err2:
+    free(e.path);
+err1:
+    free_tcb(ret);
+    return err;
+}
+
+static int
+track_cb_cmp(const void *k1, const void *k2, void *ctx)
+{
+    const struct track_cb *tcb1 = k1;
+    const struct track_cb *tcb2 = k2;
+
     (void)ctx;
 
-    fprintf(stderr, "%s(): %" PRIu64 ": length %zu bytes\n", __FUNCTION__,
-            trackno, len);
+    return (tcb1->trackno > tcb2->trackno) - (tcb1->trackno < tcb2->trackno);
+}
+
+static int
+track_cb_free(const void *keyval, void *ctx)
+{
+    const struct track_cb *tcb = keyval;
+
+    if (fclose(tcb->f) == EOF)
+        *(int *)ctx = -errno;
+
+    free(tcb->path);
 
     return 0;
 }
 
 static int
-dump_mkv(int infd, int outfd)
+free_tcb(struct avl_tree *tcb)
+{
+    avl_tree_walk_ctx_t wctx = NULL;
+    int err = 0;
+
+    avl_tree_walk(tcb, NULL, &track_cb_free, &err, &wctx);
+    avl_tree_free(tcb);
+
+    return err;
+}
+
+static int
+bitstream_cb(uint64_t trackno, const void *buf, size_t len, void *ctx)
+{
+    int res;
+    struct avl_tree *tcb = ctx;
+    struct track_cb e;
+
+    fprintf(stderr, "%s(): %" PRIu64 ": length %zu bytes", __FUNCTION__,
+            trackno, len);
+
+    e.trackno = trackno;
+    res = avl_tree_search(tcb, &e, &e);
+    if (res != 0) {
+        size_t ret;
+
+        if (res != 1)
+            return res;
+
+        fprintf(stderr, " (>%s)", e.path);
+
+        ret = fwrite(buf, 1, len, e.f);
+        if (ret != len)
+            return -errno;
+    }
+
+    fputc('\n', stderr);
+
+    return 0;
+}
+
+static int
+dump_mkv(int infd, int outfd, struct avl_tree *tcb)
 {
     const char *errmsg;
     FILE *f;
     int err;
     matroska_hdl_t hdl;
 
-    err = matroska_open(&hdl, infd, NULL, &bitstream_cb, NULL);
+    err = matroska_open(&hdl, infd, NULL, &bitstream_cb, tcb);
     if (err) {
         errmsg = "Error opening input file";
         goto err1;
@@ -85,11 +203,17 @@ err1:
 int
 main(int argc, char **argv)
 {
-    (void)argc;
-    (void)argv;
+    int err;
+    struct avl_tree *tcb;
 
-    return dump_mkv(STDIN_FILENO, STDOUT_FILENO) == 0
-           ? EXIT_SUCCESS : EXIT_FAILURE;
+    if (parse_cmdline(argc, argv, &tcb) != 0)
+        return EXIT_FAILURE;
+
+    err = dump_mkv(STDIN_FILENO, STDOUT_FILENO, tcb);
+
+    free_tcb(tcb);
+
+    return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 /* vi: set expandtab sw=4 ts=4: */
