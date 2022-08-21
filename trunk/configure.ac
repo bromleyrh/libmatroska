@@ -74,17 +74,24 @@ AS_IF(
      sdk_dir=$platforms_dir/Developer/SDKs/MacOSX.sdk
      includedir_libxml2=$sdk_dir/usr/include/libxml2
      libxml2_cppflags="-I\"$includedir_libxml2\""
-     libxml2_link_dep="-lxml2"],
+     libxml2_link_dep="-lxml2"
+     includedir_zlib=$sdk_dir/usr/include
+     zlib_cppflags="-I\"$includedir_zlib\""
+     zlib_link_dep="-lz"],
     [PKG_CHECK_MODULES([libxml2], [libxml-2.0],
                        [libxml2_cppflags=$libxml2_CFLAGS
-                        libxml2_link_dep=$libxml2_LIBS])]
+                        libxml2_link_dep=$libxml2_LIBS])
+     PKG_CHECK_MODULES([zlib], [zlib],
+                       [zlib_cppflags=$zlib_CFLAGS
+                        zlib_link_dep=$zlib_LIBS])]
 )
 
 AC_SUBST([libxml2_cppflags])
+AC_SUBST([zlib_cppflags])
 AC_SUBST([libmatroskalite_cppflags], [""])
 
 AC_SUBST([libxml2_link_dep])
-AC_SUBST([libmatroskalite_link_dep], [""])
+AC_SUBST([libmatroskalite_link_dep], ["$zlib_link_dep"])
 
 AC_ARG_WITH([pkgconfigdir],
             [  --with-pkgconfigdir=DIR install pkg-config data in DIR],
