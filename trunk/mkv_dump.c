@@ -7,28 +7,39 @@
 #include "parser.h"
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+static matroska_bitstream_cb_t bitstream_cb;
+
 static int dump_mkv(int, int);
+
+static int
+bitstream_cb(uint64_t trackno, const void *buf, size_t len, void *ctx)
+{
+    (void)buf;
+    (void)ctx;
+
+    fprintf(stderr, "%s(): %" PRIu64 ": length %zu bytes\n", __FUNCTION__,
+            trackno, len);
+
+    return 0;
+}
 
 static int
 dump_mkv(int infd, int outfd)
 {
     const char *errmsg;
-    ebml_hdl_t hdl;
     FILE *f;
     int err;
-    struct ebml_file_args args;
-    struct matroska_state state = {0};
+    matroska_hdl_t hdl;
 
-    args.fd = infd;
-    args.pathname = NULL;
-    err = ebml_open(&hdl, EBML_FILE_FNS, MATROSKA_PARSER,
-                    MATROSKA_SEMANTIC_PROCESSOR, &args, &state);
+    err = matroska_open(&hdl, infd, NULL, &bitstream_cb, NULL);
     if (err) {
         errmsg = "Error opening input file";
         goto err1;
@@ -42,7 +53,7 @@ dump_mkv(int infd, int outfd)
     }
     setlinebuf(f);
 
-    err = ebml_dump(f, hdl);
+    err = matroska_read(f, hdl);
     if (err) {
         errmsg = "Error dumping file";
         goto err3;
@@ -54,7 +65,7 @@ dump_mkv(int infd, int outfd)
         goto err2;
     }
 
-    err = ebml_close(hdl);
+    err = matroska_close(hdl);
     if (err) {
         errmsg = "Error closing input file";
         goto err1;
@@ -65,7 +76,7 @@ dump_mkv(int infd, int outfd)
 err3:
     fclose(f);
 err2:
-    ebml_close(hdl);
+    matroska_close(hdl);
 err1:
     fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
     return err;

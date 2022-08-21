@@ -515,6 +515,11 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
                 if (res != 0)
                     return res;
                 if (elen > sizeof(buf)) {
+                    if (etype == ETYPE_BINARY && act != NULL) {
+                        res = (*act)(NULL, NULL, elen, hdl->sproc_ctx);
+                        if (res != 0)
+                            return res;
+                    }
                     if (f != NULL && fputc('\n', f) == EOF)
                         return -EIO;
                     di = si = buf;
@@ -527,7 +532,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
                 return res;
             if (ETYPE_IS_STRING(val.type))
                 res = fprintf(f, "%s", val.ptr);
-            else if (val.type == ETYPE_BINARY && act != NULL) {
+            else if (elen <= sz && val.type == ETYPE_BINARY && act != NULL) {
                 res = (*act)(NULL, si, elen, hdl->sproc_ctx);
                 if (res != 0)
                     return res;
@@ -535,6 +540,11 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             free(val.ptr);
             if (res < 0)
                 return -EIO;
+            if (val.type == ETYPE_BINARY && act != NULL) {
+                res = (*act)(NULL, NULL, elen, hdl->sproc_ctx);
+                if (res != 0)
+                    return res;
+            }
         }
 
         if (f != NULL && fputc('\n', f) == EOF)
@@ -589,7 +599,7 @@ ebml_close(ebml_hdl_t hdl)
 }
 
 EXPORTED int
-ebml_dump(FILE *f, ebml_hdl_t hdl)
+ebml_read(FILE *f, ebml_hdl_t hdl)
 {
     int err;
 

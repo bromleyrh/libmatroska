@@ -35,7 +35,7 @@ int ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
 
 int ebml_close(ebml_hdl_t hdl);
 
-int ebml_dump(FILE *f, ebml_hdl_t hdl);
+int ebml_read(FILE *f, ebml_hdl_t hdl);
 
 #endif
 

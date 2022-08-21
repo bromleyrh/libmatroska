@@ -2,8 +2,11 @@
  * matroska.c
  */
 
+#include "ebml.h"
 #include "matroska.h"
 #include "vint.h"
+
+#include <malloc_ext.h>
 
 #include <errno.h>
 #include <inttypes.h>
@@ -13,6 +16,32 @@
 #include <string.h>
 
 #include <sys/param.h>
+
+#define LIST_BLOCK_HDR_FIELDS() \
+    _X(TRACKNO,     8) \
+    _X(TIMESTAMP,   2) \
+    _X(FLAGS,       1)
+
+#define _X(nm, len) \
+enum { \
+    BLOCK_HDR_##nm##_LEN = len \
+};
+LIST_BLOCK_HDR_FIELDS()
+#undef _X
+
+struct matroska_state {
+    ebml_hdl_t              hdl;
+    matroska_bitstream_cb_t *cb;
+    void                    *ctx;
+    int                     block_hdr;
+#define _X(nm, len) + len
+    char                    hdr_buf[LIST_BLOCK_HDR_FIELDS()];
+#undef _X
+    size_t                  hdr_len;
+    size_t                  hdr_sz;
+    size_t                  data_len;
+    uint64_t                trackno;
+};
 
 #define BLOCK_FLAG_KEYFRAME 1
 #define BLOCK_FLAG_INVISIBLE 16
@@ -49,17 +78,33 @@ int
 matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
                              void *ctx)
 {
-    int err;
-    size_t sz;
+    int err = 0;
+    size_t datalen, sz;
     struct matroska_state *state = ctx;
 
     if (val != NULL) {
+        if (state->data_len != 0)
+            return -EIO;
         state->block_hdr = 0;
         fprintf(stderr, "%s(): %s\n", __FUNCTION__, val);
         return 0;
     }
 
+    if (buf == NULL) {
+        if (state->data_len != len)
+            return -EIO;
+        state->data_len = 0;
+        fprintf(stderr, "End of block (%zu bytes)\n", len);
+        return 0;
+    }
+
     if (state->block_hdr == 1) {
+        state->data_len += len;
+        if (state->cb != NULL) {
+            err = (*state->cb)(state->trackno, buf, len, state->ctx);
+            if (err)
+                return err;
+        }
         fputs("...\n", stderr);
         return 0;
     }
@@ -70,6 +115,8 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
             return err;
         state->hdr_len = 0;
         state->hdr_sz += BLOCK_HDR_FIXED_LEN;
+
+        state->data_len = state->hdr_sz;
 
         state->block_hdr = 2;
     }
@@ -85,7 +132,6 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
 
     if (state->hdr_sz == 0) {
         uint8_t flags;
-        uint64_t trackno;
         union {
             int16_t val;
             char    bytes[2];
@@ -98,16 +144,16 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
             [BLOCK_FLAG_LACING_EBML]        = "EBML"
         };
 
-        err = vint_to_u64(state->hdr_buf, &trackno, &sz);
+        err = vint_to_u64(state->hdr_buf, &state->trackno, &datalen);
         if (err)
             return err;
-        if (sz != state->hdr_len - BLOCK_HDR_FIXED_LEN)
+        if (datalen != state->hdr_len - BLOCK_HDR_FIXED_LEN)
             return -EILSEQ;
 
-        timestamp.bytes[0] = state->hdr_buf[sz+1];
-        timestamp.bytes[1] = state->hdr_buf[sz];
+        timestamp.bytes[0] = state->hdr_buf[datalen+1];
+        timestamp.bytes[1] = state->hdr_buf[datalen];
 
-        flags = state->hdr_buf[sz + BLOCK_HDR_TIMESTAMP_LEN];
+        flags = state->hdr_buf[datalen + BLOCK_HDR_TIMESTAMP_LEN];
 
         fprintf(stderr, "Track number %" PRIu64 "\n"
                         "Timestamp %" PRIi16 "\n"
@@ -116,7 +162,7 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
                         "Invisible %d\n"
                         "Discardable %d\n"
                         "Lacing type %s\n",
-                trackno, timestamp.val, flags,
+                state->trackno, timestamp.val, flags,
                 FLAG_VAL(flags, KEYFRAME),
                 FLAG_VAL(flags, INVISIBLE),
                 FLAG_VAL(flags, DISCARDABLE),
@@ -126,11 +172,64 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
         state->block_hdr = 1;
     }
 
-    return 0;
+    if (state->cb != NULL) {
+        datalen = len - sz;
+        if (datalen > 0) {
+            state->data_len += datalen;
+            err = (*state->cb)(state->trackno, buf + sz, datalen, state->ctx);
+        }
+    }
+
+    return err;
 }
 
 #undef BLOCK_HDR_FIXED_LEN
 
 #undef FLAG_VAL
+
+int
+matroska_open(matroska_hdl_t *hdl, int fd, const char *pathname,
+              matroska_bitstream_cb_t *cb, void *ctx)
+{
+    int err;
+    struct ebml_file_args args;
+    struct matroska_state *ret;
+
+    if (ocalloc(&ret, 1) == NULL)
+        return -errno;
+
+    args.fd = fd;
+    args.pathname = pathname;
+    err = ebml_open(&ret->hdl, EBML_FILE_FNS, MATROSKA_PARSER,
+                    MATROSKA_SEMANTIC_PROCESSOR, &args, ret);
+    if (err) {
+        free(ret);
+        return err;
+    }
+
+    ret->cb = cb;
+    ret->ctx = ctx;
+
+    *hdl = ret;
+    return 0;
+}
+
+int
+matroska_close(matroska_hdl_t hdl)
+{
+    int err;
+
+    err = ebml_close(hdl->hdl);
+
+    free(hdl);
+
+    return err;
+}
+
+int
+matroska_read(FILE *f, matroska_hdl_t hdl)
+{
+    return ebml_read(f, hdl->hdl);
+}
 
 /* vi: set expandtab sw=4 ts=4: */
