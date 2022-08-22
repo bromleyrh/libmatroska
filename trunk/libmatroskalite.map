@@ -17,6 +17,9 @@ LIBMATROSKALITE_1 {
         u64_to_vint;
         u64_to_vint_l;
         vint_to_u64;
+        zlib_stream_destroy;
+        zlib_stream_inflate;
+        zlib_stream_init;
     local:
         *;
 };

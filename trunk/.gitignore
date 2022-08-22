@@ -40,6 +40,7 @@ version.c
 *.so
 
 /mkv_dump
+/zlib_cat
 
 /element_test
 /vint_test
