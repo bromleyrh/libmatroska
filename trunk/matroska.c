@@ -80,6 +80,7 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
                              void *ctx)
 {
     int err = 0;
+    int lacing;
     size_t datalen, sz;
     struct matroska_state *state = ctx;
 
@@ -159,6 +160,8 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
         if ((flags & BLOCK_FLAG_RESERVED) != 0)
             return -EILSEQ;
 
+        lacing = flags & BLOCK_FLAG_LACING_MASK;
+
         fprintf(stderr, "Track number %" PRIu64 "\n"
                         "Timestamp %" PRIi16 "\n"
                         "Flags %" PRIu8 "\n"
@@ -170,7 +173,7 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
                 FLAG_VAL(flags, KEYFRAME),
                 FLAG_VAL(flags, INVISIBLE),
                 FLAG_VAL(flags, DISCARDABLE),
-                lacing_typemap[flags & BLOCK_FLAG_LACING_MASK]);
+                lacing_typemap[lacing]);
 
         state->block_hdr = 1;
     }
@@ -178,8 +181,13 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
     if (state->cb != NULL) {
         datalen = len - sz;
         if (datalen > 0) {
+            int off;
+
             state->data_len += datalen;
-            err = (*state->cb)(state->trackno, buf + sz, datalen, state->ctx);
+
+            off = lacing == BLOCK_FLAG_LACING_FIXED_SIZE;
+            err = (*state->cb)(state->trackno, buf + sz + off, datalen - off,
+                               state->ctx);
         }
     }
 
