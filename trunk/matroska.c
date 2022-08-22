@@ -43,11 +43,12 @@ struct matroska_state {
     uint64_t                trackno;
 };
 
-#define BLOCK_FLAG_KEYFRAME 1
-#define BLOCK_FLAG_INVISIBLE 16
-#define BLOCK_FLAG_DISCARDABLE 128
+#define BLOCK_FLAG_KEYFRAME 128
+#define BLOCK_FLAG_RESERVED 112
+#define BLOCK_FLAG_INVISIBLE 8
+#define BLOCK_FLAG_DISCARDABLE 1
 
-#define BLOCK_FLAG_LACING_SHIFT 5
+#define BLOCK_FLAG_LACING_SHIFT 1
 #define BLOCK_FLAG_LACING_MASK (3 << BLOCK_FLAG_LACING_SHIFT)
 
 #define BLOCK_FLAG_LACING_XIPH (1 << BLOCK_FLAG_LACING_SHIFT)
@@ -155,6 +156,9 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
 
         flags = state->hdr_buf[datalen + BLOCK_HDR_TIMESTAMP_LEN];
 
+        if ((flags & BLOCK_FLAG_RESERVED) != 0)
+            return -EILSEQ;
+
         fprintf(stderr, "Track number %" PRIu64 "\n"
                         "Timestamp %" PRIi16 "\n"
                         "Flags %" PRIu8 "\n"
@@ -166,8 +170,7 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
                 FLAG_VAL(flags, KEYFRAME),
                 FLAG_VAL(flags, INVISIBLE),
                 FLAG_VAL(flags, DISCARDABLE),
-                lacing_typemap[(flags & BLOCK_FLAG_LACING_MASK)
-                               >> BLOCK_FLAG_LACING_SHIFT]);
+                lacing_typemap[flags & BLOCK_FLAG_LACING_MASK]);
 
         state->block_hdr = 1;
     }
