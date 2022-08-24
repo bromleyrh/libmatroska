@@ -1,0 +1,3 @@
+[submodule "trunk/third_party/FFmpeg"]
+	path = trunk/third_party/FFmpeg
+	url = https://github.com/FFmpeg/FFmpeg
