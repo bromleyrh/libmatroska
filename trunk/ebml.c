@@ -61,6 +61,16 @@ static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t,
                         semantic_action_t **, enum etype *, int, uint64_t,
                         FILE *);
 
+static int invoke_binary_handler(enum etype, semantic_action_t *, const char *,
+                                 size_t, struct ebml_hdl *);
+
+static int handle_fixed_width_value(char **, char **, size_t, enum etype,
+                                    uint64_t, FILE *, struct ebml_hdl *);
+static int handle_variable_length_value(char *, char **, char **, size_t,
+                                        size_t, enum etype, uint64_t,
+                                        semantic_action_t *, FILE *,
+                                        struct ebml_hdl *);
+
 static int parse_header(FILE *, struct ebml_hdl *);
 
 static int parse_body(FILE *, struct ebml_hdl *);
@@ -301,6 +311,136 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
 }
 
 static int
+invoke_binary_handler(enum etype etype, semantic_action_t *act,
+                      const char *buf, size_t len, struct ebml_hdl *hdl)
+{
+    return etype == ETYPE_BINARY && act != NULL
+           ? (*act)(NULL, buf, len, hdl->sproc_ctx) : 0;
+}
+
+static int
+handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
+                         uint64_t elen, FILE *f, struct ebml_hdl *hdl)
+{
+    char *di, *si;
+    char valbuf[8];
+    edata_t val;
+    int res;
+
+    if (elen > ETYPE_MAX_FIXED_WIDTH)
+        return -EINVAL;
+
+    si = *sip;
+    di = *dip;
+
+    if (elen > sz) {
+        ssize_t nbytes;
+
+        memcpy(valbuf, si, sz);
+
+        di = valbuf + elen;
+        for (si = valbuf + sz; si < di; si += nbytes) {
+            nbytes = di - si;
+            res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
+            if (res != 0)
+                return res;
+        }
+
+        si = valbuf;
+    }
+
+    res = edata_unpack(si, &val, etype, elen);
+    if (res != 0) {
+        if (res != -EINVAL)
+            return res;
+        goto end;
+    }
+
+    if (val.type == ETYPE_INTEGER)
+        res = fprintf(f, "%" PRIi64, val.integer);
+    else if (val.type == ETYPE_UINTEGER)
+        res = fprintf(f, "%" PRIu64, val.uinteger);
+    else if (val.type == ETYPE_FLOAT) {
+        res = fprintf(f, "%f",
+                      val.dbl ? val.floatd : (double)val.floats);
+    } else if (val.type == ETYPE_DATE) {
+        char buf[26];
+        struct timespec tm;
+
+        res = edata_to_timespec(&val, &tm);
+        if (res != 0)
+            return res;
+        res = fprintf(f, "%s", ctime_r(&tm.tv_sec, buf));
+    }
+    if (res < 0)
+        return -EIO;
+
+end:
+    *sip = si;
+    *dip = di;
+    return 0;
+}
+
+static int
+handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
+                             size_t sz, enum etype etype, uint64_t elen,
+                             semantic_action_t *act, FILE *f,
+                             struct ebml_hdl *hdl)
+{
+    char *di, *si;
+    edata_t val;
+    int res;
+
+    si = *sip;
+    di = *dip;
+
+    if (elen > sz) { /* read remaining EBML element data */
+        memmove(buf, si, sz);
+        res = invoke_binary_handler(etype, act, buf, sz, hdl);
+        if (res != 0)
+            return res;
+
+        res = read_elem_data(hdl, buf + sz, elen - sz, bufsz - sz,
+                             etype == ETYPE_BINARY ? act : NULL);
+        if (res != 0)
+            return res;
+
+        if (elen > bufsz) {
+            res = invoke_binary_handler(etype, act, NULL, elen, hdl);
+            if (res != 0)
+                return res;
+            goto end;
+        }
+
+        si = buf;
+    }
+
+    res = edata_unpack(si, &val, etype, elen);
+    if (res != 0)
+        return res;
+
+    if (ETYPE_IS_STRING(val.type))
+        res = fprintf(f, "%s", val.ptr);
+    else if (elen <= sz) {
+        res = invoke_binary_handler(val.type, act, si, elen, hdl);
+        if (res != 0)
+            return res;
+    }
+    free(val.ptr);
+    if (res < 0)
+        return -EIO;
+
+    res = invoke_binary_handler(val.type, act, NULL, elen, hdl);
+    if (res != 0)
+        return res;
+
+end:
+    *sip = si;
+    *dip = di;
+    return 0;
+}
+
+static int
 parse_header(FILE *f, struct ebml_hdl *hdl)
 {
     char buf[4096], *di, *si, *tmp;
@@ -393,13 +533,10 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
 
     di = si = buf;
     for (n = 1;; n++) {
-        char valbuf[8];
-        edata_t val;
         enum etype etype;
         off_t off;
         semantic_action_t *act;
         size_t sz;
-        ssize_t nbytes;
         uint64_t eid;
         uint64_t elen, totlen;
 
@@ -457,103 +594,29 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         sz = di - si;
 
         if (etype == ETYPE_MASTER) {
-            if (f != NULL && fputc('\n', f) == EOF)
-                return -EIO;
             memmove(buf, si, sz);
             si = buf;
             di = si + sz;
-            continue;
-        }
-
-        if (ETYPE_IS_FIXED_WIDTH(etype)) {
-            if (elen > ETYPE_MAX_FIXED_WIDTH)
-                return -EINVAL;
-            if (elen > sz) {
-                memcpy(valbuf, si, sz);
-                di = valbuf + elen;
-                for (si = valbuf + sz; si < di; si += nbytes) {
-                    nbytes = di - si;
-                    res = (*hdl->fns->read)(hdl->ctx, si, &nbytes);
-                    if (res != 0)
-                        return res;
-                }
-                si = valbuf;
-            }
-            res = edata_unpack(si, &val, etype, elen);
-            if (res == 0) {
-                if (val.type == ETYPE_INTEGER)
-                    res = fprintf(f, "%" PRIi64, val.integer);
-                else if (val.type == ETYPE_UINTEGER)
-                    res = fprintf(f, "%" PRIu64, val.uinteger);
-                else if (val.type == ETYPE_FLOAT) {
-                    res = fprintf(f, "%f",
-                                  val.dbl ? val.floatd : (double)val.floats);
-                } else if (val.type == ETYPE_DATE) {
-                    char buf[26];
-                    struct timespec tm;
-
-                    res = edata_to_timespec(&val, &tm);
-                    if (res != 0)
-                        return res;
-                    res = fprintf(f, "%s", ctime_r(&tm.tv_sec, buf));
-                }
-                if (res < 0)
-                    return -EIO;
-            } else if (res != -EINVAL)
-                return res;
         } else {
-            if (elen > sz) { /* read remaining EBML element data */
-                memmove(buf, si, sz);
-                if (etype == ETYPE_BINARY && act != NULL) {
-                    res = (*act)(NULL, buf, sz, hdl->sproc_ctx);
-                    if (res != 0)
-                        return res;
-                }
-                res = read_elem_data(hdl, buf + sz, elen - sz,
-                                     sizeof(buf) - sz,
-                                     etype == ETYPE_BINARY ? act : NULL);
-                if (res != 0)
-                    return res;
-                if (elen > sizeof(buf)) {
-                    if (etype == ETYPE_BINARY && act != NULL) {
-                        res = (*act)(NULL, NULL, elen, hdl->sproc_ctx);
-                        if (res != 0)
-                            return res;
-                    }
-                    if (f != NULL && fputc('\n', f) == EOF)
-                        return -EIO;
-                    di = si = buf;
-                    continue;
-                }
-                si = buf;
+            if (ETYPE_IS_FIXED_WIDTH(etype)) {
+                res = handle_fixed_width_value(&si, &di, sz, etype, elen, f,
+                                               hdl);
+            } else {
+                res = handle_variable_length_value(buf, &si, &di, sizeof(buf),
+                                                   sz, etype, elen, act, f,
+                                                   hdl);
             }
-            res = edata_unpack(si, &val, etype, elen);
             if (res != 0)
                 return res;
-            if (ETYPE_IS_STRING(val.type))
-                res = fprintf(f, "%s", val.ptr);
-            else if (elen <= sz && val.type == ETYPE_BINARY && act != NULL) {
-                res = (*act)(NULL, si, elen, hdl->sproc_ctx);
-                if (res != 0)
-                    return res;
-            }
-            free(val.ptr);
-            if (res < 0)
-                return -EIO;
-            if (val.type == ETYPE_BINARY && act != NULL) {
-                res = (*act)(NULL, NULL, elen, hdl->sproc_ctx);
-                if (res != 0)
-                    return res;
-            }
+
+            if (elen > sz)
+                di = si = buf;
+            else
+                si += elen;
         }
 
         if (f != NULL && fputc('\n', f) == EOF)
             return -EIO;
-
-        if (elen > sz)
-            di = si = buf;
-        else
-            si += elen;
     }
 
     return 0;
