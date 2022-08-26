@@ -41,7 +41,9 @@
         <xs:attribute name="type" use="required">
             <xs:simpleType>
                 <xs:restriction base="xs:string">
+                    <xs:enumeration value="uinteger"/>
                     <xs:enumeration value="master"/>
+                    <xs:enumeration value="binary"/>
                 </xs:restriction>
             </xs:simpleType>
         </xs:attribute>

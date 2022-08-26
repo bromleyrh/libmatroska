@@ -29,6 +29,20 @@ enum { \
 LIST_BLOCK_HDR_FIELDS()
 #undef _X
 
+enum content_comp_algo {
+    CONTENT_COMP_ALGO_ZLIB,
+    CONTENT_COMP_ALGO_BZLIB,
+    CONTENT_COMP_ALGO_LZO1X,
+    CONTENT_COMP_ALGO_HEADER_STRIPPING
+};
+
+struct track_data {
+    uint64_t                trackno;
+    enum content_comp_algo  compalg;
+    const void              *stripped_bytes;
+    size_t                  num_stripped_bytes;
+};
+
 struct matroska_state {
     ebml_hdl_t              hdl;
     matroska_bitstream_cb_t *cb;
@@ -197,6 +211,30 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
 #undef BLOCK_HDR_FIXED_LEN
 
 #undef FLAG_VAL
+
+int
+matroska_contentcompalgo_handler(const char *val, const void *buf, size_t len,
+                                 void *ctx)
+{
+    (void)val;
+    (void)buf;
+    (void)len;
+    (void)ctx;
+
+    return 0;
+}
+
+int
+matroska_contentcompsettings_handler(const char *val, const void *buf,
+                                     size_t len, void *ctx)
+{
+    (void)val;
+    (void)buf;
+    (void)len;
+    (void)ctx;
+
+    return 0;
+}
 
 int
 matroska_open(matroska_hdl_t *hdl, int fd, const char *pathname,
