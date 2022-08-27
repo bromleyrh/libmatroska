@@ -6,6 +6,7 @@
 #include "matroska.h"
 #include "vint.h"
 
+#include <avl_tree.h>
 #include <malloc_ext.h>
 
 #include <errno.h>
@@ -55,6 +56,7 @@ struct matroska_state {
     size_t                  hdr_sz;
     size_t                  data_len;
     uint64_t                trackno;
+    struct avl_tree         *track_data;
 };
 
 #define BLOCK_FLAG_KEYFRAME 128
@@ -69,17 +71,53 @@ struct matroska_state {
 #define BLOCK_FLAG_LACING_FIXED_SIZE (2 << BLOCK_FLAG_LACING_SHIFT)
 #define BLOCK_FLAG_LACING_EBML (3 << BLOCK_FLAG_LACING_SHIFT)
 
-int
-matroska_tracknumber_handler(const char *val, const void *buf, size_t len,
-                             void *ctx)
+static int track_data_cmp(const void *, const void *, void *);
+
+static int
+track_data_cmp(const void *k1, const void *k2, void *ctx)
 {
-    (void)buf;
-    (void)len;
+    const struct track_data *tdata1 = k1;
+    const struct track_data *tdata2 = k2;
+
     (void)ctx;
 
-    if (val == NULL)
-        fputs("...\n", stderr);
-    else
+    return (tdata1->trackno > tdata2->trackno)
+           - (tdata1->trackno < tdata2->trackno);
+}
+
+int
+matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
+                             const void *buf, size_t len, void *ctx)
+{
+    int err;
+    struct matroska_state *state = ctx;
+
+    (void)buf;
+    (void)len;
+
+    if (state->track_data == NULL) {
+        err = avl_tree_new(&state->track_data, sizeof(struct track_data),
+                           &track_data_cmp, 0, NULL, NULL, NULL);
+        if (err)
+            return err;
+    }
+
+    if (val == NULL) {
+        struct track_data tdata;
+
+        if (etype != ETYPE_UINTEGER)
+            return -EILSEQ;
+
+        tdata.trackno = edata->uinteger;
+        tdata.compalg = -1;
+        tdata.stripped_bytes = NULL;
+        tdata.num_stripped_bytes = 0;
+        err = avl_tree_insert(state->track_data, &tdata);
+        if (err)
+            return err;
+
+        fprintf(stderr, "Track number %" PRIu64 "\n", tdata.trackno);
+    } else
         fprintf(stderr, "%s(): %s\n", __FUNCTION__, val);
 
     return 0;
@@ -90,13 +128,18 @@ matroska_tracknumber_handler(const char *val, const void *buf, size_t len,
 #define FLAG_VAL(flags, which) (!!((flags) & BLOCK_FLAG_##which))
 
 int
-matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
-                             void *ctx)
+matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
+                             const void *buf, size_t len, void *ctx)
 {
-    int err = 0;
     int lacing;
+    int res = 0;
     size_t datalen, sz;
     struct matroska_state *state = ctx;
+
+    (void)edata;
+
+    if (etype != ETYPE_BINARY)
+        return -EILSEQ;
 
     if (val != NULL) {
         if (state->data_len != 0)
@@ -117,18 +160,18 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
     if (state->block_hdr == 1) {
         state->data_len += len;
         if (state->cb != NULL) {
-            err = (*state->cb)(state->trackno, buf, len, state->ctx);
-            if (err)
-                return err;
+            res = (*state->cb)(state->trackno, buf, len, state->ctx);
+            if (res != 0)
+                return res;
         }
         fputs("...\n", stderr);
         return 0;
     }
 
     if (state->block_hdr == 0) {
-        err = vint_to_u64(buf, NULL, &state->hdr_sz);
-        if (err)
-            return err;
+        res = vint_to_u64(buf, NULL, &state->hdr_sz);
+        if (res != 0)
+            return res;
         state->hdr_len = 0;
         state->hdr_sz += BLOCK_HDR_FIXED_LEN;
 
@@ -147,6 +190,7 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
     state->hdr_sz -= sz;
 
     if (state->hdr_sz == 0) {
+        struct track_data tdata;
         uint8_t flags;
         union {
             int16_t val;
@@ -160,9 +204,9 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
             [BLOCK_FLAG_LACING_EBML]        = "EBML"
         };
 
-        err = vint_to_u64(state->hdr_buf, &state->trackno, &datalen);
-        if (err)
-            return err;
+        res = vint_to_u64(state->hdr_buf, &state->trackno, &datalen);
+        if (res != 0)
+            return res;
         if (datalen != state->hdr_len - BLOCK_HDR_FIXED_LEN)
             return -EILSEQ;
 
@@ -176,18 +220,24 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
 
         lacing = flags & BLOCK_FLAG_LACING_MASK;
 
+        tdata.trackno = state->trackno;
+        res = avl_tree_search(state->track_data, &tdata, &tdata);
+        if (res != 1)
+            return res == 0 ? -EILSEQ : res;
+
         fprintf(stderr, "Track number %" PRIu64 "\n"
                         "Timestamp %" PRIi16 "\n"
                         "Flags %" PRIu8 "\n"
                         "Keyframe %d\n"
                         "Invisible %d\n"
                         "Discardable %d\n"
-                        "Lacing type %s\n",
-                state->trackno, timestamp.val, flags,
+                        "Lacing type %s\n"
+                        "Content compression algorithm %d\n",
+                tdata.trackno, timestamp.val, flags,
                 FLAG_VAL(flags, KEYFRAME),
                 FLAG_VAL(flags, INVISIBLE),
                 FLAG_VAL(flags, DISCARDABLE),
-                lacing_typemap[lacing]);
+                lacing_typemap[lacing], tdata.compalg);
 
         state->block_hdr = 1;
     }
@@ -200,12 +250,12 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
             state->data_len += datalen;
 
             off = lacing == BLOCK_FLAG_LACING_FIXED_SIZE;
-            err = (*state->cb)(state->trackno, buf + sz + off, datalen - off,
+            res = (*state->cb)(state->trackno, buf + sz + off, datalen - off,
                                state->ctx);
         }
     }
 
-    return err;
+    return res;
 }
 
 #undef BLOCK_HDR_FIXED_LEN
@@ -213,10 +263,13 @@ matroska_simpleblock_handler(const char *val, const void *buf, size_t len,
 #undef FLAG_VAL
 
 int
-matroska_contentcompalgo_handler(const char *val, const void *buf, size_t len,
+matroska_contentcompalgo_handler(const char *val, enum etype etype,
+                                 edata_t *edata, const void *buf, size_t len,
                                  void *ctx)
 {
     (void)val;
+    (void)etype;
+    (void)edata;
     (void)buf;
     (void)len;
     (void)ctx;
@@ -225,10 +278,13 @@ matroska_contentcompalgo_handler(const char *val, const void *buf, size_t len,
 }
 
 int
-matroska_contentcompsettings_handler(const char *val, const void *buf,
+matroska_contentcompsettings_handler(const char *val, enum etype etype,
+                                     edata_t *edata, const void *buf,
                                      size_t len, void *ctx)
 {
     (void)val;
+    (void)etype;
+    (void)edata;
     (void)buf;
     (void)len;
     (void)ctx;
@@ -267,6 +323,9 @@ int
 matroska_close(matroska_hdl_t hdl)
 {
     int err;
+
+    if (hdl->track_data != NULL)
+        avl_tree_free(hdl->track_data);
 
     err = ebml_close(hdl->hdl);
 

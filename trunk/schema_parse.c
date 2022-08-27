@@ -242,7 +242,8 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
         struct id_node *idnode = val;
 
         if (idnode->handler != NULL
-            && printf("int %s(const char *, const void *, size_t, void *);\n\n",
+            && printf("int %s(const char *, enum etype, edata_t *, "
+                      "const void *, size_t, void *);\n\n",
                       idnode->handler)
                < 0)
             goto err;
@@ -365,6 +366,7 @@ output_parser_data(xmlDocPtr doc, const char *doctype)
     if (err)
         goto err;
 
+    do_printf(&env, "#include \"parser.h\"\n");
     do_printf(&env, "#include \"parser_defs.h\"\n\n");
 
     do_printf(&env, "#include <stddef.h>\n\n");
