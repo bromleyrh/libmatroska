@@ -243,7 +243,7 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
 
         if (idnode->handler != NULL
             && printf("int %s(const char *, enum etype, edata_t *, "
-                      "const void *, size_t, void *);\n\n",
+                      "const void *, size_t, size_t, void *);\n\n",
                       idnode->handler)
                < 0)
             goto err;

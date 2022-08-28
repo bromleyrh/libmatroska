@@ -2,6 +2,7 @@
  * mkv_dump.c
  */
 
+#include "common.h"
 #include "ebml.h"
 #include "matroska.h"
 #include "parser.h"
@@ -126,8 +127,8 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, void *ctx)
     struct avl_tree *tcb = ctx;
     struct track_cb e;
 
-    fprintf(stderr, "%s(): %" PRIu64 ": length %zu bytes", __FUNCTION__,
-            trackno, len);
+    fprintf(stderr, "%s(): %" PRIu64 ": length %zu byte%s", __FUNCTION__,
+            trackno, len, PLURAL(len, "s"));
 
     e.trackno = trackno;
     res = avl_tree_search(tcb, &e, &e);
