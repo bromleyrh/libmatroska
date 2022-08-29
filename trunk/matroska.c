@@ -44,6 +44,8 @@ struct track_data {
     enum content_comp_algo  compalg;
     void                    *stripped_bytes;
     size_t                  num_stripped_bytes;
+    size_t                  frame_sz; /* used when lacing employed */
+    size_t                  next_frame_off;
 };
 
 struct matroska_state {
@@ -56,7 +58,6 @@ struct matroska_state {
 #undef _X
     size_t                  hdr_len;
     size_t                  hdr_sz;
-    size_t                  frame_sz; /* used when lacing employed */
     size_t                  data_len;
     uint64_t                trackno;
     struct avl_tree         *track_data;
@@ -87,6 +88,12 @@ static int print_handler(FILE *, const char *, const char *);
 
 static int track_data_cmp(const void *, const void *, void *);
 static int track_data_free(const void *, void *);
+
+static int get_track_data(struct matroska_state *, uint64_t,
+                          struct track_data **);
+
+static int return_track_data(const char *, size_t, struct track_data *,
+                             struct matroska_state *);
 
 static int
 print_handler(FILE *f, const char *func, const char *val)
@@ -120,6 +127,69 @@ track_data_free(const void *keyval, void *ctx)
     return 0;
 }
 
+static int
+get_track_data(struct matroska_state *state, uint64_t trackno,
+               struct track_data **tdata)
+{
+    int res;
+    struct track_data k, *ret;
+
+    k.trackno = trackno;
+
+    ret = &k;
+    res = avl_tree_search(state->track_data, &ret, &ret);
+    if (res != 1)
+        return res == 0 ? -EILSEQ : res;
+
+    *tdata = ret;
+    return 0;
+}
+
+static int
+return_track_data(const char *buf, size_t len, struct track_data *tdata,
+                  struct matroska_state *state)
+{
+    const char *dp, *sp;
+    int res;
+    size_t frame_off;
+    size_t seglen;
+
+    frame_off = tdata->next_frame_off;
+
+    for (sp = buf;; sp = dp) {
+        dp = sp + MIN(len, frame_off);
+
+        if ((size_t)(sp - buf) == tdata->next_frame_off) {
+            if (tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
+                res = (*state->cb)(state->trackno, tdata->stripped_bytes,
+                                   tdata->num_stripped_bytes, state->ctx);
+                if (res != 0)
+                    return res;
+            }
+            tdata->next_frame_off += tdata->frame_sz;
+        }
+
+        seglen = dp - sp;
+
+        if (seglen > 0) {
+            res = (*state->cb)(state->trackno, sp, seglen, state->ctx);
+            if (res != 0)
+                return res;
+
+            len -= seglen;
+        }
+
+        if (len == 0)
+            break;
+
+        frame_off = tdata->frame_sz;
+    }
+
+    tdata->next_frame_off = frame_off - seglen;
+
+    return 0;
+}
+
 int
 matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
                              const void *buf, size_t len, size_t totlen,
@@ -145,13 +215,11 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
         if (etype != ETYPE_UINTEGER)
             return -EILSEQ;
 
-        if (omalloc(&tdata) == NULL)
+        if (ocalloc(&tdata, 1) == NULL)
             return -errno;
 
         tdata->trackno = edata->uinteger;
         tdata->compalg = -1;
-        tdata->stripped_bytes = NULL;
-        tdata->num_stripped_bytes = 0;
 
         err = avl_tree_insert(state->track_data, &tdata);
         if (err) {
@@ -177,11 +245,12 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                              const void *buf, size_t len, size_t totlen,
                              void *ctx)
 {
+    int err = 0;
     int lacing;
-    int res = 0;
+    int off;
     size_t datalen, sz;
     struct matroska_state *state;
-    struct track_data tdata, *tdatap;
+    struct track_data *tdata;
 
     (void)edata;
     (void)totlen;
@@ -210,18 +279,22 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     if (state->block_hdr == 1) {
         state->data_len += len;
         if (state->cb != NULL) {
-            res = (*state->cb)(state->trackno, buf, len, state->ctx);
-            if (res != 0)
-                return res;
+            err = get_track_data(state, state->trackno, &tdata);
+            if (err)
+                return err;
+
+            err = return_track_data(buf, len, tdata, state);
+            if (err)
+                return err;
         }
         fputs("...\n", stderr);
         return 0;
     }
 
     if (state->block_hdr == 0) {
-        res = vint_to_u64(buf, NULL, &state->hdr_sz);
-        if (res != 0)
-            return res;
+        err = vint_to_u64(buf, NULL, &state->hdr_sz);
+        if (err)
+            return err;
         state->hdr_len = 0;
         state->hdr_sz += BLOCK_HDR_FIXED_LEN;
 
@@ -253,9 +326,9 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
             [BLOCK_FLAG_LACING_EBML]        = "EBML"
         };
 
-        res = vint_to_u64(state->hdr_buf, &state->trackno, &datalen);
-        if (res != 0)
-            return res;
+        err = vint_to_u64(state->hdr_buf, &state->trackno, &datalen);
+        if (err)
+            return err;
         if (datalen != state->hdr_len - BLOCK_HDR_FIXED_LEN)
             return -EILSEQ;
 
@@ -269,12 +342,9 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
 
         lacing = flags & BLOCK_FLAG_LACING_MASK;
 
-        tdata.trackno = state->trackno;
-
-        tdatap = &tdata;
-        res = avl_tree_search(state->track_data, &tdatap, &tdatap);
-        if (res != 1)
-            return res == 0 ? -EILSEQ : res;
+        err = get_track_data(state, state->trackno, &tdata);
+        if (err)
+            return err;
 
         fprintf(stderr, "Track number %" PRIu64 "\n"
                         "Timestamp %" PRIi16 "\n"
@@ -284,59 +354,49 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                         "Discardable %d\n"
                         "Lacing type %s\n"
                         "Content compression algorithm %s\n",
-                tdatap->trackno, timestamp.val, flags,
+                tdata->trackno, timestamp.val, flags,
                 FLAG_VAL(flags, KEYFRAME),
                 FLAG_VAL(flags, INVISIBLE),
                 FLAG_VAL(flags, DISCARDABLE),
-                lacing_typemap[lacing], compalg_typemap[tdatap->compalg]);
+                lacing_typemap[lacing], compalg_typemap[tdata->compalg]);
 
         state->block_hdr = 1;
     } else {
-        tdata.trackno = state->trackno;
-
-        tdatap = &tdata;
-        res = avl_tree_search(state->track_data, &tdatap, &tdatap);
-        if (res != 1)
-            return res == 0 ? -EILSEQ : res;
+        err = get_track_data(state, state->trackno, &tdata);
+        if (err)
+            return err;
     }
 
     if (state->cb == NULL)
-        return res;
-
-    if (tdatap->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
-        res = (*state->cb)(state->trackno, tdatap->stripped_bytes,
-                           tdatap->num_stripped_bytes, state->ctx);
-        if (res != 0)
-            return res;
-    }
+        return err;
 
     datalen = len - sz;
-    if (datalen > 0) {
-        int off;
+    if (datalen == 0)
+        return 0;
 
-        state->data_len += datalen;
+    if (lacing == BLOCK_FLAG_LACING_FIXED_SIZE) {
+        lldiv_t q;
 
-        if (lacing == BLOCK_FLAG_LACING_FIXED_SIZE) {
-            lldiv_t q;
+        lacing = *(unsigned char *)(buf + sz) + 1;
 
-            lacing = *(unsigned char *)(buf + sz) + 1;
+        q = lldiv(totlen - state->hdr_len - 1, lacing);
+        if (q.rem != 0)
+            return -EILSEQ;
+        tdata->frame_sz = q.quot;
 
-            q = lldiv(totlen - state->hdr_len - 1, lacing);
-            if (q.rem != 0)
-                return -EILSEQ;
-            state->frame_sz = q.quot;
+        fprintf(stderr, "%d laced frames of size %zu byte%s\n", lacing,
+                tdata->frame_sz, PLURAL(tdata->frame_sz, "s"));
 
-            fprintf(stderr, "%d laced frames of size %zu byte%s\n", lacing,
-                    state->frame_sz, PLURAL(state->frame_sz, "s"));
-            off = 1;
-        } else
-            off = 0;
-
-        res = (*state->cb)(state->trackno, buf + sz + off, datalen - off,
-                           state->ctx);
+        off = 1;
+    } else {
+        tdata->frame_sz = totlen - state->hdr_len;
+        off = 0;
     }
 
-    return res;
+    tdata->next_frame_off = 0;
+    state->data_len += datalen;
+
+    return return_track_data(buf + sz + off, datalen - off, tdata, state);
 }
 
 #undef BLOCK_HDR_FIXED_LEN
@@ -348,7 +408,7 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
                                  edata_t *edata, const void *buf, size_t len,
                                  size_t totlen, void *ctx)
 {
-    int res;
+    int err;
     struct matroska_state *state;
 
     (void)buf;
@@ -359,21 +419,18 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
         return -EILSEQ;
 
     if (val == NULL) {
-        struct track_data tdata, *tdatap;
+        struct track_data *tdata;
 
         state = ctx;
 
-        tdata.trackno = state->trackno;
+        err = get_track_data(state, state->trackno, &tdata);
+        if (err)
+            return err;
 
-        tdatap = &tdata;
-        res = avl_tree_search(state->track_data, &tdatap, &tdatap);
-        if (res != 1)
-            return res == 0 ? -EILSEQ : res;
-
-        tdatap->compalg = edata->uinteger;
+        tdata->compalg = edata->uinteger;
 
         fprintf(stderr, "ContentCompAlgo(%" PRIu64 ") = %s\n",
-                state->trackno, compalg_typemap[tdatap->compalg]);
+                state->trackno, compalg_typemap[tdata->compalg]);
     } else
         PRINT_HANDLER_INFO(val);
 
@@ -385,9 +442,9 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
                                      edata_t *edata, const void *buf,
                                      size_t len, size_t totlen, void *ctx)
 {
-    int res;
+    int err;
     struct matroska_state *state;
-    struct track_data tdata, *tdatap;
+    struct track_data *tdata;
 
     (void)edata;
     (void)totlen;
@@ -397,15 +454,12 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 
     state = ctx;
 
-    tdata.trackno = state->trackno;
-
-    tdatap = &tdata;
-    res = avl_tree_search(state->track_data, &tdatap, &tdatap);
-    if (res != 1)
-        return res == 0 ? -EILSEQ : res;
+    err = get_track_data(state, state->trackno, &tdata);
+    if (err)
+        return err;
 
     if (buf == NULL) {
-        if (tdatap->num_stripped_bytes != len)
+        if (tdata->num_stripped_bytes != len)
             return -EIO;
         return 0;
     }
@@ -414,15 +468,15 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
         size_t num_stripped_bytes;
         void *stripped_bytes;
 
-        num_stripped_bytes = tdatap->num_stripped_bytes + len;
+        num_stripped_bytes = tdata->num_stripped_bytes + len;
 
-        stripped_bytes = realloc(tdatap->stripped_bytes, num_stripped_bytes);
+        stripped_bytes = realloc(tdata->stripped_bytes, num_stripped_bytes);
         if (stripped_bytes == NULL)
             return -errno;
-        memcpy((char *)stripped_bytes + tdatap->num_stripped_bytes, buf, len);
+        memcpy((char *)stripped_bytes + tdata->num_stripped_bytes, buf, len);
 
-        tdatap->stripped_bytes = stripped_bytes;
-        tdatap->num_stripped_bytes = num_stripped_bytes;
+        tdata->stripped_bytes = stripped_bytes;
+        tdata->num_stripped_bytes = num_stripped_bytes;
 
         fprintf(stderr, "|ContentCompSettings(%" PRIu64 ")| += %zu byte%s\n",
                 state->trackno, len, PLURAL(len, "s"));
