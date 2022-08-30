@@ -256,9 +256,6 @@ parse_edatasz(uint64_t *elen, size_t *sz, char *bufp)
     if (retsz > EDATASZ_MAX_LEN)
         return -EIO;
 
-    if (ret == EDATASZ_UNKNOWN)
-        return -ENOSYS;
-
     *elen = ret;
     *sz = retsz;
     return 0;
@@ -489,6 +486,8 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
     res = parse_edatasz(&elen, &sz, si);
     if (res != 0)
         return res;
+    if (elen == EDATASZ_UNKNOWN)
+        elen = 0;
     totlen += sz + elen;
     si += sz;
 
@@ -515,6 +514,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
     di = si + elen;
     for (; si < di; si += elen) {
         enum etype etype;
+        int sz_unknown;
 
         /* parse EBML element ID */
         res = parse_eid(&eid, &sz, si);
@@ -527,12 +527,18 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
         res = parse_edatasz(&elen, &sz, si);
         if (res != 0)
             return res;
+        sz_unknown = elen == EDATASZ_UNKNOWN;
+        if (sz_unknown)
+            elen = 0;
         totlen += sz + elen;
         si += sz;
 
         res = look_up_elem(hdl, eid, elen, totlen, NULL, &etype, 1, n, f);
         if (res != 0)
             return res;
+
+        if (sz_unknown && etype != ETYPE_MASTER)
+            return -EILSEQ;
 
         if (f != NULL && fputc('\n', f) == EOF)
             return -EIO;
@@ -553,6 +559,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
     di = si = buf;
     for (n = 1;; n++) {
         enum etype etype;
+        int sz_unknown;
         off_t off;
         semantic_action_t *act;
         size_t sz;
@@ -596,6 +603,9 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         res = parse_edatasz(&elen, &sz, si);
         if (res != 0)
             return res;
+        sz_unknown = elen == EDATASZ_UNKNOWN;
+        if (sz_unknown)
+            elen = 0;
         si += sz;
         totlen += sz + elen;
 
@@ -606,6 +616,9 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         res = look_up_elem(hdl, eid, elen, totlen, &act, &etype, 0, n, f);
         if (res != 0)
             return res;
+
+        if (sz_unknown && etype != ETYPE_MASTER)
+            return -EILSEQ;
 
         if (f != NULL && fprintf(f, "\t%s\t", typestrmap[etype]) < 0)
             return -EIO;
