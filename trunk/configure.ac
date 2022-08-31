@@ -92,7 +92,7 @@ AC_SUBST([libmatroskalite_cppflags], [""])
 
 AC_SUBST([libxml2_link_dep])
 AC_SUBST([zlib_link_dep])
-AC_SUBST([libmatroskalite_link_dep], ["$zlib_link_dep"])
+AC_SUBST([libmatroskalite_link_dep], ["$libutil_link_dep $zlib_link_dep"])
 
 AC_ARG_WITH([pkgconfigdir],
             [  --with-pkgconfigdir=DIR install pkg-config data in DIR],
