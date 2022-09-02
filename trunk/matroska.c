@@ -36,7 +36,8 @@ enum content_comp_algo {
     CONTENT_COMP_ALGO_ZLIB,
     CONTENT_COMP_ALGO_BZLIB,
     CONTENT_COMP_ALGO_LZO1X,
-    CONTENT_COMP_ALGO_HEADER_STRIPPING
+    CONTENT_COMP_ALGO_HEADER_STRIPPING,
+    CONTENT_COMP_ALGO_NONE
 };
 
 struct track_data {
@@ -79,7 +80,8 @@ static const char *const compalg_typemap[] = {
     [CONTENT_COMP_ALGO_ZLIB]                = "zlib",
     [CONTENT_COMP_ALGO_BZLIB]               = "bzip2",
     [CONTENT_COMP_ALGO_LZO1X]               = "Lempel-Ziv-Oberhumer",
-    [CONTENT_COMP_ALGO_HEADER_STRIPPING]    = "header stripping"
+    [CONTENT_COMP_ALGO_HEADER_STRIPPING]    = "header stripping",
+    [CONTENT_COMP_ALGO_NONE]                = "none"
 };
 
 #define PRINT_HANDLER_INFO(val) print_handler(stderr, __FUNCTION__, val)
@@ -219,7 +221,7 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
             return -errno;
 
         tdata->trackno = edata->uinteger;
-        tdata->compalg = -1;
+        tdata->compalg = CONTENT_COMP_ALGO_NONE;
 
         err = avl_tree_insert(state->track_data, &tdata);
         if (err) {
