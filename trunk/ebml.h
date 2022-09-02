@@ -37,6 +37,10 @@ int ebml_close(ebml_hdl_t hdl);
 
 int ebml_read(FILE *f, ebml_hdl_t hdl);
 
+int ebml_read_header(FILE *f, ebml_hdl_t hdl);
+
+int ebml_read_body(FILE *f, ebml_hdl_t hdl);
+
 #endif
 
 /* vi: set expandtab sw=4 ts=4: */

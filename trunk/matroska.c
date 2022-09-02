@@ -51,6 +51,7 @@ struct track_data {
 
 struct matroska_state {
     ebml_hdl_t              hdl;
+    ebml_io_fns_t           iofns;
     matroska_bitstream_cb_t *cb;
     void                    *ctx;
     int                     block_hdr;
@@ -489,20 +490,38 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 }
 
 int
-matroska_open(matroska_hdl_t *hdl, int fd, const char *pathname,
-              matroska_bitstream_cb_t *cb, void *ctx)
+matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
+              matroska_bitstream_cb_t *cb, void *args, void *ctx)
 {
+    const ebml_io_fns_t *ebmlfns;
     int err;
-    struct ebml_file_args args;
+    struct ebml_file_args fileargs;
     struct matroska_state *ret;
+    void *argsp;
 
     if (ocalloc(&ret, 1) == NULL)
         return -errno;
 
-    args.fd = fd;
-    args.pathname = pathname;
-    err = ebml_open(&ret->hdl, EBML_FILE_FNS, MATROSKA_PARSER,
-                    MATROSKA_SEMANTIC_PROCESSOR, &args, ret);
+    if (fns == NULL) {
+        struct matroska_file_args *fileargsp = args;
+
+        ebmlfns = EBML_FILE_FNS;
+
+        fileargs.fd = fileargsp->fd;
+        fileargs.pathname = fileargsp->pathname;
+        argsp = &fileargs;
+    } else {
+        ret->iofns.open = fns->open;
+        ret->iofns.close = fns->close;
+        ret->iofns.read = fns->read;
+        ret->iofns.get_fpos = fns->get_fpos;
+        ebmlfns = &ret->iofns;
+
+        argsp = args;
+    }
+
+    err = ebml_open(&ret->hdl, ebmlfns, MATROSKA_PARSER,
+                    MATROSKA_SEMANTIC_PROCESSOR, argsp, ret);
     if (err) {
         free(ret);
         return err;
@@ -538,6 +557,18 @@ int
 matroska_read(FILE *f, matroska_hdl_t hdl)
 {
     return ebml_read(f, hdl->hdl);
+}
+
+int
+matroska_read_header(FILE *f, matroska_hdl_t hdl)
+{
+    return ebml_read_header(f, hdl->hdl);
+}
+
+int
+matroska_read_body(FILE *f, matroska_hdl_t hdl)
+{
+    return ebml_read_body(f, hdl->hdl);
 }
 
 /* vi: set expandtab sw=4 ts=4: */

@@ -702,4 +702,16 @@ ebml_read(FILE *f, ebml_hdl_t hdl)
     return err ? err : parse_body(f, hdl);
 }
 
+EXPORTED int
+ebml_read_header(FILE *f, ebml_hdl_t hdl)
+{
+    return parse_header(f, hdl);
+}
+
+EXPORTED int
+ebml_read_body(FILE *f, ebml_hdl_t hdl)
+{
+    return parse_body(f, hdl);
+}
+
 /* vi: set expandtab sw=4 ts=4: */

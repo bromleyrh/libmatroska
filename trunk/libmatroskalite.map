@@ -10,6 +10,8 @@ LIBMATROSKALITE_1 {
         matroska_open;
         matroska_parser;
         matroska_read;
+        matroska_read_body;
+        matroska_read_header;
         matroska_semantic_processor;
         u64_to_edatasz;
         u64_to_edatasz_l;
