@@ -161,7 +161,7 @@ dump_mkv(int infd, int outfd, struct avl_tree *tcb)
 
     args.fd = infd;
     args.pathname = NULL;
-    err = matroska_open(&hdl, NULL, &bitstream_cb, &args, tcb);
+    err = matroska_open(&hdl, NULL, NULL, &bitstream_cb, &args, tcb);
     if (err) {
         errmsg = "Error opening input file";
         goto err1;

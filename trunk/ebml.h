@@ -5,6 +5,7 @@
 #ifndef _EBML_H
 #define _EBML_H
 
+#include "matroska.h"
 #include "parser.h"
 
 #include <stdio.h>
@@ -25,13 +26,15 @@ struct ebml_file_args {
     const char  *pathname;
 };
 
+typedef int ebml_metadata_cb_t(const char *, matroska_metadata_t *, void *);
+
 extern const ebml_io_fns_t ebml_file_fns;
 #define EBML_FILE_FNS (&ebml_file_fns)
 
 int ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
               const struct parser *parser,
-              const struct semantic_processor *sproc, void *args,
-              void *sproc_ctx);
+              const struct semantic_processor *sproc, ebml_metadata_cb_t *cb,
+              void *args, void *sproc_ctx, void *ctx);
 
 int ebml_close(ebml_hdl_t hdl);
 

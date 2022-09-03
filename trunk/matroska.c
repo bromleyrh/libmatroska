@@ -491,7 +491,8 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 
 int
 matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
-              matroska_bitstream_cb_t *cb, void *args, void *ctx)
+              matroska_metadata_cb_t *metacb, matroska_bitstream_cb_t *cb,
+              void *args, void *ctx)
 {
     const ebml_io_fns_t *ebmlfns;
     int err;
@@ -521,7 +522,7 @@ matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
     }
 
     err = ebml_open(&ret->hdl, ebmlfns, MATROSKA_PARSER,
-                    MATROSKA_SEMANTIC_PROCESSOR, argsp, ret);
+                    MATROSKA_SEMANTIC_PROCESSOR, metacb, argsp, ret, ctx);
     if (err) {
         free(ret);
         return err;

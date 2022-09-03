@@ -7,6 +7,7 @@
 #include "common.h"
 #include "ebml.h"
 #include "element.h"
+#include "matroska.h"
 #include "parser.h"
 #include "vint.h"
 
@@ -30,8 +31,10 @@ struct ebml_hdl {
     const struct parser             *parser_ebml;
     const struct parser             *parser_doc;
     const struct semantic_processor *sproc;
+    ebml_metadata_cb_t              *cb;
     void                            *ctx;
     void                            *sproc_ctx;
+    void                            *metactx;
 };
 
 struct ebml_file_ctx {
@@ -42,6 +45,15 @@ struct ebml_file_ctx {
 #define EDATASZ_MAX_LEN 8
 
 #define EBML_ELEMENT_ID 0xa45dfa3
+
+static const enum matroska_metadata_type typemap[] = {
+    [ETYPE_INTEGER]     = MATROSKA_TYPE_INTEGER,
+    [ETYPE_UINTEGER]    = MATROSKA_TYPE_UINTEGER,
+    [ETYPE_FLOAT]       = MATROSKA_TYPE_DOUBLE,
+    [ETYPE_DATE]        = MATROSKA_TYPE_INTEGER,
+    [ETYPE_STRING]      = MATROSKA_TYPE_BYTES,
+    [ETYPE_BINARY]      = MATROSKA_TYPE_BYTES
+};
 
 static int ebml_file_open(void **, void *);
 static int ebml_file_close(void *);
@@ -58,8 +70,8 @@ static int parse_eid(uint64_t *, size_t *, char *);
 static int parse_edatasz(uint64_t *, size_t *, char *);
 
 static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t,
-                        semantic_action_t **, enum etype *, int, uint64_t,
-                        FILE *);
+                        semantic_action_t **, enum etype *, const char **, int,
+                        uint64_t, FILE *);
 
 static int invoke_value_handler(enum etype, semantic_action_t *, edata_t *,
                                 struct ebml_hdl *);
@@ -67,11 +79,11 @@ static int invoke_binary_handler(enum etype, semantic_action_t *, const char *,
                                  size_t, size_t, struct ebml_hdl *);
 
 static int handle_fixed_width_value(char **, char **, size_t, enum etype,
-                                    uint64_t, semantic_action_t *, FILE *,
-                                    struct ebml_hdl *);
+                                    const char *, uint64_t, semantic_action_t *,
+                                    FILE *, struct ebml_hdl *);
 static int handle_variable_length_value(char *, char **, char **, size_t,
-                                        size_t, enum etype, uint64_t,
-                                        semantic_action_t *, FILE *,
+                                        size_t, enum etype, const char *,
+                                        uint64_t, semantic_action_t *, FILE *,
                                         struct ebml_hdl *);
 
 static int parse_header(FILE *, struct ebml_hdl *);
@@ -263,8 +275,8 @@ parse_edatasz(uint64_t *elen, size_t *sz, char *bufp)
 
 static int
 look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
-             semantic_action_t **act, enum etype *etype, int ebml, uint64_t n,
-             FILE *f)
+             semantic_action_t **act, enum etype *etype, const char **value,
+             int ebml, uint64_t n, FILE *f)
 {
     char idstr[7];
     const char *val;
@@ -308,6 +320,7 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
     if (act != NULL)
         *act = action;
     *etype = ret;
+    *value = val;
     return 0;
 }
 
@@ -331,13 +344,15 @@ invoke_binary_handler(enum etype etype, semantic_action_t *act,
 
 static int
 handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
-                         uint64_t elen, semantic_action_t *act, FILE *f,
-                         struct ebml_hdl *hdl)
+                         const char *value, uint64_t elen,
+                         semantic_action_t *act, FILE *f, struct ebml_hdl *hdl)
 {
+    char buf[26];
     char *di, *si;
     char valbuf[8];
     edata_t val;
     int res;
+    struct timespec tm;
 
     if (elen > ETYPE_MAX_FIXED_WIDTH)
         return -EINVAL;
@@ -368,21 +383,25 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
         goto end;
     }
 
-    if (val.type == ETYPE_INTEGER)
+    switch (val.type) {
+    case ETYPE_INTEGER:
         res = fprintf(f, "%" PRIi64, val.integer);
-    else if (val.type == ETYPE_UINTEGER)
+        break;
+    case ETYPE_UINTEGER:
         res = fprintf(f, "%" PRIu64, val.uinteger);
-    else if (val.type == ETYPE_FLOAT) {
+        break;
+    case ETYPE_FLOAT:
         res = fprintf(f, "%f",
                       val.dbl ? val.floatd : (double)val.floats);
-    } else if (val.type == ETYPE_DATE) {
-        char buf[26];
-        struct timespec tm;
-
+        break;
+    case ETYPE_DATE:
         res = edata_to_timespec(&val, &tm);
         if (res != 0)
             return res;
         res = fprintf(f, "%s", ctime_r(&tm.tv_sec, buf));
+        break;
+    default:
+        abort();
     }
     if (res < 0)
         return -EIO;
@@ -390,6 +409,32 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
     res = invoke_value_handler(val.type, act, &val, hdl);
     if (res != 0)
         return res;
+
+    if (hdl->cb != NULL) {
+        matroska_metadata_t d = {0};
+
+        switch (val.type) {
+        case ETYPE_INTEGER:
+            d.integer = val.integer;
+            break;
+        case ETYPE_UINTEGER:
+            d.uinteger = val.uinteger;
+            break;
+        case ETYPE_FLOAT:
+            d.dbl = val.dbl ? val.floatd : (double)val.floats;
+            break;
+        case ETYPE_DATE:
+            d.integer = val.date;
+            break;
+        default:
+            abort();
+        }
+        d.type = typemap[val.type];
+
+        res = (*hdl->cb)(value, &d, hdl->metactx);
+        if (res != 0)
+            return res;
+    }
 
 end:
     *sip = si;
@@ -399,8 +444,8 @@ end:
 
 static int
 handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
-                             size_t sz, enum etype etype, uint64_t elen,
-                             semantic_action_t *act, FILE *f,
+                             size_t sz, enum etype etype, const char *value,
+                             uint64_t elen, semantic_action_t *act, FILE *f,
                              struct ebml_hdl *hdl)
 {
     char *di, *si;
@@ -449,6 +494,18 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
     res = invoke_binary_handler(val.type, act, NULL, elen, elen, hdl);
     if (res != 0)
         return res;
+
+    if (hdl->cb != NULL) {
+        matroska_metadata_t d = {0};
+
+        d.data = val.ptr;
+        d.len = ETYPE_IS_STRING(val.type) ? strlen(val.ptr) : elen;
+        d.type = typemap[val.type];
+
+        res = (*hdl->cb)(value, &d, hdl->metactx);
+        if (res != 0)
+            return res;
+    }
 
 end:
     *sip = si;
@@ -513,6 +570,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
     si = tmp;
     di = si + elen;
     for (; si < di; si += elen) {
+        const char *val;
         enum etype etype;
         int sz_unknown;
 
@@ -533,7 +591,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
         totlen += sz + elen;
         si += sz;
 
-        res = look_up_elem(hdl, eid, elen, totlen, NULL, &etype, 1, n, f);
+        res = look_up_elem(hdl, eid, elen, totlen, NULL, &etype, &val, 1, n, f);
         if (res != 0)
             return res;
 
@@ -558,6 +616,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
 
     di = si = buf;
     for (n = 1;; n++) {
+        const char *val;
         enum etype etype;
         int sz_unknown;
         off_t off;
@@ -613,7 +672,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             && fprintf(f, "body\t\t\t%" PRIu64 "\n", elen) < 0)
             return -EIO;
 
-        res = look_up_elem(hdl, eid, elen, totlen, &act, &etype, 0, n, f);
+        res = look_up_elem(hdl, eid, elen, totlen, &act, &etype, &val, 0, n, f);
         if (res != 0)
             return res;
 
@@ -631,11 +690,11 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             di = si + sz;
         } else {
             if (ETYPE_IS_FIXED_WIDTH(etype)) {
-                res = handle_fixed_width_value(&si, &di, sz, etype, elen, act,
-                                               f, hdl);
+                res = handle_fixed_width_value(&si, &di, sz, etype, val, elen,
+                                               act, f, hdl);
             } else {
                 res = handle_variable_length_value(buf, &si, &di, sizeof(buf),
-                                                   sz, etype, elen, act, f,
+                                                   sz, etype, val, elen, act, f,
                                                    hdl);
             }
             if (res != 0)
@@ -657,7 +716,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
 EXPORTED int
 ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
           const struct parser *parser, const struct semantic_processor *sproc,
-          void *args, void *sproc_ctx)
+          ebml_metadata_cb_t *cb, void *args, void *sproc_ctx, void *ctx)
 {
     int err;
     struct ebml_hdl *ret;
@@ -672,10 +731,12 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     }
 
     ret->fns = fns;
+    ret->cb = cb;
     ret->parser_ebml = EBML_PARSER;
     ret->parser_doc = parser;
     ret->sproc = sproc;
     ret->sproc_ctx = sproc_ctx;
+    ret->metactx = ctx;
 
     *hdl = ret;
     return 0;
