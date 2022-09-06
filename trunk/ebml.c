@@ -39,6 +39,7 @@ struct ebml_hdl {
     void                            *ctx;
     void                            *sproc_ctx;
     void                            *metactx;
+    int                             interrupt_read;
 };
 
 struct ebml_file_ctx {
@@ -339,15 +340,25 @@ invoke_binary_handler(enum etype etype, semantic_action_t *act,
                       const char *buf, size_t len, size_t totlen,
                       struct ebml_hdl *hdl)
 {
-    return etype == ETYPE_BINARY && act != NULL
-           ? (*act)(NULL, ETYPE_BINARY, NULL, buf, len, totlen, hdl->sproc_ctx)
-           : 0;
+    int res;
+
+    if (etype != ETYPE_BINARY || act == NULL)
+        return 0;
+
+    res = (*act)(NULL, ETYPE_BINARY, NULL, buf, len, totlen, hdl->sproc_ctx);
+    if (res == 1) {
+        hdl->interrupt_read = 1;
+        res = 0;
+    }
+
+    return res;
 }
 
 static int
 invoke_user_cb(const char *value, enum etype etype, edata_t *val, char *buf,
                uint64_t len, uint64_t totlen, struct ebml_hdl *hdl)
 {
+    int ret;
     matroska_metadata_t d;
 
     static const enum matroska_metadata_type typemap[] = {
@@ -370,8 +381,9 @@ invoke_user_cb(const char *value, enum etype etype, edata_t *val, char *buf,
         d.len = len;
         d.type = typemap[etype];
 
-        return (*hdl->cb)(value, &d, totlen, MATROSKA_METADATA_FLAG_FRAGMENT,
-                          hdl->metactx);
+        ret = (*hdl->cb)(value, &d, totlen, MATROSKA_METADATA_FLAG_FRAGMENT,
+                         hdl->metactx);
+        goto end;
     }
 
     switch (val->type) {
@@ -399,7 +411,14 @@ invoke_user_cb(const char *value, enum etype etype, edata_t *val, char *buf,
 
     d.type = typemap[val->type];
 
-    return (*hdl->cb)(value, &d, totlen, 0, hdl->metactx);
+    ret = (*hdl->cb)(value, &d, totlen, 0, hdl->metactx);
+
+end:
+    if (ret == 1) {
+        hdl->interrupt_read = 1;
+        ret = 0;
+    }
+    return ret;
 }
 
 static int
@@ -740,7 +759,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
                                                    sizeof(hdl->buf), sz, etype,
                                                    val, elen, act, f, hdl);
             }
-            if (res < 0)
+            if (res != 0)
                 return res;
 
             if (elen > sz)
@@ -752,8 +771,10 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         if (f != NULL && fputc('\n', f) == EOF)
             return -EIO;
 
-        if (res == 1)
+        if (hdl->interrupt_read) {
+            hdl->interrupt_read = 0;
             break;
+        }
     }
 
     return 0;

@@ -63,6 +63,7 @@ struct matroska_state {
     size_t                  data_len;
     uint64_t                trackno;
     struct avl_tree         *track_data;
+    int                     interrupt_read;
 };
 
 #define BLOCK_FLAG_KEYFRAME 128
@@ -176,8 +177,11 @@ return_track_data(const char *buf, size_t len, struct track_data *tdata,
 
         if (seglen > 0) {
             res = (*state->cb)(state->trackno, sp, seglen, state->ctx);
-            if (res != 0)
-                return res;
+            if (res != 0) {
+                if (res != 1)
+                    return res;
+                state->interrupt_read = 1;
+            }
 
             len -= seglen;
         }
@@ -272,11 +276,18 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     }
 
     if (buf == NULL) {
+        int interrupt_read;
+
         if (state->data_len != len)
             return -EIO;
         state->data_len = 0;
+
+        interrupt_read = state->interrupt_read;
+        state->interrupt_read = 0;
+
         fprintf(stderr, "End of block (%zu byte%s)\n", len, PLURAL(len, "s"));
-        return 0;
+
+        return interrupt_read;
     }
 
     if (state->block_hdr == 1) {
