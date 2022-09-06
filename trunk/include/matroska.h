@@ -56,7 +56,8 @@ typedef struct {
 typedef int matroska_metadata_cb_t(const char *, matroska_metadata_t *, size_t,
                                    int, void *);
 
-typedef int matroska_bitstream_cb_t(uint64_t, const void *, size_t, void *);
+typedef int matroska_bitstream_cb_t(uint64_t, const void *, size_t, size_t,
+                                    void *);
 
 #define MATROSKA_METADATA_FLAG_FRAGMENT 1
 

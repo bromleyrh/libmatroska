@@ -121,11 +121,14 @@ free_tcb(struct avl_tree *tcb)
 }
 
 static int
-bitstream_cb(uint64_t trackno, const void *buf, size_t len, void *ctx)
+bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
+             void *ctx)
 {
     int res;
     struct avl_tree *tcb = ctx;
     struct track_cb e;
+
+    (void)totlen;
 
     fprintf(stderr, "%s(): %" PRIu64 ": length %zu byte%s", __FUNCTION__,
             trackno, len, PLURAL(len, "s"));

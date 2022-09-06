@@ -96,7 +96,7 @@ static int track_data_free(const void *, void *);
 static int get_track_data(struct matroska_state *, uint64_t,
                           struct track_data **);
 
-static int return_track_data(const char *, size_t, struct track_data *,
+static int return_track_data(const char *, size_t, size_t, struct track_data *,
                              struct matroska_state *);
 
 static int
@@ -150,8 +150,8 @@ get_track_data(struct matroska_state *state, uint64_t trackno,
 }
 
 static int
-return_track_data(const char *buf, size_t len, struct track_data *tdata,
-                  struct matroska_state *state)
+return_track_data(const char *buf, size_t len, size_t totlen,
+                  struct track_data *tdata, struct matroska_state *state)
 {
     const char *dp, *sp;
     int res;
@@ -166,7 +166,8 @@ return_track_data(const char *buf, size_t len, struct track_data *tdata,
         if ((size_t)(sp - buf) == tdata->next_frame_off) {
             if (tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
-                                   tdata->num_stripped_bytes, state->ctx);
+                                   tdata->num_stripped_bytes, totlen,
+                                   state->ctx);
                 if (res != 0)
                     return res;
             }
@@ -176,7 +177,7 @@ return_track_data(const char *buf, size_t len, struct track_data *tdata,
         seglen = dp - sp;
 
         if (seglen > 0) {
-            res = (*state->cb)(state->trackno, sp, seglen, state->ctx);
+            res = (*state->cb)(state->trackno, sp, seglen, totlen, state->ctx);
             if (res != 0) {
                 if (res != 1)
                     return res;
@@ -260,7 +261,6 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     struct track_data *tdata;
 
     (void)edata;
-    (void)totlen;
 
     if (etype != ETYPE_BINARY)
         return -EILSEQ;
@@ -297,7 +297,8 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
             if (err)
                 return err;
 
-            err = return_track_data(buf, len, tdata, state);
+            err = return_track_data(buf, len, totlen - state->hdr_len, tdata,
+                                    state);
             if (err)
                 return err;
         }
@@ -384,6 +385,11 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     if (state->cb == NULL)
         return err;
 
+    totlen -= state->hdr_len;
+
+    fprintf(stderr, "Total block data length %zu byte%s\n", totlen,
+            PLURAL(totlen, "s"));
+
     datalen = len - sz;
     if (datalen == 0)
         return 0;
@@ -393,7 +399,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
 
         lacing = *(unsigned char *)(buf + sz) + 1;
 
-        q = lldiv(totlen - state->hdr_len - 1, lacing);
+        q = lldiv(totlen - 1, lacing);
         if (q.rem != 0)
             return -EILSEQ;
         tdata->frame_sz = q.quot;
@@ -403,14 +409,15 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
 
         off = 1;
     } else {
-        tdata->frame_sz = totlen - state->hdr_len;
+        tdata->frame_sz = totlen;
         off = 0;
     }
 
     tdata->next_frame_off = 0;
     state->data_len += datalen;
 
-    return return_track_data(buf + sz + off, datalen - off, tdata, state);
+    return return_track_data(buf + sz + off, datalen - off, totlen, tdata,
+                             state);
 }
 
 #undef BLOCK_HDR_FIXED_LEN
