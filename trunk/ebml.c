@@ -50,16 +50,6 @@ struct ebml_file_ctx {
 
 #define EBML_ELEMENT_ID 0xa45dfa3
 
-static const enum matroska_metadata_type typemap[] = {
-    [ETYPE_INTEGER]     = MATROSKA_TYPE_INTEGER,
-    [ETYPE_UINTEGER]    = MATROSKA_TYPE_UINTEGER,
-    [ETYPE_FLOAT]       = MATROSKA_TYPE_DOUBLE,
-    [ETYPE_STRING]      = MATROSKA_TYPE_BYTES,
-    [ETYPE_UTF8]        = MATROSKA_TYPE_BYTES,
-    [ETYPE_DATE]        = MATROSKA_TYPE_INTEGER,
-    [ETYPE_BINARY]      = MATROSKA_TYPE_BYTES
-};
-
 static int ebml_file_open(void **, void *);
 static int ebml_file_close(void *);
 
@@ -69,7 +59,7 @@ static int ebml_file_get_fpos(void *, off_t *);
 
 static int read_elem_hdr(struct ebml_hdl *, char **, char *);
 static int read_elem_data(struct ebml_hdl *, char *, uint64_t, uint64_t, size_t,
-                          semantic_action_t *);
+                          semantic_action_t *, const char *, enum etype);
 
 static int parse_eid(uint64_t *, size_t *, char *);
 static int parse_edatasz(uint64_t *, size_t *, char *);
@@ -82,6 +72,9 @@ static int invoke_value_handler(enum etype, semantic_action_t *, edata_t *,
                                 struct ebml_hdl *);
 static int invoke_binary_handler(enum etype, semantic_action_t *, const char *,
                                  size_t, size_t, struct ebml_hdl *);
+
+static int invoke_user_cb(const char *, enum etype, edata_t *, char *, uint64_t,
+                          uint64_t, struct ebml_hdl *);
 
 static int handle_fixed_width_value(char **, char **, size_t, enum etype,
                                     const char *, uint64_t, semantic_action_t *,
@@ -200,7 +193,8 @@ read_elem_hdr(struct ebml_hdl *hdl, char **buf, char *bufp)
 
 static int
 read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen,
-               uint64_t tot_elen, size_t bufsz, semantic_action_t *act)
+               uint64_t tot_elen, size_t bufsz, semantic_action_t *act,
+               const char *value, enum etype etype)
 {
     char *di, *si;
     int res;
@@ -222,6 +216,9 @@ read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen,
             if (res != 0)
                 return res;
         }
+        res = invoke_user_cb(value, etype, NULL, buf, sz, tot_elen, hdl);
+        if (res != 0)
+            return res;
     }
 
     return 0;
@@ -348,6 +345,64 @@ invoke_binary_handler(enum etype etype, semantic_action_t *act,
 }
 
 static int
+invoke_user_cb(const char *value, enum etype etype, edata_t *val, char *buf,
+               uint64_t len, uint64_t totlen, struct ebml_hdl *hdl)
+{
+    matroska_metadata_t d;
+
+    static const enum matroska_metadata_type typemap[] = {
+        [ETYPE_INTEGER]     = MATROSKA_TYPE_INTEGER,
+        [ETYPE_UINTEGER]    = MATROSKA_TYPE_UINTEGER,
+        [ETYPE_FLOAT]       = MATROSKA_TYPE_DOUBLE,
+        [ETYPE_STRING]      = MATROSKA_TYPE_BYTES,
+        [ETYPE_UTF8]        = MATROSKA_TYPE_BYTES,
+        [ETYPE_DATE]        = MATROSKA_TYPE_INTEGER,
+        [ETYPE_BINARY]      = MATROSKA_TYPE_BYTES
+    };
+
+    if (hdl->cb == NULL)
+        return 0;
+
+    memset(&d, 0, sizeof(d));
+
+    if (val == NULL) {
+        d.data = buf;
+        d.len = len;
+        d.type = typemap[etype];
+
+        return (*hdl->cb)(value, &d, totlen, MATROSKA_METADATA_FLAG_FRAGMENT,
+                          hdl->metactx);
+    }
+
+    switch (val->type) {
+    case ETYPE_INTEGER:
+        d.integer = val->integer;
+        break;
+    case ETYPE_UINTEGER:
+        d.uinteger = val->uinteger;
+        break;
+    case ETYPE_FLOAT:
+        d.dbl = val->dbl ? val->floatd : (double)val->floats;
+        break;
+    case ETYPE_DATE:
+        d.integer = val->date;
+        break;
+    case ETYPE_STRING:
+    case ETYPE_UTF8:
+    case ETYPE_BINARY:
+        d.data = val->ptr;
+        d.len = ETYPE_IS_STRING(val->type) ? strlen(val->ptr) : totlen;
+        break;
+    default:
+        abort();
+    }
+
+    d.type = typemap[val->type];
+
+    return (*hdl->cb)(value, &d, totlen, 0, hdl->metactx);
+}
+
+static int
 handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
                          const char *value, uint64_t elen,
                          semantic_action_t *act, FILE *f, struct ebml_hdl *hdl)
@@ -415,31 +470,9 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
     if (res != 0)
         return res;
 
-    if (hdl->cb != NULL) {
-        matroska_metadata_t d = {0};
-
-        switch (val.type) {
-        case ETYPE_INTEGER:
-            d.integer = val.integer;
-            break;
-        case ETYPE_UINTEGER:
-            d.uinteger = val.uinteger;
-            break;
-        case ETYPE_FLOAT:
-            d.dbl = val.dbl ? val.floatd : (double)val.floats;
-            break;
-        case ETYPE_DATE:
-            d.integer = val.date;
-            break;
-        default:
-            abort();
-        }
-        d.type = typemap[val.type];
-
-        res = (*hdl->cb)(value, &d, hdl->metactx);
-        if (res != 0)
-            return res;
-    }
+    res = invoke_user_cb(value, etype, &val, buf, 0, elen, hdl);
+    if (res != 0)
+        return res;
 
 end:
     *sip = si;
@@ -456,6 +489,7 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
     char *di, *si;
     edata_t val;
     int res;
+    int user_cb_invoked = 0;
 
     si = *sip;
     di = *dip;
@@ -465,9 +499,12 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         res = invoke_binary_handler(etype, act, buf, sz, elen, hdl);
         if (res != 0)
             return res;
+        res = invoke_user_cb(value, etype, NULL, buf, sz, elen, hdl);
+        if (res != 0)
+            return res;
 
         res = read_elem_data(hdl, buf + sz, elen - sz, elen, bufsz - sz,
-                             etype == ETYPE_BINARY ? act : NULL);
+                             etype == ETYPE_BINARY ? act : NULL, value, etype);
         if (res != 0)
             return res;
 
@@ -479,6 +516,7 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         }
 
         si = buf;
+        user_cb_invoked = 1;
     }
 
     res = edata_unpack(si, &val, etype, elen);
@@ -501,14 +539,8 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
     if (res != 0)
         goto err;
 
-    if (hdl->cb != NULL) {
-        matroska_metadata_t d = {0};
-
-        d.data = val.ptr;
-        d.len = ETYPE_IS_STRING(val.type) ? strlen(val.ptr) : elen;
-        d.type = typemap[val.type];
-
-        res = (*hdl->cb)(value, &d, hdl->metactx);
+    if (!user_cb_invoked) {
+        res = invoke_user_cb(value, etype, &val, NULL, 0, elen, hdl);
         if (res != 0)
             goto err;
     }

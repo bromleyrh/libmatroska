@@ -53,9 +53,12 @@ typedef struct {
     };
 } matroska_metadata_t;
 
-typedef int matroska_metadata_cb_t(const char *, matroska_metadata_t *, void *);
+typedef int matroska_metadata_cb_t(const char *, matroska_metadata_t *, size_t,
+                                   int, void *);
 
 typedef int matroska_bitstream_cb_t(uint64_t, const void *, size_t, void *);
+
+#define MATROSKA_METADATA_FLAG_FRAGMENT 1
 
 int matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
                   matroska_metadata_cb_t *metacb, matroska_bitstream_cb_t *cb,
