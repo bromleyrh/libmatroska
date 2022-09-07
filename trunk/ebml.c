@@ -773,7 +773,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
 
         if (hdl->interrupt_read) {
             hdl->interrupt_read = 0;
-            break;
+            return 1;
         }
     }
 
