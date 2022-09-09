@@ -676,7 +676,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
     char *tmp;
     int res;
 
-    for (;; hdl->n++) {
+    for (;;) {
         const char *val;
         enum etype etype;
         int sz_unknown;
@@ -770,6 +770,8 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
 
         if (f != NULL && fputc('\n', f) == EOF)
             return -EIO;
+
+        ++hdl->n;
 
         if (hdl->interrupt_read) {
             hdl->interrupt_read = 0;

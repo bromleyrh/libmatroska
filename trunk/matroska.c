@@ -416,7 +416,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     tdata->next_frame_off = 0;
     state->data_len += datalen;
 
-    return return_track_data(buf + sz + off, datalen - off, totlen, tdata,
+    return return_track_data(buf + sz + off, datalen - off, totlen - off, tdata,
                              state);
 }
 
