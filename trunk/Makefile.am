@@ -37,8 +37,8 @@ pkgconfig_DATA = libmatroskalite.pc
 
 $(pkgconfig_DATA): config.status
 
-noinst_HEADERS = common.h ebml.h element.h parser.h radix_tree.h util.h vint.h \
-	zlib_stream.h
+noinst_HEADERS = common.h ebml.h element.h parser.h parser_defs.h radix_tree.h \
+	util.h vint.h zlib_stream.h
 
 BUILT_SOURCES = ebml_schema.h matroska_schema.h matroska_semantics.h version.c
 
