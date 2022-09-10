@@ -790,7 +790,7 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     int err;
     struct ebml_hdl *ret;
 
-    if (omalloc(&ret) == NULL)
+    if (ocalloc(&ret, 1) == NULL)
         return -errno;
 
     err = (*fns->open)(&ret->ctx, args);
