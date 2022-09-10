@@ -7,7 +7,6 @@ LIBMATROSKALITE_1 {
         edatasz_to_u64;
         eid_to_u64;
         matroska_close;
-        matroska_open;
         matroska_parser;
         matroska_read;
         matroska_read_body;
@@ -25,3 +24,8 @@ LIBMATROSKALITE_1 {
     local:
         *;
 };
+
+LIBMATROSKALITE_2 {
+    global:
+        matroska_open;
+} LIBMATROSKALITE_1;

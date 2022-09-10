@@ -47,6 +47,7 @@ struct track_data {
     size_t                  num_stripped_bytes;
     size_t                  frame_sz; /* used when lacing employed */
     size_t                  next_frame_off;
+    int                     keyframe;
 };
 
 struct matroska_state {
@@ -167,7 +168,7 @@ return_track_data(const char *buf, size_t len, size_t totlen,
             if (tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
                                    tdata->num_stripped_bytes, totlen,
-                                   state->ctx);
+                                   tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
             }
@@ -177,7 +178,8 @@ return_track_data(const char *buf, size_t len, size_t totlen,
         seglen = dp - sp;
 
         if (seglen > 0) {
-            res = (*state->cb)(state->trackno, sp, seglen, totlen, state->ctx);
+            res = (*state->cb)(state->trackno, sp, seglen, totlen,
+                               tdata->keyframe, state->ctx);
             if (res != 0) {
                 if (res != 1)
                     return res;
@@ -361,6 +363,8 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
         if (err)
             return err;
 
+        tdata->keyframe = FLAG_VAL(flags, KEYFRAME);
+
         fprintf(stderr, "Track number %" PRIu64 "\n"
                         "Timestamp %" PRIi16 "\n"
                         "Flags %" PRIu8 "\n"
@@ -370,7 +374,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                         "Lacing type %s\n"
                         "Content compression algorithm %s\n",
                 tdata->trackno, timestamp.val, flags,
-                FLAG_VAL(flags, KEYFRAME),
+                tdata->keyframe,
                 FLAG_VAL(flags, INVISIBLE),
                 FLAG_VAL(flags, DISCARDABLE),
                 lacing_typemap[lacing], compalg_typemap[tdata->compalg]);
