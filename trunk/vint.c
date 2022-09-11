@@ -2,9 +2,12 @@
  * vint.c
  */
 
-#include "common.h"
 #include "util.h"
 #include "vint.h"
+
+#define NO_ASSERT_MACROS
+#include "common.h"
+#undef NO_ASSERT_MACROS
 
 #include <assert.h>
 #include <errno.h>

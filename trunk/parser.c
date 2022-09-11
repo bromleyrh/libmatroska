@@ -2,10 +2,13 @@
  * parser.c
  */
 
-#include "common.h"
 #include "element.h"
 #include "parser.h"
 #include "parser_defs.h"
+
+#define NO_ASSERT_MACROS
+#include "common.h"
+#undef NO_ASSERT_MACROS
 
 #include "ebml_schema.h"
 #include "matroska_schema.h"

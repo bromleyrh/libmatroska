@@ -2,8 +2,11 @@
  * vint_test.c
  */
 
-#include "common.h"
 #include "vint.h"
+
+#define NO_ASSERT_MACROS
+#include "common.h"
+#undef NO_ASSERT_MACROS
 
 #include <stddef.h>
 #include <stdio.h>

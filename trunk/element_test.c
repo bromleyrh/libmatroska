@@ -2,8 +2,11 @@
  * element_test.c
  */
 
-#include "common.h"
 #include "element.h"
+
+#define NO_ASSERT_MACROS
+#include "common.h"
+#undef NO_ASSERT_MACROS
 
 #include <errno.h>
 #include <stdio.h>

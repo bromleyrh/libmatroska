@@ -2,9 +2,12 @@
  * schema_parse.c
  */
 
-#include "common.h"
 #include "element.h"
 #include "radix_tree.h"
+
+#define NO_ASSERT_MACROS
+#include "common.h"
+#undef NO_ASSERT_MACROS
 
 #include <crypto.h>
 #include <strings_ext.h>

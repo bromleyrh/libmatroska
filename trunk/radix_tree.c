@@ -124,7 +124,7 @@ new_node(struct radix_tree *rt, struct radix_tree_node **node,
 
     ret = calloc(1, NODE_SIZE(rt));
     if (ret == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     ret->type = type;
 
@@ -133,7 +133,7 @@ new_node(struct radix_tree *rt, struct radix_tree_node **node,
     else {
         ret->label = lenlabel < 0 ? strdup(label) : strndup(label, lenlabel);
         if (ret->label == NULL) {
-            err = -errno;
+            err = MINUS_ERRNO;
             free(ret);
             return err;
         }
@@ -214,7 +214,7 @@ split_edge(struct radix_tree *rt, struct radix_tree_node *src,
 
     newlabel = strdup(&edge->label[idx]);
     if (newlabel == NULL) {
-        err = -errno;
+        err = MINUS_ERRNO;
         free_node(branch_node);
         free_node(info_node);
         return err;
@@ -340,7 +340,7 @@ concat_labels(const char *label1, const char *label2, const char **newlabel)
 
     ret = malloc(strlen(label1) + strlen(label2) + 1);
     if (ret == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     strcpy(stpcpy(ret, label1), label2);
 
@@ -664,7 +664,7 @@ radix_tree_new(struct radix_tree **rt, size_t val_size)
         return -EINVAL;
 
     if (omalloc(&ret) == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     ret->val_size = val_size;
 
