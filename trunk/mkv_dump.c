@@ -53,17 +53,23 @@ parse_cmdline(int argc, char **argv, struct avl_tree **tcb)
         char *sep;
 
         sep = strchr(argv[i], ':');
-        if (sep == NULL)
+        if (sep == NULL) {
+            err = -EINVAL;
             goto err1;
+        }
         *sep = '\0';
 
         e.path = strdup(sep + 1);
-        if (e.path == NULL)
+        if (e.path == NULL) {
+            err = MINUS_ERRNO;
             goto err1;
+        }
 
         e.f = fopen(e.path, "w");
-        if (e.f == NULL)
+        if (e.f == NULL) {
+            err = MINUS_ERRNO;
             goto err2;
+        }
 
         e.trackno = strtoull(argv[i], NULL, 10);
 
