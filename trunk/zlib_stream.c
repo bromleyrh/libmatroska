@@ -57,7 +57,7 @@ zlib_stream_init(zlib_stream_hdl_t *hdl,
     struct zlib_stream *ret;
 
     if (omalloc(&ret) == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     ret->s.next_in = NULL;
 

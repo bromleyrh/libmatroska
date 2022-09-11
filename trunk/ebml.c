@@ -104,7 +104,7 @@ ebml_file_open(void **ctx, void *args)
     struct ebml_file_ctx *ret;
 
     if (omalloc(&ret) == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     a = args;
 
@@ -113,7 +113,7 @@ ebml_file_open(void **ctx, void *args)
     else {
         ret->fd = openat(a->fd, a->pathname, O_CLOEXEC | O_RDONLY);
         if (ret->fd == -1) {
-            err = -errno;
+            err = MINUS_ERRNO;
             free(ret);
             return err;
         }
@@ -147,7 +147,7 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
         if (ret >= 0)
             break;
         if (errno != EINTR)
-            return -errno;
+            return MINUS_ERRNO;
     }
 
     *nbytes = ret;
@@ -162,7 +162,7 @@ ebml_file_get_fpos(void *ctx, off_t *offset)
 
     ret = lseek(fctx->fd, 0, SEEK_CUR);
     if (ret == -1)
-        return -errno;
+        return MINUS_ERRNO;
 
     *offset = ret;
     return 0;
@@ -791,7 +791,7 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     struct ebml_hdl *ret;
 
     if (ocalloc(&ret, 1) == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     err = (*fns->open)(&ret->ctx, args);
     if (err) {

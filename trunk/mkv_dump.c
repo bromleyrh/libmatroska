@@ -107,7 +107,7 @@ track_cb_free(const void *keyval, void *ctx)
     const struct track_cb *tcb = keyval;
 
     if (fclose(tcb->f) == EOF)
-        *(int *)ctx = -errno;
+        *(int *)ctx = MINUS_ERRNO;
 
     free(tcb->path);
 
@@ -152,7 +152,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
 
         ret = fwrite(buf, 1, len, e.f);
         if (ret != len)
-            return -errno;
+            return MINUS_ERRNO;
     }
 
     fputc('\n', stderr);
@@ -179,7 +179,7 @@ dump_mkv(int infd, int outfd, struct avl_tree *tcb)
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
-        err = -errno;
+        err = MINUS_ERRNO;
         errmsg = "Error opening output file";
         goto err2;
     }
@@ -192,7 +192,7 @@ dump_mkv(int infd, int outfd, struct avl_tree *tcb)
     }
 
     if (fclose(f) == EOF) {
-        err = -errno;
+        err = MINUS_ERRNO;
         errmsg = "Error closing output file";
         goto err2;
     }

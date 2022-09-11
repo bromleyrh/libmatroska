@@ -226,7 +226,7 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
             return -EILSEQ;
 
         if (ocalloc(&tdata, 1) == NULL)
-            return -errno;
+            return MINUS_ERRNO;
 
         tdata->trackno = edata->uinteger;
         tdata->compalg = CONTENT_COMP_ALGO_NONE;
@@ -497,7 +497,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 
         stripped_bytes = realloc(tdata->stripped_bytes, num_stripped_bytes);
         if (stripped_bytes == NULL)
-            return -errno;
+            return MINUS_ERRNO;
         memcpy((char *)stripped_bytes + tdata->num_stripped_bytes, buf, len);
 
         tdata->stripped_bytes = stripped_bytes;
@@ -523,7 +523,7 @@ matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
     void *argsp;
 
     if (ocalloc(&ret, 1) == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     if (fns == NULL) {
         struct matroska_file_args *fileargsp = args;

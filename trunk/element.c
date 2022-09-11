@@ -119,7 +119,7 @@ unpack_string(const char *x, edata_t *y, size_t sz)
 
     ret = malloc(sz + 1);
     if (ret == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     ret[sz] = '\0';
 
@@ -147,7 +147,7 @@ unpack_binary(const char *x, edata_t *y, size_t sz)
 
     ret = malloc(sz);
     if (ret == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     y->ptr = memcpy(ret, x, sz);
     return 0;

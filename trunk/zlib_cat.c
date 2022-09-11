@@ -4,6 +4,7 @@
 
 #define _FILE_OFFSET_BITS 64
 
+#include "common.h"
 #include "zlib_stream.h"
 
 #include <errno.h>
@@ -19,7 +20,7 @@ zlib_stream_cb(const void *buf, size_t len, void *ctx)
 {
     FILE *f = *(FILE **)ctx;
 
-    return fwrite(buf, 1, len, f) == len ? 0 : -errno;
+    return fwrite(buf, 1, len, f) == len ? 0 : MINUS_ERRNO;
 }
 
 int
