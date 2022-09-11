@@ -6,6 +6,7 @@
 #include "util.h"
 #include "vint.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stddef.h>
@@ -97,6 +98,7 @@ vint_to_u64(const char *x, uint64_t *y, size_t *sz)
     }
 
     /* scan VINT_DATA */
+    assert(len <= 8);
     ret = d & 0xff >> len;
     ret <<= --len * CHAR_BIT;
     i = len;
