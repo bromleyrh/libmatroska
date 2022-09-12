@@ -47,6 +47,7 @@ struct track_data {
     size_t                  num_stripped_bytes;
     size_t                  frame_sz; /* used when lacing employed */
     size_t                  next_frame_off;
+    int16_t                 ts;
     int                     keyframe;
 };
 
@@ -168,7 +169,7 @@ return_track_data(const char *buf, size_t len, size_t totlen,
             if (tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
                                    tdata->num_stripped_bytes, totlen,
-                                   tdata->keyframe, state->ctx);
+                                   tdata->ts, tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
             }
@@ -178,7 +179,7 @@ return_track_data(const char *buf, size_t len, size_t totlen,
         seglen = dp - sp;
 
         if (seglen > 0) {
-            res = (*state->cb)(state->trackno, sp, seglen, totlen,
+            res = (*state->cb)(state->trackno, sp, seglen, totlen, tdata->ts,
                                tdata->keyframe, state->ctx);
             if (res != 0) {
                 if (res != 1)
@@ -363,6 +364,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
         if (err)
             return err;
 
+        tdata->ts = timestamp.val;
         tdata->keyframe = FLAG_VAL(flags, KEYFRAME);
 
         fprintf(stderr, "Track number %" PRIu64 "\n"
@@ -373,7 +375,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                         "Discardable %d\n"
                         "Lacing type %s\n"
                         "Content compression algorithm %s\n",
-                tdata->trackno, timestamp.val, flags,
+                tdata->trackno, tdata->ts, flags,
                 tdata->keyframe,
                 FLAG_VAL(flags, INVISIBLE),
                 FLAG_VAL(flags, DISCARDABLE),
