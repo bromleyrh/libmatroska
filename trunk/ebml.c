@@ -35,6 +35,7 @@ struct ebml_hdl {
     char                            buf[4096];
     char                            *di;
     char                            *si;
+    off_t                           off;
     uint64_t                        n;
     void                            *ctx;
     void                            *sproc_ctx;
@@ -212,7 +213,7 @@ read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen,
                 return res;
         }
         if (act != NULL) {
-            res = (*act)(NULL, ETYPE_BINARY, NULL, buf, sz, tot_elen,
+            res = (*act)(NULL, ETYPE_BINARY, NULL, buf, sz, tot_elen, hdl->off,
                          hdl->sproc_ctx);
             if (res != 0)
                 return res;
@@ -315,7 +316,7 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
         if (res != 1)
             return res;
 
-        res = (*action)(val, ret, NULL, NULL, 0, 0, hdl->sproc_ctx);
+        res = (*action)(val, ret, NULL, NULL, 0, 0, hdl->off, hdl->sproc_ctx);
         if (res != 0)
             return res;
     }
@@ -332,7 +333,8 @@ invoke_value_handler(enum etype etype, semantic_action_t *act, edata_t *edata,
                      struct ebml_hdl *hdl)
 {
     return act != NULL
-           ? (*act)(NULL, etype, edata, NULL, 0, 0, hdl->sproc_ctx) : 0;
+           ? (*act)(NULL, etype, edata, NULL, 0, 0, hdl->off, hdl->sproc_ctx)
+           : 0;
 }
 
 static int
@@ -345,7 +347,8 @@ invoke_binary_handler(enum etype etype, semantic_action_t *act,
     if (etype != ETYPE_BINARY || act == NULL)
         return 0;
 
-    res = (*act)(NULL, ETYPE_BINARY, NULL, buf, len, totlen, hdl->sproc_ctx);
+    res = (*act)(NULL, ETYPE_BINARY, NULL, buf, len, totlen, hdl->off,
+                 hdl->sproc_ctx);
     if (res == 1) {
         hdl->interrupt_read = 1;
         res = 0;
@@ -601,6 +604,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
         return -EILSEQ;
     totlen = sz;
     si = buf + sz;
+    hdl->off += sz;
 
     /* parse EBML element length */
     res = parse_edatasz(&elen, &sz, si);
@@ -610,6 +614,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
         elen = 0;
     totlen += sz + elen;
     si += sz;
+    hdl->off += sz;
 
     if (f != NULL
         && (fprintf(f, "header\t\t\t%" PRIu64 "\n", elen) < 0
@@ -643,6 +648,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
             return res;
         totlen = sz;
         si += sz;
+        hdl->off += sz;
 
         /* parse EBML element length */
         res = parse_edatasz(&elen, &sz, si);
@@ -653,6 +659,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
             elen = 0;
         totlen += sz + elen;
         si += sz;
+        hdl->off += sz;
 
         res = look_up_elem(hdl, eid, elen, totlen, NULL, &etype, &val, 1, n, f);
         if (res != 0)
@@ -663,6 +670,8 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
 
         if (f != NULL && fputc('\n', f) == EOF)
             return -EIO;
+
+        hdl->off += elen;
 
         ++n;
     }
@@ -718,6 +727,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             return res;
         totlen = sz;
         hdl->si = tmp + sz;
+        hdl->off += sz;
 
         /* parse EBML element length */
         res = parse_edatasz(&elen, &sz, hdl->si);
@@ -726,8 +736,9 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         sz_unknown = elen == EDATASZ_UNKNOWN;
         if (sz_unknown)
             elen = 0;
-        hdl->si += sz;
         totlen += sz + elen;
+        hdl->si += sz;
+        hdl->off += sz;
 
         if (f != NULL && hdl->n == 1
             && fprintf(f, "body\t\t\t%" PRIu64 "\n", elen) < 0)
@@ -766,6 +777,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
                 hdl->di = hdl->si = hdl->buf;
             else
                 hdl->si += elen;
+            hdl->off += elen;
         }
 
         if (f != NULL && fputc('\n', f) == EOF)

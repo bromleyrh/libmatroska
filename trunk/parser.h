@@ -9,12 +9,14 @@
 
 #include <stddef.h>
 
+#include <sys/types.h>
+
 struct parser;
 
 struct semantic_processor;
 
 typedef int semantic_action_t(const char *, enum etype, edata_t *, const void *,
-                              size_t, size_t, void *);
+                              size_t, size_t, off_t, void *);
 
 extern const struct parser ebml_parser;
 #define EBML_PARSER (&ebml_parser)

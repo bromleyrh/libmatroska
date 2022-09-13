@@ -19,6 +19,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <sys/types.h>
+
 struct track_cb {
     uint64_t    trackno;
     char        *path;
@@ -128,13 +130,14 @@ free_tcb(struct avl_tree *tcb)
 
 static int
 bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
-             int16_t ts, int keyframe, void *ctx)
+             off_t off, int16_t ts, int keyframe, void *ctx)
 {
     int res;
     struct avl_tree *tcb = ctx;
     struct track_cb e;
 
     (void)totlen;
+    (void)off;
     (void)ts;
     (void)keyframe;
 

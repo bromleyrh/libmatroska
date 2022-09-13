@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <sys/param.h>
+#include <sys/types.h>
 
 #define LIST_BLOCK_HDR_FIELDS() \
     _X(TRACKNO,     8) \
@@ -98,8 +99,8 @@ static int track_data_free(const void *, void *);
 static int get_track_data(struct matroska_state *, uint64_t,
                           struct track_data **);
 
-static int return_track_data(const char *, size_t, size_t, struct track_data *,
-                             struct matroska_state *);
+static int return_track_data(const char *, size_t, size_t, off_t,
+                             struct track_data *, struct matroska_state *);
 
 static int
 print_handler(FILE *f, const char *func, const char *val)
@@ -152,7 +153,7 @@ get_track_data(struct matroska_state *state, uint64_t trackno,
 }
 
 static int
-return_track_data(const char *buf, size_t len, size_t totlen,
+return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
                   struct track_data *tdata, struct matroska_state *state)
 {
     const char *dp, *sp;
@@ -168,7 +169,7 @@ return_track_data(const char *buf, size_t len, size_t totlen,
         if ((size_t)(sp - buf) == tdata->next_frame_off) {
             if (tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
-                                   tdata->num_stripped_bytes, totlen,
+                                   tdata->num_stripped_bytes, totlen, off,
                                    tdata->ts, tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
@@ -179,8 +180,8 @@ return_track_data(const char *buf, size_t len, size_t totlen,
         seglen = dp - sp;
 
         if (seglen > 0) {
-            res = (*state->cb)(state->trackno, sp, seglen, totlen, tdata->ts,
-                               tdata->keyframe, state->ctx);
+            res = (*state->cb)(state->trackno, sp, seglen, totlen, off,
+                               tdata->ts, tdata->keyframe, state->ctx);
             if (res != 0) {
                 if (res != 1)
                     return res;
@@ -204,7 +205,7 @@ return_track_data(const char *buf, size_t len, size_t totlen,
 int
 matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
                              const void *buf, size_t len, size_t totlen,
-                             void *ctx)
+                             off_t off, void *ctx)
 {
     int err;
     struct matroska_state *state = ctx;
@@ -212,6 +213,7 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
     (void)buf;
     (void)len;
     (void)totlen;
+    (void)off;
 
     if (state->track_data == NULL) {
         err = avl_tree_new(&state->track_data, sizeof(struct track_data *),
@@ -254,11 +256,11 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
 int
 matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                              const void *buf, size_t len, size_t totlen,
-                             void *ctx)
+                             off_t off, void *ctx)
 {
     int err = 0;
     int lacing;
-    int off;
+    int offset;
     size_t datalen, sz;
     struct matroska_state *state;
     struct track_data *tdata;
@@ -300,8 +302,8 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
             if (err)
                 return err;
 
-            err = return_track_data(buf, len, totlen - state->hdr_len, tdata,
-                                    state);
+            err = return_track_data(buf, len, totlen - state->hdr_len, off,
+                                    tdata, state);
             if (err)
                 return err;
         }
@@ -413,17 +415,18 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
         fprintf(stderr, "%d laced frames of size %zu byte%s\n", lacing,
                 tdata->frame_sz, PLURAL(tdata->frame_sz, "s"));
 
-        off = 1;
+        offset = 1;
+        ++sz;
     } else {
         tdata->frame_sz = totlen;
-        off = 0;
+        offset = 0;
     }
 
     tdata->next_frame_off = 0;
     state->data_len += datalen;
 
-    return return_track_data(buf + sz + off, datalen - off, totlen - off, tdata,
-                             state);
+    return return_track_data(buf + sz, datalen - offset, totlen - offset,
+                             off + sz, tdata, state);
 }
 
 #undef BLOCK_HDR_FIXED_LEN
@@ -433,7 +436,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
 int
 matroska_contentcompalgo_handler(const char *val, enum etype etype,
                                  edata_t *edata, const void *buf, size_t len,
-                                 size_t totlen, void *ctx)
+                                 size_t totlen, off_t off, void *ctx)
 {
     int err;
     struct matroska_state *state;
@@ -441,6 +444,7 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
     (void)buf;
     (void)len;
     (void)totlen;
+    (void)off;
 
     if (etype != ETYPE_UINTEGER)
         return -EILSEQ;
@@ -467,7 +471,8 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
 int
 matroska_contentcompsettings_handler(const char *val, enum etype etype,
                                      edata_t *edata, const void *buf,
-                                     size_t len, size_t totlen, void *ctx)
+                                     size_t len, size_t totlen, off_t off,
+                                     void *ctx)
 {
     int err;
     struct matroska_state *state;
@@ -475,6 +480,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 
     (void)edata;
     (void)totlen;
+    (void)off;
 
     if (etype != ETYPE_BINARY)
         return -EILSEQ;
