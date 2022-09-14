@@ -548,16 +548,17 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         return res;
 
     if (ETYPE_IS_STRING(val.type)) {
-        if (f != NULL)
+        if (f != NULL) {
             res = fprintf(f, "%s", val.ptr);
+            if (res < 0) {
+                res = -EIO;
+                goto err;
+            }
+        }
     } else if (elen <= sz) {
         res = invoke_binary_handler(val.type, act, si, elen, elen, hdl);
         if (res != 0)
             return res;
-    }
-    if (res < 0) {
-        res = -EIO;
-        goto err;
     }
 
     res = invoke_binary_handler(val.type, act, NULL, elen, elen, hdl);
