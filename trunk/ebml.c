@@ -465,28 +465,30 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
         goto end;
     }
 
-    switch (val.type) {
-    case ETYPE_INTEGER:
-        res = fprintf(f, "%" PRIi64, val.integer);
-        break;
-    case ETYPE_UINTEGER:
-        res = fprintf(f, "%" PRIu64, val.uinteger);
-        break;
-    case ETYPE_FLOAT:
-        res = fprintf(f, "%f",
-                      val.dbl ? val.floatd : (double)val.floats);
-        break;
-    case ETYPE_DATE:
-        res = edata_to_timespec(&val, &tm);
-        if (res != 0)
-            return res;
-        res = fprintf(f, "%s", ctime_r(&tm.tv_sec, buf));
-        break;
-    default:
-        abort();
+    if (f != NULL) {
+        switch (val.type) {
+        case ETYPE_INTEGER:
+            res = fprintf(f, "%" PRIi64, val.integer);
+            break;
+        case ETYPE_UINTEGER:
+            res = fprintf(f, "%" PRIu64, val.uinteger);
+            break;
+        case ETYPE_FLOAT:
+            res = fprintf(f, "%f",
+                          val.dbl ? val.floatd : (double)val.floats);
+            break;
+        case ETYPE_DATE:
+            res = edata_to_timespec(&val, &tm);
+            if (res != 0)
+                return res;
+            res = fprintf(f, "%s", ctime_r(&tm.tv_sec, buf));
+            break;
+        default:
+            abort();
+        }
+        if (res < 0)
+            return -EIO;
     }
-    if (res < 0)
-        return -EIO;
 
     res = invoke_value_handler(val.type, act, &val, hdl);
     if (res != 0)
@@ -545,9 +547,10 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
     if (res != 0)
         return res;
 
-    if (ETYPE_IS_STRING(val.type))
-        res = fprintf(f, "%s", val.ptr);
-    else if (elen <= sz) {
+    if (ETYPE_IS_STRING(val.type)) {
+        if (f != NULL)
+            res = fprintf(f, "%s", val.ptr);
+    } else if (elen <= sz) {
         res = invoke_binary_handler(val.type, act, si, elen, elen, hdl);
         if (res != 0)
             return res;
