@@ -69,6 +69,10 @@ struct matroska_state {
     int                     interrupt_read;
 };
 
+#ifndef NDEBUG
+#define DEBUG_OUTPUT
+#endif
+
 #define BLOCK_FLAG_KEYFRAME 128
 #define BLOCK_FLAG_RESERVED 112
 #define BLOCK_FLAG_INVISIBLE 8
@@ -89,10 +93,20 @@ static const char *const compalg_typemap[] = {
     [CONTENT_COMP_ALGO_NONE]                = "none"
 };
 
+#ifdef DEBUG_OUTPUT
+#define debug_puts(s) fputs(s, stderr)
+#define debug_printf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #define PRINT_HANDLER_INFO(val) print_handler(stderr, __FUNCTION__, val)
+#else
+#define debug_puts(s)
+#define debug_printf(fmt, ...)
+#define PRINT_HANDLER_INFO(val)
+#endif
 
+#ifdef DEBUG_OUTPUT
 static int print_handler(FILE *, const char *, const char *);
 
+#endif
 static int track_data_cmp(const void *, const void *, void *);
 static int track_data_free(const void *, void *);
 
@@ -102,11 +116,14 @@ static int get_track_data(struct matroska_state *, uint64_t,
 static int return_track_data(const char *, size_t, size_t, off_t,
                              struct track_data *, struct matroska_state *);
 
+#ifdef DEBUG_OUTPUT
 static int
 print_handler(FILE *f, const char *func, const char *val)
 {
     return fprintf(f, "%s(): %s\n", func, val) < 0 ? -EIO : 0;
 }
+
+#endif
 
 static int
 track_data_cmp(const void *k1, const void *k2, void *ctx)
@@ -240,7 +257,7 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
             return err;
         }
 
-        fprintf(stderr, "Track number %" PRIu64 "\n", tdata->trackno);
+        debug_printf("Track number %" PRIu64 "\n", tdata->trackno);
 
         state->trackno = tdata->trackno;
     } else
@@ -290,7 +307,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
         interrupt_read = state->interrupt_read;
         state->interrupt_read = 0;
 
-        fprintf(stderr, "End of block (%zu byte%s)\n", len, PLURAL(len, "s"));
+        debug_printf("End of block (%zu byte%s)\n", len, PLURAL(len, "s"));
 
         return interrupt_read;
     }
@@ -307,7 +324,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
             if (err)
                 return err;
         }
-        fputs("...\n", stderr);
+        debug_puts("...\n");
         return 0;
     }
 
@@ -369,19 +386,22 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
         tdata->ts = timestamp.val;
         tdata->keyframe = FLAG_VAL(flags, KEYFRAME);
 
-        fprintf(stderr, "Track number %" PRIu64 "\n"
-                        "Timestamp %" PRIi16 "\n"
-                        "Flags %" PRIu8 "\n"
-                        "Keyframe %d\n"
-                        "Invisible %d\n"
-                        "Discardable %d\n"
-                        "Lacing type %s\n"
-                        "Content compression algorithm %s\n",
-                tdata->trackno, tdata->ts, flags,
-                tdata->keyframe,
-                FLAG_VAL(flags, INVISIBLE),
-                FLAG_VAL(flags, DISCARDABLE),
-                lacing_typemap[lacing], compalg_typemap[tdata->compalg]);
+        debug_printf("Track number %" PRIu64 "\n"
+                     "Timestamp %" PRIi16 "\n"
+                     "Flags %" PRIu8 "\n"
+                     "Keyframe %d\n"
+                     "Invisible %d\n"
+                     "Discardable %d\n"
+                     "Lacing type %s\n"
+                     "Content compression algorithm %s\n",
+                     tdata->trackno, tdata->ts, flags,
+                     tdata->keyframe,
+                     FLAG_VAL(flags, INVISIBLE),
+                     FLAG_VAL(flags, DISCARDABLE),
+                     lacing_typemap[lacing], compalg_typemap[tdata->compalg]);
+
+        (void)lacing_typemap;
+        (void)compalg_typemap;
 
         state->block_hdr = 1;
     } else {
@@ -395,8 +415,8 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
 
     totlen -= state->hdr_len;
 
-    fprintf(stderr, "Total block data length %zu byte%s\n", totlen,
-            PLURAL(totlen, "s"));
+    debug_printf("Total block data length %zu byte%s\n", totlen,
+                 PLURAL(totlen, "s"));
 
     datalen = len - sz;
     if (datalen == 0)
@@ -412,8 +432,8 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
             return -EILSEQ;
         tdata->frame_sz = q.quot;
 
-        fprintf(stderr, "%d laced frames of size %zu byte%s\n", lacing,
-                tdata->frame_sz, PLURAL(tdata->frame_sz, "s"));
+        debug_printf("%d laced frames of size %zu byte%s\n", lacing,
+                     tdata->frame_sz, PLURAL(tdata->frame_sz, "s"));
 
         offset = 1;
         ++sz;
@@ -460,8 +480,10 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
 
         tdata->compalg = edata->uinteger;
 
-        fprintf(stderr, "ContentCompAlgo(%" PRIu64 ") = %s\n",
-                state->trackno, compalg_typemap[tdata->compalg]);
+        debug_printf("ContentCompAlgo(%" PRIu64 ") = %s\n",
+                     state->trackno, compalg_typemap[tdata->compalg]);
+
+        (void)compalg_typemap;
     } else
         PRINT_HANDLER_INFO(val);
 
@@ -511,8 +533,8 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
         tdata->stripped_bytes = stripped_bytes;
         tdata->num_stripped_bytes = num_stripped_bytes;
 
-        fprintf(stderr, "|ContentCompSettings(%" PRIu64 ")| += %zu byte%s\n",
-                state->trackno, len, PLURAL(len, "s"));
+        debug_printf("|ContentCompSettings(%" PRIu64 ")| += %zu byte%s\n",
+                     state->trackno, len, PLURAL(len, "s"));
     } else
         PRINT_HANDLER_INFO(val);
 
