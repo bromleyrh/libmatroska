@@ -17,6 +17,8 @@ build_vers = "$(shell git rev-parse HEAD)"
 debug_cppflags_debug =
 debug_cflags_debug = -ggdb3 -O0
 
+debug_cppflags_ndebug = -DNDEBUG
+
 if DEBUG
 AM_CPPFLAGS = $(defines) $(debug_cppflags_debug)
 AM_CFLAGS = $(debug_cflags_debug) -pipe -Wall -Wextra
