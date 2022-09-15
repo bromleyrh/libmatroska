@@ -18,6 +18,7 @@ debug_cppflags_debug =
 debug_cflags_debug = -ggdb3 -O0
 
 debug_cppflags_ndebug = -DNDEBUG
+debug_cflags_ndebug = -O2
 
 if DEBUG
 AM_CPPFLAGS = $(defines) $(debug_cppflags_debug)
