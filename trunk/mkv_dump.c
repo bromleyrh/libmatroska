@@ -222,7 +222,7 @@ int
 main(int argc, char **argv)
 {
     int err;
-    struct avl_tree *tcb;
+    struct avl_tree *tcb = NULL;
 
     if (parse_cmdline(argc, argv, &tcb) != 0)
         return EXIT_FAILURE;
