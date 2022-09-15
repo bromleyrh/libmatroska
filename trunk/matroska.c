@@ -98,9 +98,9 @@ static const char *const compalg_typemap[] = {
 #define debug_printf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #define PRINT_HANDLER_INFO(val) print_handler(stderr, __FUNCTION__, val)
 #else
-#define debug_puts(s)
-#define debug_printf(fmt, ...)
-#define PRINT_HANDLER_INFO(val)
+#define debug_puts(s) ((void)0)
+#define debug_printf(fmt, ...) ((void)0)
+#define PRINT_HANDLER_INFO(val) ((void)0)
 #endif
 
 #ifdef DEBUG_OUTPUT
