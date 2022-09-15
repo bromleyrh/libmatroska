@@ -276,7 +276,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                              off_t off, void *ctx)
 {
     int err = 0;
-    int lacing;
+    int lacing = 0;
     int offset;
     size_t datalen, sz;
     struct matroska_state *state;
