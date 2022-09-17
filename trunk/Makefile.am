@@ -127,6 +127,9 @@ vint_test_DEPENDENCIES = libmatroskalite.la
 include scripts/Makefile.am
 
 install-exec-hook:
+	if [ `uname` = Darwin ]; then \
+		chmod -h 0755 $(libdir)/libmatroskalite.$(sosuf); \
+	fi
 	@if ldc=`which ldconfig 2>/dev/null` && test -x ${ldc}; then \
 		echo "Regenerating runtime linker cache"; \
 		ldconfig || true; \
