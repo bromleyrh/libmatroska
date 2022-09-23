@@ -2,6 +2,8 @@
  * parser.c
  */
 
+#define _FILE_OFFSET_BITS 64
+
 #include "element.h"
 #include "parser.h"
 #include "parser_defs.h"

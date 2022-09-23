@@ -5,6 +5,10 @@
 #ifndef _MATROSKA_H
 #define _MATROSKA_H
 
+#if _FILE_OFFSET_BITS != 64
+#error "'-D_FILE_OFFSET_BITS=64' is required to use this module"
+#endif
+
 #define _LIBMATROSKALITE_H_INTERNAL
 #include <matroska/libmatroskalite_common.h>
 #undef _LIBMATROSKALITE_H_INTERNAL

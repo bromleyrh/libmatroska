@@ -5,6 +5,10 @@
 #ifndef _PARSER_H
 #define _PARSER_H
 
+#if _FILE_OFFSET_BITS != 64
+#error "'-D_FILE_OFFSET_BITS=64' is required to use this module"
+#endif
+
 #include "element.h"
 
 #include <stddef.h>

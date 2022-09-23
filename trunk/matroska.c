@@ -2,6 +2,8 @@
  * matroska.c
  */
 
+#define _FILE_OFFSET_BITS 64
+
 #include "common.h"
 #include "ebml.h"
 #include "matroska.h"
