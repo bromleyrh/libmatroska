@@ -14,6 +14,7 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -48,7 +49,10 @@ struct track_data {
     enum content_comp_algo  compalg;
     void                    *stripped_bytes;
     size_t                  num_stripped_bytes;
-    size_t                  frame_sz; /* used when lacing employed */
+    size_t                  *frame_sz; /* used when lacing employed */
+    ssize_t                 frame_idx;
+    size_t                  num_frames;
+    size_t                  num_frame_sz;
     size_t                  next_frame_off;
     int16_t                 ts;
     int                     keyframe;
@@ -60,11 +64,17 @@ struct matroska_state {
     matroska_bitstream_cb_t *cb;
     void                    *ctx;
     int                     block_hdr;
+    int                     lacing_hdr;
 #define _X(nm, len) + len
     char                    hdr_buf[LIST_BLOCK_HDR_FIELDS()];
 #undef _X
     size_t                  hdr_len;
     size_t                  hdr_sz;
+    char                    *lacing_hdr_buf;
+    size_t                  lacing_hdr_len;
+    size_t                  lacing_hdr_sz;
+    off_t                   lacing_hdr_off;
+    size_t                  lacing_nframes;
     size_t                  data_len;
     uint64_t                trackno;
     struct avl_tree         *track_data;
@@ -112,6 +122,10 @@ static int print_handler(FILE *, const char *, const char *);
 static int track_data_cmp(const void *, const void *, void *);
 static int track_data_free(const void *, void *);
 
+static int parse_ebml_lacing_header(const void *, size_t, size_t, size_t *,
+                                    int *, struct track_data *,
+                                    struct matroska_state *);
+
 static int get_track_data(struct matroska_state *, uint64_t,
                           struct track_data **);
 
@@ -149,11 +163,94 @@ track_data_free(const void *keyval, void *ctx)
 
     (void)ctx;
 
+    free(tdata->frame_sz);
     free(tdata->stripped_bytes);
 
     free(tdata);
 
     return 0;
+}
+
+static int
+parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
+                         size_t *hdrlen, int *offset, struct track_data *tdata,
+                         struct matroska_state *state)
+{
+    char *bufp;
+    int err;
+    size_t hlen;
+    size_t i;
+    size_t startoff;
+    uint64_t framesz, totframesz;
+
+    startoff = state->lacing_hdr_len;
+
+    hlen = MIN(len, state->lacing_hdr_sz);
+
+    memcpy(state->lacing_hdr_buf + state->lacing_hdr_len, (const char *)buf,
+           hlen);
+
+    state->lacing_hdr_len += hlen;
+    state->lacing_hdr_sz -= hlen;
+    if (state->lacing_hdr_sz > 0)
+        return 0;
+
+    bufp = state->lacing_hdr_buf;
+    framesz = totframesz = 0;
+    for (i = 0; i < state->lacing_nframes - 1; i++) {
+        int64_t delta;
+        uint64_t fsz;
+
+        err = vint_to_u64(bufp, &fsz, &hlen);
+        if (err)
+            return err;
+
+        if (i == 0)
+            framesz = fsz;
+        else {
+            delta = fsz + 1 - (1 << (hlen * CHAR_BIT - hlen - 1));
+            if (delta < 0 && (uint64_t)-delta > framesz)
+                return -EILSEQ;
+            framesz += delta;
+        }
+
+        tdata->frame_sz[i] = framesz;
+
+        fprintf(stderr, "Frame size %" PRIu64 " byte%s\n", framesz,
+                PLURAL(framesz, "s"));
+
+        bufp += hlen;
+        totframesz += framesz;
+    }
+
+    if (totframesz >= totlen)
+        return -EILSEQ;
+
+    hlen = bufp - state->lacing_hdr_buf;
+
+    tdata->frame_sz[i] = framesz = totlen - hlen - totframesz;
+    tdata->frame_idx = 0;
+    tdata->num_frames = state->lacing_nframes;
+
+    fprintf(stderr, "Frame size %" PRIu64 " byte%s\n", framesz,
+            PLURAL(framesz, "s"));
+
+    tdata->next_frame_off = 0;
+
+    err = return_track_data(bufp, state->lacing_hdr_len - hlen, totlen - hlen,
+                            state->lacing_hdr_off + hlen, tdata, state);
+    if (err)
+        return err;
+
+    free(state->lacing_hdr_buf);
+    state->lacing_hdr_buf = NULL;
+
+    *hdrlen = hlen;
+    if (offset != NULL) {
+        *offset = startoff < state->lacing_hdr_len
+                  ? state->lacing_hdr_len - startoff : 0;
+    }
+    return 1;
 }
 
 static int
@@ -196,7 +293,7 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
                 if (res != 0)
                     return res;
             }
-            tdata->next_frame_off += tdata->frame_sz;
+            tdata->next_frame_off += tdata->frame_sz[tdata->frame_idx];
         }
 
         seglen = dp - sp;
@@ -211,12 +308,14 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
             }
 
             len -= seglen;
+            if ((size_t)(dp - buf) == tdata->next_frame_off)
+                ++tdata->frame_idx;
         }
 
         if (len == 0)
             break;
 
-        frame_off = tdata->frame_sz;
+        frame_off = tdata->frame_sz[tdata->frame_idx];
     }
 
     tdata->next_frame_off = frame_off - seglen;
@@ -233,10 +332,11 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
               const void *buf, size_t len, size_t totlen, off_t off, int simple,
               void *ctx)
 {
-    int err = 0;
     int lacing = 0;
+    int ret = 0;
     int offset;
-    size_t datalen, sz;
+    lldiv_t q;
+    size_t datalen, hdrlen, sz;
     struct matroska_state *state;
     struct track_data *tdata;
 
@@ -250,7 +350,7 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
     if (val != NULL) {
         if (state->data_len != 0)
             return -EIO;
-        state->block_hdr = 0;
+        state->block_hdr = state->lacing_hdr = 0;
         PRINT_HANDLER_INFO(val);
         return 0;
     }
@@ -271,25 +371,41 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
     }
 
     if (state->block_hdr == 1) {
-        state->data_len += len;
-        if (state->cb != NULL) {
-            err = get_track_data(state, state->trackno, &tdata);
-            if (err)
-                return err;
+        if (state->lacing_hdr == 1 || state->cb != NULL) {
+            ret = get_track_data(state, state->trackno, &tdata);
+            if (ret != 0)
+                return ret;
+        }
 
-            err = return_track_data(buf, len, totlen - state->hdr_len, off,
-                                    tdata, state);
-            if (err)
-                return err;
+        state->data_len += len;
+
+        if (state->lacing_hdr == 1) {
+            ret = parse_ebml_lacing_header((const char *)buf, len,
+                                           totlen - state->hdr_len - 1, &hdrlen,
+                                           &offset, tdata, state);
+            if (ret != 1)
+                return ret;
+
+            buf = (const char *)buf + offset;
+            len -= offset;
+
+            state->lacing_hdr = 2;
+        }
+
+        if (state->cb != NULL) {
+            ret = return_track_data((const char *)buf, len,
+                                    totlen - state->hdr_len, off, tdata, state);
+            if (ret != 0)
+                return ret;
         }
         debug_puts("...\n");
         return 0;
     }
 
     if (state->block_hdr == 0) {
-        err = vint_to_u64(buf, NULL, &state->hdr_sz);
-        if (err)
-            return err;
+        ret = vint_to_u64(buf, NULL, &state->hdr_sz);
+        if (ret != 0)
+            return ret;
         state->hdr_len = 0;
         state->hdr_sz += BLOCK_HDR_FIXED_LEN;
 
@@ -324,9 +440,9 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
             [BLOCK_FLAG_LACING_EBML]        = "EBML"
         };
 
-        err = vint_to_u64(state->hdr_buf, &state->trackno, &datalen);
-        if (err)
-            return err;
+        ret = vint_to_u64(state->hdr_buf, &state->trackno, &datalen);
+        if (ret != 0)
+            return ret;
         if (datalen != state->hdr_len - BLOCK_HDR_FIXED_LEN)
             return -EILSEQ;
 
@@ -340,9 +456,9 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
 
         lacing = flags & BLOCK_FLAG_LACING_MASK;
 
-        err = get_track_data(state, state->trackno, &tdata);
-        if (err)
-            return err;
+        ret = get_track_data(state, state->trackno, &tdata);
+        if (ret != 0)
+            return ret;
 
         tdata->ts = timestamp.val;
         tdata->keyframe = FLAG_VAL(flags, KEYFRAME);
@@ -375,9 +491,9 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
 
         state->block_hdr = 1;
     } else {
-        err = get_track_data(state, state->trackno, &tdata);
-        if (err)
-            return err;
+        ret = get_track_data(state, state->trackno, &tdata);
+        if (ret != 0)
+            return ret;
     }
 
     if (state->cb == NULL)
@@ -392,24 +508,84 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
     if (datalen == 0)
         return 0;
 
-    if (lacing == BLOCK_FLAG_LACING_FIXED_SIZE) {
-        lldiv_t q;
-
+    switch (lacing) {
+    case BLOCK_FLAG_LACING_XIPH:
+        return -ENOSYS;
+    case BLOCK_FLAG_LACING_FIXED_SIZE:
         lacing = *((unsigned char *)buf + sz) + 1;
 
         q = lldiv(totlen - 1, lacing);
         if (q.rem != 0)
             return -EILSEQ;
-        tdata->frame_sz = q.quot;
+        tdata->frame_sz[0] = q.quot;
+        tdata->frame_idx = 0;
+        tdata->num_frames = 1;
 
         debug_printf("%d laced frames of size %zu byte%s\n", lacing,
-                     tdata->frame_sz, PLURAL(tdata->frame_sz, "s"));
+                     tdata->frame_sz[0], PLURAL(tdata->frame_sz[0], "s"));
 
         offset = 1;
         ++sz;
-    } else {
-        tdata->frame_sz = totlen;
+
+        break;
+    case BLOCK_FLAG_LACING_EBML:
         offset = 0;
+
+        switch (state->lacing_hdr) {
+        case 0:
+            state->lacing_nframes = *((unsigned char *)buf + sz) + 1;
+
+            state->lacing_hdr_sz = state->lacing_nframes
+                                   * ETYPE_MAX_FIXED_WIDTH;
+            state->lacing_hdr_buf = malloc(state->lacing_hdr_sz);
+            if (state->lacing_hdr_buf == NULL)
+                return MINUS_ERRNO;
+            state->lacing_hdr_len = 0;
+
+            if (tdata->num_frame_sz < state->lacing_nframes) {
+                size_t *tmp;
+                size_t newsz = 2 * state->lacing_nframes;
+
+                if (oreallocarray(tdata->frame_sz, &tmp, newsz) == NULL)
+                    return MINUS_ERRNO;
+                tdata->frame_sz = tmp;
+                tdata->num_frame_sz = newsz;
+            }
+
+            offset = 1;
+            ++sz;
+
+            state->lacing_hdr_off = off + sz;
+
+            state->lacing_hdr = 1;
+            /* fallthrough */
+        case 1:
+            ret = parse_ebml_lacing_header((const char *)buf + sz,
+                                           datalen - offset, totlen - offset,
+                                           &hdrlen, NULL, tdata, state);
+            if (ret != 1) {
+                if (ret == 0)
+                    state->data_len += datalen;
+                return ret;
+            }
+
+            state->lacing_hdr = 2;
+
+            offset += hdrlen;
+            sz += hdrlen;
+        case 2:
+            break;
+        default:
+            abort();
+        }
+
+        return 0;
+    default:
+        tdata->frame_sz[0] = totlen;
+        tdata->frame_idx = 0;
+        tdata->num_frames = 1;
+        offset = 0;
+        break;
     }
 
     tdata->next_frame_off = 0;
@@ -430,6 +606,7 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
 {
     int err;
     struct matroska_state *state = ctx;
+    struct track_data *tdata;
 
     (void)buf;
     (void)len;
@@ -444,8 +621,6 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
     }
 
     if (val == NULL) {
-        struct track_data *tdata;
-
         if (etype != ETYPE_UINTEGER)
             return -EILSEQ;
 
@@ -455,10 +630,16 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
         tdata->trackno = edata->uinteger;
         tdata->compalg = CONTENT_COMP_ALGO_NONE;
 
+        tdata->num_frame_sz = 8;
+        if (oallocarray(&tdata->frame_sz, tdata->num_frame_sz) == NULL) {
+            err = MINUS_ERRNO;
+            goto err;
+        }
+
         err = avl_tree_insert(state->track_data, &tdata);
         if (err) {
-            free(tdata);
-            return err;
+            free(tdata->frame_sz);
+            goto err;
         }
 
         debug_printf("Track number %" PRIu64 "\n", tdata->trackno);
@@ -468,6 +649,10 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
         PRINT_HANDLER_INFO(val);
 
     return 0;
+
+err:
+    free(tdata);
+    return err;
 }
 
 int
@@ -624,6 +809,8 @@ int
 matroska_close(matroska_hdl_t hdl)
 {
     int err;
+
+    free(hdl->lacing_hdr_buf);
 
     if (hdl->track_data != NULL) {
         avl_tree_walk_ctx_t wctx = NULL;
