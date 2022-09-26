@@ -427,7 +427,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     if (lacing == BLOCK_FLAG_LACING_FIXED_SIZE) {
         lldiv_t q;
 
-        lacing = *(unsigned char *)(buf + sz) + 1;
+        lacing = *((unsigned char *)buf + sz) + 1;
 
         q = lldiv(totlen - 1, lacing);
         if (q.rem != 0)
@@ -447,8 +447,8 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     tdata->next_frame_off = 0;
     state->data_len += datalen;
 
-    return return_track_data(buf + sz, datalen - offset, totlen - offset,
-                             off + sz, tdata, state);
+    return return_track_data((const char *)buf + sz, datalen - offset,
+                             totlen - offset, off + sz, tdata, state);
 }
 
 #undef BLOCK_HDR_FIXED_LEN
