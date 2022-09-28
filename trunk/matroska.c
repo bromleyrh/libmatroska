@@ -415,7 +415,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     }
 
     if (state->cb == NULL)
-        return err;
+        return 0;
 
     totlen -= state->hdr_len;
 
