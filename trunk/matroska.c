@@ -347,9 +347,11 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     if (sz > sizeof(state->hdr_buf) - state->hdr_len)
         return -EILSEQ;
 
-    memcpy(state->hdr_buf + state->hdr_len, buf, sz);
-    state->hdr_len += sz;
-    state->hdr_sz -= sz;
+    if (sz > 0) {
+        memcpy(state->hdr_buf + state->hdr_len, buf, sz);
+        state->hdr_len += sz;
+        state->hdr_sz -= sz;
+    }
 
     if (state->hdr_sz == 0) {
         uint8_t flags;
