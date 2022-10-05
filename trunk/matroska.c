@@ -118,6 +118,9 @@ static int get_track_data(struct matroska_state *, uint64_t,
 static int return_track_data(const char *, size_t, size_t, off_t,
                              struct track_data *, struct matroska_state *);
 
+static int block_handler(const char *, enum etype, edata_t *, const void *,
+                         size_t, size_t, off_t, int, void *);
+
 #ifdef DEBUG_OUTPUT
 static int
 print_handler(FILE *f, const char *func, const char *val)
@@ -221,61 +224,14 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
     return 0;
 }
 
-int
-matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
-                             const void *buf, size_t len, size_t totlen,
-                             off_t off, void *ctx)
-{
-    int err;
-    struct matroska_state *state = ctx;
-
-    (void)buf;
-    (void)len;
-    (void)totlen;
-    (void)off;
-
-    if (state->track_data == NULL) {
-        err = avl_tree_new(&state->track_data, sizeof(struct track_data *),
-                           &track_data_cmp, 0, NULL, NULL, NULL);
-        if (err)
-            return err;
-    }
-
-    if (val == NULL) {
-        struct track_data *tdata;
-
-        if (etype != ETYPE_UINTEGER)
-            return -EILSEQ;
-
-        if (ocalloc(&tdata, 1) == NULL)
-            return MINUS_ERRNO;
-
-        tdata->trackno = edata->uinteger;
-        tdata->compalg = CONTENT_COMP_ALGO_NONE;
-
-        err = avl_tree_insert(state->track_data, &tdata);
-        if (err) {
-            free(tdata);
-            return err;
-        }
-
-        debug_printf("Track number %" PRIu64 "\n", tdata->trackno);
-
-        state->trackno = tdata->trackno;
-    } else
-        PRINT_HANDLER_INFO(val);
-
-    return 0;
-}
-
 #define BLOCK_HDR_FIXED_LEN (BLOCK_HDR_TIMESTAMP_LEN + BLOCK_HDR_FLAGS_LEN)
 
 #define FLAG_VAL(flags, which) (!!((flags) & BLOCK_FLAG_##which))
 
-int
-matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
-                             const void *buf, size_t len, size_t totlen,
-                             off_t off, void *ctx)
+static int
+block_handler(const char *val, enum etype etype, edata_t *edata,
+              const void *buf, size_t len, size_t totlen, off_t off, int simple,
+              void *ctx)
 {
     int err = 0;
     int lacing = 0;
@@ -354,6 +310,7 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
     }
 
     if (state->hdr_sz == 0) {
+        int discardable;
         uint8_t flags;
         union {
             int16_t val;
@@ -390,6 +347,14 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
         tdata->ts = timestamp.val;
         tdata->keyframe = FLAG_VAL(flags, KEYFRAME);
 
+        if (simple)
+            discardable = FLAG_VAL(flags, DISCARDABLE);
+        else {
+            if (tdata->keyframe != 0)
+                return -EILSEQ;
+            discardable = -1;
+        }
+
         debug_printf("Track number %" PRIu64 "\n"
                      "Timestamp %" PRIi16 "\n"
                      "Flags %" PRIu8 "\n"
@@ -401,9 +366,10 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                      tdata->trackno, tdata->ts, flags,
                      tdata->keyframe,
                      FLAG_VAL(flags, INVISIBLE),
-                     FLAG_VAL(flags, DISCARDABLE),
+                     discardable,
                      lacing_typemap[lacing], compalg_typemap[tdata->compalg]);
 
+        (void)discardable;
         (void)lacing_typemap;
         (void)compalg_typemap;
 
@@ -456,6 +422,69 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
 #undef BLOCK_HDR_FIXED_LEN
 
 #undef FLAG_VAL
+
+int
+matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
+                             const void *buf, size_t len, size_t totlen,
+                             off_t off, void *ctx)
+{
+    int err;
+    struct matroska_state *state = ctx;
+
+    (void)buf;
+    (void)len;
+    (void)totlen;
+    (void)off;
+
+    if (state->track_data == NULL) {
+        err = avl_tree_new(&state->track_data, sizeof(struct track_data *),
+                           &track_data_cmp, 0, NULL, NULL, NULL);
+        if (err)
+            return err;
+    }
+
+    if (val == NULL) {
+        struct track_data *tdata;
+
+        if (etype != ETYPE_UINTEGER)
+            return -EILSEQ;
+
+        if (ocalloc(&tdata, 1) == NULL)
+            return MINUS_ERRNO;
+
+        tdata->trackno = edata->uinteger;
+        tdata->compalg = CONTENT_COMP_ALGO_NONE;
+
+        err = avl_tree_insert(state->track_data, &tdata);
+        if (err) {
+            free(tdata);
+            return err;
+        }
+
+        debug_printf("Track number %" PRIu64 "\n", tdata->trackno);
+
+        state->trackno = tdata->trackno;
+    } else
+        PRINT_HANDLER_INFO(val);
+
+    return 0;
+}
+
+int
+matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
+                             const void *buf, size_t len, size_t totlen,
+                             off_t off, void *ctx)
+{
+    return block_handler(val, etype, edata, buf, len, totlen, off, 1, ctx);
+}
+
+int
+matroska_block_handler(const char *val, enum etype etype, edata_t *edata,
+                       const void *buf, size_t len, size_t totlen, off_t off,
+                       void *ctx)
+{
+    return block_handler(val, etype, edata, buf, len, totlen, off, 0, ctx);
+}
 
 int
 matroska_contentcompalgo_handler(const char *val, enum etype etype,

@@ -14,6 +14,8 @@ ppush(`EBMLSemantics')
           `type="master" handler="matroska_tracknumber_handler"')
     nexte(`ElementHandler', `0xA3',
           `type="master" handler="matroska_simpleblock_handler"')
+    nexte(`ElementHandler', `0xA1',
+          `type="master" handler="matroska_block_handler"')
     nexte(`ElementHandler', `0x4254',
           `type="uinteger" handler="matroska_contentcompalgo_handler"')
     nexte(`ElementHandler', `0x4255',
