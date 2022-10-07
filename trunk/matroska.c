@@ -66,6 +66,7 @@ struct matroska_state {
     void                    *ctx;
     int                     block_hdr;
     int                     lacing_hdr;
+    int                     lacing_type;
 #define _X(nm, len) + len
     char                    hdr_buf[LIST_BLOCK_HDR_FIELDS()];
 #undef _X
@@ -123,6 +124,9 @@ static int print_handler(FILE *, const char *, const char *);
 static int track_data_cmp(const void *, const void *, void *);
 static int track_data_free(const void *, void *);
 
+static int parse_xiph_lacing_header(const void *, size_t, size_t, size_t *,
+                                    int *, struct track_data *,
+                                    struct matroska_state *);
 static int parse_ebml_lacing_header(const void *, size_t, size_t, size_t *,
                                     int *, struct track_data *,
                                     struct matroska_state *);
@@ -170,6 +174,80 @@ track_data_free(const void *keyval, void *ctx)
     free(tdata);
 
     return 0;
+}
+
+static int
+parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
+                         size_t *hdrlen, int *offset, struct track_data *tdata,
+                         struct matroska_state *state)
+{
+    char *bufp;
+    int err;
+    size_t hlen;
+    size_t i;
+    size_t startoff;
+    uint64_t framesz, totframesz;
+
+    startoff = state->lacing_hdr_len;
+
+    hlen = MIN(len, state->lacing_hdr_sz);
+
+    memcpy(state->lacing_hdr_buf + state->lacing_hdr_len, buf, hlen);
+
+    state->lacing_hdr_len += hlen;
+    state->lacing_hdr_sz -= hlen;
+    if (state->lacing_hdr_sz > 0)
+        return 0;
+
+    bufp = state->lacing_hdr_buf;
+    totframesz = 0;
+    for (i = 0; i < state->lacing_nframes - 1; i++) {
+        framesz = 0;
+        for (;;) {
+            unsigned char val = (unsigned char)*bufp;
+
+            framesz += val;
+            ++bufp;
+            if (val != 255)
+                break;
+        }
+
+        tdata->frame_sz[i] = framesz;
+
+        fprintf(stderr, "Frame size %" PRIu64 " byte%s\n", framesz,
+                PLURAL(framesz, "s"));
+
+        totframesz += framesz;
+    }
+
+    if (totframesz >= totlen)
+        return -EILSEQ;
+
+    hlen = bufp - state->lacing_hdr_buf;
+
+    tdata->frame_sz[i] = framesz = totlen - hlen - totframesz;
+    tdata->frame_idx = 0;
+    tdata->num_frames = state->lacing_nframes;
+
+    fprintf(stderr, "Frame size %" PRIu64 " byte%s\n", framesz,
+            PLURAL(framesz, "s"));
+
+    tdata->next_frame_off = 0;
+
+    err = return_track_data(bufp, state->lacing_hdr_len - hlen, totlen - hlen,
+                            state->lacing_hdr_off + hlen, tdata, state);
+    if (err)
+        return err;
+
+    free(state->lacing_hdr_buf);
+    state->lacing_hdr_buf = NULL;
+
+    *hdrlen = hlen;
+    if (offset != NULL) {
+        *offset = startoff < state->lacing_hdr_len
+                  ? state->lacing_hdr_len - startoff : 0;
+    }
+    return 1;
 }
 
 static int
@@ -334,7 +412,6 @@ static int
 block_handler(const char *val, enum etype etype, const void *buf, size_t len,
               size_t totlen, off_t off, int simple, void *ctx)
 {
-    int lacing = 0;
     int ret = 0;
     int offset;
     lldiv_t q;
@@ -385,9 +462,11 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         state->data_len += len;
 
         if (state->lacing_hdr == 1) {
-            ret = parse_ebml_lacing_header((const char *)buf, len,
-                                           totlen - state->hdr_len - 1, &hdrlen,
-                                           &offset, tdata, state);
+            ret = (state->lacing_type == BLOCK_FLAG_LACING_XIPH
+                   ? parse_xiph_lacing_header
+                   : parse_ebml_lacing_header)((const char *)buf, len,
+                                               totlen - state->hdr_len - 1,
+                                               &hdrlen, &offset, tdata, state);
             if (ret != 1)
                 return ret;
 
@@ -459,7 +538,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         if ((flags & BLOCK_FLAG_RESERVED) != 0)
             return -EILSEQ;
 
-        lacing = flags & BLOCK_FLAG_LACING_MASK;
+        state->lacing_type = flags & BLOCK_FLAG_LACING_MASK;
 
         ret = get_track_data(state, state->trackno, &tdata);
         if (ret != 0)
@@ -488,7 +567,8 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
                      tdata->keyframe,
                      FLAG_VAL(flags, INVISIBLE),
                      discardable,
-                     lacing_typemap[lacing], compalg_typemap[tdata->compalg]);
+                     lacing_typemap[state->lacing_type],
+                     compalg_typemap[tdata->compalg]);
 
         (void)discardable;
         (void)lacing_typemap;
@@ -513,26 +593,26 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
     if (datalen == 0)
         return 0;
 
-    switch (lacing) {
-    case BLOCK_FLAG_LACING_XIPH:
-        return -ENOSYS;
+    switch (state->lacing_type) {
     case BLOCK_FLAG_LACING_FIXED_SIZE:
-        lacing = *((unsigned char *)buf + sz) + 1;
+        tdata->num_frames = *((unsigned char *)buf + sz) + 1;
 
-        q = lldiv(totlen - 1, lacing);
+        q = lldiv(totlen - 1, tdata->num_frames);
         if (q.rem != 0)
             return -EILSEQ;
         tdata->frame_sz[0] = q.quot;
         tdata->frame_idx = 0;
-        tdata->num_frames = 1;
 
-        debug_printf("%d laced frames of size %zu byte%s\n", lacing,
+        debug_printf("%zu laced frames of size %zu byte%s\n", tdata->num_frames,
                      tdata->frame_sz[0], PLURAL(tdata->frame_sz[0], "s"));
+
+        tdata->num_frames = 1;
 
         offset = 1;
         ++sz;
 
         break;
+    case BLOCK_FLAG_LACING_XIPH:
     case BLOCK_FLAG_LACING_EBML:
         offset = 0;
 
@@ -540,8 +620,10 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         case 0:
             state->lacing_nframes = *((unsigned char *)buf + sz) + 1;
 
-            state->lacing_hdr_sz = state->lacing_nframes
-                                   * ETYPE_MAX_FIXED_WIDTH;
+            state->lacing_hdr_sz = state->lacing_type == BLOCK_FLAG_LACING_XIPH
+                                   ? totlen
+                                   : state->lacing_nframes
+                                     * ETYPE_MAX_FIXED_WIDTH;
             state->lacing_hdr_buf = malloc(state->lacing_hdr_sz);
             if (state->lacing_hdr_buf == NULL)
                 return MINUS_ERRNO;
@@ -565,9 +647,12 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             state->lacing_hdr = 1;
             /* fallthrough */
         case 1:
-            ret = parse_ebml_lacing_header((const char *)buf + sz,
-                                           datalen - offset, totlen - offset,
-                                           &hdrlen, NULL, tdata, state);
+            ret = (state->lacing_type == BLOCK_FLAG_LACING_XIPH
+                   ? parse_xiph_lacing_header
+                   : parse_ebml_lacing_header)((const char *)buf + sz,
+                                               datalen - offset,
+                                               totlen - offset, &hdrlen, NULL,
+                                               tdata, state);
             if (ret != 1) {
                 if (ret == 0)
                     state->data_len += datalen;
