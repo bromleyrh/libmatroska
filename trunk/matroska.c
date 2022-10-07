@@ -362,8 +362,13 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
     if (buf == NULL) {
         int interrupt_read;
 
-        if (state->data_len != len)
+        if (state->data_len != len) {
+            fprintf(stderr, "Block data length mismatch: %zu byte%s vs. %zu "
+                            "byte%s\n",
+                    state->data_len, PLURAL(state->data_len, "s"), len,
+                    PLURAL(len, "s"));
             return -EIO;
+        }
         state->data_len = 0;
 
         interrupt_read = state->interrupt_read;
