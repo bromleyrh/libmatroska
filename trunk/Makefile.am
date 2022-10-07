@@ -17,7 +17,7 @@ build_vers = "$(shell git rev-parse HEAD)"
 debug_cppflags_debug =
 debug_cflags_debug = -ggdb3 -O0
 
-debug_cppflags_ndebug = -DNDEBUG
+debug_cppflags_ndebug =
 debug_cflags_ndebug = -O2
 
 if DEBUG
