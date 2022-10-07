@@ -308,7 +308,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
             }
 
             len -= seglen;
-            if ((size_t)(dp - buf) == tdata->next_frame_off)
+            if (tdata->num_frames > 1
+                && (size_t)(dp - buf) == tdata->next_frame_off)
                 ++tdata->frame_idx;
         }
 
