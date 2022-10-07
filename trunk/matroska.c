@@ -12,6 +12,7 @@
 #include <avl_tree.h>
 #include <malloc_ext.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -293,6 +294,7 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
                 if (res != 0)
                     return res;
             }
+            assert((size_t)tdata->frame_idx < tdata->num_frames);
             tdata->next_frame_off += tdata->frame_sz[tdata->frame_idx];
         }
 
@@ -316,6 +318,7 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
         if (len == 0)
             break;
 
+        assert((size_t)tdata->frame_idx < tdata->num_frames);
         frame_off = tdata->frame_sz[tdata->frame_idx];
     }
 
