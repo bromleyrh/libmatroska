@@ -188,8 +188,7 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
 
     hlen = MIN(len, state->lacing_hdr_sz);
 
-    memcpy(state->lacing_hdr_buf + state->lacing_hdr_len, (const char *)buf,
-           hlen);
+    memcpy(state->lacing_hdr_buf + state->lacing_hdr_len, buf, hlen);
 
     state->lacing_hdr_len += hlen;
     state->lacing_hdr_sz -= hlen;
