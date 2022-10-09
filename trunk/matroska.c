@@ -133,8 +133,8 @@ static int get_track_data(struct matroska_state *, uint64_t,
 static int return_track_data(const char *, size_t, size_t, off_t,
                              struct track_data *, struct matroska_state *);
 
-static int block_handler(const char *, enum etype, edata_t *, const void *,
-                         size_t, size_t, off_t, int, void *);
+static int block_handler(const char *, enum etype, const void *, size_t, size_t,
+                         off_t, int, void *);
 
 #ifdef DEBUG_OUTPUT
 static int
@@ -332,9 +332,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
 #define FLAG_VAL(flags, which) (!!((flags) & BLOCK_FLAG_##which))
 
 static int
-block_handler(const char *val, enum etype etype, edata_t *edata,
-              const void *buf, size_t len, size_t totlen, off_t off, int simple,
-              void *ctx)
+block_handler(const char *val, enum etype etype, const void *buf, size_t len,
+              size_t totlen, off_t off, int simple, void *ctx)
 {
     int lacing = 0;
     int ret = 0;
@@ -343,8 +342,6 @@ block_handler(const char *val, enum etype etype, edata_t *edata,
     size_t datalen, hdrlen, sz;
     struct matroska_state *state;
     struct track_data *tdata;
-
-    (void)edata;
 
     if (etype != ETYPE_BINARY)
         return -EILSEQ;
@@ -669,7 +666,9 @@ matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                              const void *buf, size_t len, size_t totlen,
                              off_t off, void *ctx)
 {
-    return block_handler(val, etype, edata, buf, len, totlen, off, 1, ctx);
+    (void)edata;
+
+    return block_handler(val, etype, buf, len, totlen, off, 1, ctx);
 }
 
 int
@@ -677,7 +676,9 @@ matroska_block_handler(const char *val, enum etype etype, edata_t *edata,
                        const void *buf, size_t len, size_t totlen, off_t off,
                        void *ctx)
 {
-    return block_handler(val, etype, edata, buf, len, totlen, off, 0, ctx);
+    (void)edata;
+
+    return block_handler(val, etype, buf, len, totlen, off, 0, ctx);
 }
 
 int
