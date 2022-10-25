@@ -285,7 +285,12 @@ free_fn(const char *str, void *val, void *ctx)
 static int
 do_radix_tree_free(struct radix_tree *rt)
 {
-    return radix_tree_walk(rt, &free_fn, NULL);
+    int err, tmp;
+
+    err = radix_tree_walk(rt, &free_fn, NULL);
+
+    tmp = radix_tree_free(rt);
+    return tmp == 0 ? err : tmp;
 }
 
 #define INIT_ENTRY(key1, key2, name) \
