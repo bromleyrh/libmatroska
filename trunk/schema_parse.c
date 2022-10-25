@@ -368,11 +368,11 @@ output_parser_data(xmlDocPtr doc, const char *doctype)
 
     err = _output_parser_data(xmlDocGetRootElement(doc), 0, rt);
     if (err)
-        goto err;
+        goto end;
 
     err = setjmp(env);
     if (err)
-        goto err;
+        goto end;
 
     do_printf(&env, "#include \"parser.h\"\n");
     do_printf(&env, "#include \"parser_defs.h\"\n\n");
@@ -388,7 +388,7 @@ output_parser_data(xmlDocPtr doc, const char *doctype)
     if (!err)
         return printf("#undef TRIE_NODE_PREFIX\n\n") < 0 ? -EIO : 0;
 
-err:
+end:
     do_radix_tree_free(rt);
     return err;
 }
