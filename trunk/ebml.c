@@ -283,9 +283,9 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
              int ebml, uint64_t n, FILE *f)
 {
     char idstr[7];
-    const char *val;
+    const char *val = NULL;
     const struct parser *parsers[2];
-    enum etype ret;
+    enum etype ret = ETYPE_NONE;
     int res;
     semantic_action_t *action = NULL;
     size_t i;
@@ -752,6 +752,8 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
                            hdl->n, f);
         if (res != 0)
             return res;
+        if (etype == ETYPE_NONE)
+            return -EILSEQ;
 
         if (sz_unknown && etype != ETYPE_MASTER)
             return -EILSEQ;
