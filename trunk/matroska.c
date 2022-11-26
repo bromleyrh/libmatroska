@@ -364,7 +364,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
         dp = sp + MIN(len, frame_off);
 
         if ((size_t)(sp - buf) == tdata->next_frame_off) {
-            if (tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
+            if (state->cb != NULL
+                && tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
                                    tdata->num_stripped_bytes, totlen, off,
                                    tdata->ts, tdata->keyframe, state->ctx);
@@ -378,12 +379,14 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
         seglen = dp - sp;
 
         if (seglen > 0) {
-            res = (*state->cb)(state->trackno, sp, seglen, totlen, off,
-                               tdata->ts, tdata->keyframe, state->ctx);
-            if (res != 0) {
-                if (res != 1)
-                    return res;
-                state->interrupt_read = 1;
+            if (state->cb != NULL) {
+                res = (*state->cb)(state->trackno, sp, seglen, totlen, off,
+                                   tdata->ts, tdata->keyframe, state->ctx);
+                if (res != 0) {
+                    if (res != 1)
+                        return res;
+                    state->interrupt_read = 1;
+                }
             }
 
             len -= seglen;
@@ -580,9 +583,6 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         if (ret != 0)
             return ret;
     }
-
-    if (state->cb == NULL)
-        return 0;
 
     totlen -= state->hdr_len;
 
