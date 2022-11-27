@@ -83,7 +83,7 @@ struct matroska_state {
     int                     interrupt_read;
 };
 
-#ifndef NDEBUG
+#if 0 && !defined(NDEBUG)
 #define DEBUG_OUTPUT
 #endif
 
