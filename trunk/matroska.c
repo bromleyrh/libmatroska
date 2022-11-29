@@ -358,6 +358,9 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
     size_t frame_off;
     size_t seglen;
 
+    if (len == 0)
+        return 0;
+
     frame_off = tdata->next_frame_off;
 
     for (sp = buf;; sp = dp) {
