@@ -214,8 +214,8 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
 
         tdata->frame_sz[i] = framesz;
 
-        fprintf(stderr, "Frame size %" PRIu64 " byte%s\n", framesz,
-                PLURAL(framesz, "s"));
+        debug_printf("Frame size %" PRIu64 " byte%s\n", framesz,
+                     PLURAL(framesz, "s"));
 
         totframesz += framesz;
     }
@@ -229,8 +229,8 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->frame_idx = 0;
     tdata->num_frames = state->lacing_nframes;
 
-    fprintf(stderr, "Frame size %" PRIu64 " byte%s\n", framesz,
-            PLURAL(framesz, "s"));
+    debug_printf("Frame size %" PRIu64 " byte%s\n", framesz,
+                 PLURAL(framesz, "s"));
 
     tdata->next_frame_off = 0;
 
@@ -294,8 +294,8 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
 
         tdata->frame_sz[i] = framesz;
 
-        fprintf(stderr, "Frame size %" PRIu64 " byte%s\n", framesz,
-                PLURAL(framesz, "s"));
+        debug_printf("Frame size %" PRIu64 " byte%s\n", framesz,
+                     PLURAL(framesz, "s"));
 
         bufp += hlen;
         totframesz += framesz;
@@ -310,8 +310,8 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->frame_idx = 0;
     tdata->num_frames = state->lacing_nframes;
 
-    fprintf(stderr, "Frame size %" PRIu64 " byte%s\n", framesz,
-            PLURAL(framesz, "s"));
+    debug_printf("Frame size %" PRIu64 " byte%s\n", framesz,
+                 PLURAL(framesz, "s"));
 
     tdata->next_frame_off = 0;
 
