@@ -110,6 +110,9 @@ track_cb_free(const void *keyval, void *ctx)
 {
     const struct track_cb *tcb = keyval;
 
+    if (fsync(fileno(tcb->f)) == -1 && errno != EINVAL)
+        *(int *)ctx = MINUS_ERRNO;
+
     if (fclose(tcb->f) == EOF)
         *(int *)ctx = MINUS_ERRNO;
 
@@ -194,6 +197,12 @@ dump_mkv(int infd, int outfd, struct avl_tree *tcb)
     err = matroska_read(f, hdl);
     if (err) {
         errmsg = "Error dumping file";
+        goto err3;
+    }
+
+    if (fsync(fileno(f)) == -1 && errno != EINVAL) {
+        err = MINUS_ERRNO;
+        errmsg = "Error closing output file";
         goto err3;
     }
 
