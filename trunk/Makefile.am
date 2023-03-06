@@ -139,4 +139,7 @@ install-exec-hook:
 	@echo "PKG_CONFIG_PATH in order to build dependent modules"
 	@echo
 
+distclean-local:
+	-rm -f scan_build
+
 ## vi: set noexpandtab sw=4 ts=4:

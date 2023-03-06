@@ -11,6 +11,7 @@
 /conftest.err
 /libtool
 /*.pc
+/scan_build
 
 Makefile
 Makefile.in
