@@ -650,6 +650,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             state->lacing_hdr = 1;
             /* fallthrough */
         case 1:
+            hdrlen = 0;
             ret = (state->lacing_type == BLOCK_FLAG_LACING_XIPH
                    ? parse_xiph_lacing_header
                    : parse_ebml_lacing_header)((const char *)buf + sz,
