@@ -75,6 +75,7 @@ parse_track_spec(const char *trackno, const char *path, struct avl_tree *tcb)
     e.f = fopen(e.path, "w");
     if (e.f == NULL) {
         err = MINUS_ERRNO;
+        fprintf(stderr, "Error opening %s: %s\n", e.path, strerror(-err));
         goto err1;
     }
 
@@ -106,6 +107,7 @@ parse_elem_spec(const char *elemno, const char *path, struct avl_tree *ecb)
     e.f = fopen(e.path, "w");
     if (e.f == NULL) {
         err = MINUS_ERRNO;
+        fprintf(stderr, "Error opening %s: %s\n", e.path, strerror(-err));
         goto err1;
     }
 
@@ -191,12 +193,18 @@ static int
 track_cb_free(const void *keyval, void *ctx)
 {
     const struct track_cb *tcb = keyval;
+    int err = 0;
 
     if (fsync(fileno(tcb->f)) == -1 && errno != EINVAL)
-        *(int *)ctx = MINUS_ERRNO;
+        err = MINUS_ERRNO;
 
     if (fclose(tcb->f) == EOF)
-        *(int *)ctx = MINUS_ERRNO;
+        err = MINUS_ERRNO;
+
+    if (err) {
+        fprintf(stderr, "Error closing %s: %s\n", tcb->path, strerror(-err));
+        *(int *)ctx = err;
+    }
 
     free(tcb->path);
 
@@ -218,12 +226,18 @@ static int
 elem_cb_free(const void *keyval, void *ctx)
 {
     const struct elem_cb *ecb = keyval;
+    int err = 0;
 
     if (fsync(fileno(ecb->f)) == -1 && errno != EINVAL)
-        *(int *)ctx = MINUS_ERRNO;
+        err = MINUS_ERRNO;
 
     if (fclose(ecb->f) == EOF)
-        *(int *)ctx = MINUS_ERRNO;
+        err = MINUS_ERRNO;
+
+    if (err) {
+        fprintf(stderr, "Error closing %s: %s\n", ecb->path, strerror(-err));
+        *(int *)ctx = err;
+    }
 
     free(ecb->path);
 
@@ -282,8 +296,12 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
             return res;
 
         ret = fwrite(val->data, 1, val->len, e.f);
-        if (ret != val->len)
-            return MINUS_ERRNO;
+        if (ret != val->len) {
+            res = MINUS_ERRNO;
+            fprintf(stderr, "Error writing to %s: %s\n",
+                    e.path, strerror(-res));
+            return res;
+        }
     }
 
     ctxp->datalen += val->len;
@@ -322,8 +340,12 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
         fprintf(stderr, " (>%s)", e.path);
 
         ret = fwrite(buf, 1, len, e.f);
-        if (ret != len)
-            return MINUS_ERRNO;
+        if (ret != len) {
+            res = MINUS_ERRNO;
+            fprintf(stderr, "Error writing to %s: %s\n",
+                    e.path, strerror(-res));
+            return res;
+        }
     }
 
     fputc('\n', stderr);
