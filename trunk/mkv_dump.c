@@ -372,13 +372,17 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
         goto err1;
     }
 
+    errmsg = "Error opening output file";
+
     f = fdopen(outfd, "w");
     if (f == NULL) {
         err = MINUS_ERRNO;
-        errmsg = "Error opening output file";
         goto err2;
     }
-    setlinebuf(f);
+    if (setvbuf(f, NULL, _IOLBF, 0) == EOF) {
+        err = -ENOMEM;
+        goto err3;
+    }
 
     err = matroska_read(f, hdl);
     if (err) {

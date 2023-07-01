@@ -461,11 +461,13 @@ main(int argc, char **argv)
     xmlFreeDoc(schemadoc);
 
     if (ret == 0) {
-        setlinebuf(stdout);
-        if (output_parser_data(doc, doctype) != 0) {
-            status = EXIT_FAILURE;
+        status = EXIT_FAILURE;
+        if (setvbuf(stdout, NULL, _IOLBF, 0) == EOF)
+            fputs("Out of memory\n", stderr);
+        else if (output_parser_data(doc, doctype) != 0)
             fputs("Parsing error\n", stderr);
-        }
+        else
+            status = EXIT_SUCCESS;
     }
 
     xmlFreeDoc(doc);
