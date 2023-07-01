@@ -195,7 +195,8 @@ track_cb_free(const void *keyval, void *ctx)
     const struct track_cb *tcb = keyval;
     int err = 0;
 
-    if (fsync(fileno(tcb->f)) == -1 && errno != EINVAL)
+    if (fsync(fileno(tcb->f)) == -1
+        && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
         err = MINUS_ERRNO;
 
     if (fclose(tcb->f) == EOF)
@@ -228,7 +229,8 @@ elem_cb_free(const void *keyval, void *ctx)
     const struct elem_cb *ecb = keyval;
     int err = 0;
 
-    if (fsync(fileno(ecb->f)) == -1 && errno != EINVAL)
+    if (fsync(fileno(ecb->f)) == -1
+        && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
         err = MINUS_ERRNO;
 
     if (fclose(ecb->f) == EOF)
@@ -384,7 +386,8 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
         goto err3;
     }
 
-    if (fsync(fileno(f)) == -1 && errno != EINVAL) {
+    if (fsync(fileno(f)) == -1
+        && errno != EBADF && errno != EINVAL && errno != ENOTSUP) {
         err = MINUS_ERRNO;
         errmsg = "Error closing output file";
         goto err3;
