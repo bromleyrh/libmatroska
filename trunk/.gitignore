@@ -40,6 +40,7 @@ version.c
 *.o
 *.so
 
+/mkv_cat
 /mkv_dump
 /zlib_cat
 
