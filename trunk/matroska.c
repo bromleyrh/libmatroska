@@ -214,8 +214,7 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
 
         tdata->frame_sz[i] = framesz;
 
-        debug_printf("Frame size %" PRIu64 " byte%s\n", framesz,
-                     PLURAL(framesz, "s"));
+        debug_printf("Frame size %" PRIu64 " byte%s\n", PLURAL(framesz, "s"));
 
         totframesz += framesz;
     }
@@ -229,8 +228,7 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->frame_idx = 0;
     tdata->num_frames = state->lacing_nframes;
 
-    debug_printf("Frame size %" PRIu64 " byte%s\n", framesz,
-                 PLURAL(framesz, "s"));
+    debug_printf("Frame size %" PRIu64 " byte%s\n", PLURAL(framesz, "s"));
 
     tdata->next_frame_off = 0;
 
@@ -294,8 +292,7 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
 
         tdata->frame_sz[i] = framesz;
 
-        debug_printf("Frame size %" PRIu64 " byte%s\n", framesz,
-                     PLURAL(framesz, "s"));
+        debug_printf("Frame size %" PRIu64 " byte%s\n", PLURAL(framesz, "s"));
 
         bufp += hlen;
         totframesz += framesz;
@@ -310,8 +307,7 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->frame_idx = 0;
     tdata->num_frames = state->lacing_nframes;
 
-    debug_printf("Frame size %" PRIu64 " byte%s\n", framesz,
-                 PLURAL(framesz, "s"));
+    debug_printf("Frame size %" PRIu64 " byte%s\n", PLURAL(framesz, "s"));
 
     tdata->next_frame_off = 0;
 
@@ -444,8 +440,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         if (state->data_len != len) {
             fprintf(stderr, "Block data length mismatch: %zu byte%s vs. %zu "
                             "byte%s\n",
-                    state->data_len, PLURAL(state->data_len, "s"), len,
-                    PLURAL(len, "s"));
+                    PLURAL(state->data_len, "s"), PLURAL(len, "s"));
             return -EIO;
         }
         state->data_len = 0;
@@ -453,7 +448,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         interrupt_read = state->interrupt_read;
         state->interrupt_read = 0;
 
-        debug_printf("End of block (%zu byte%s)\n", len, PLURAL(len, "s"));
+        debug_printf("End of block (%zu byte%s)\n", PLURAL(len, "s"));
 
         return interrupt_read;
     }
@@ -589,8 +584,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 
     totlen -= state->hdr_len;
 
-    debug_printf("Total block data length %zu byte%s\n", totlen,
-                 PLURAL(totlen, "s"));
+    debug_printf("Total block data length %zu byte%s\n", PLURAL(totlen, "s"));
 
     datalen = len - sz;
     if (datalen == 0)
@@ -607,7 +601,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         tdata->frame_idx = 0;
 
         debug_printf("%zu laced frames of size %zu byte%s\n", tdata->num_frames,
-                     tdata->frame_sz[0], PLURAL(tdata->frame_sz[0], "s"));
+                     PLURAL(tdata->frame_sz[0], "s"));
 
         tdata->num_frames = 1;
 
@@ -849,7 +843,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
         tdata->num_stripped_bytes = num_stripped_bytes;
 
         debug_printf("|ContentCompSettings(%" PRIu64 ")| += %zu byte%s\n",
-                     state->trackno, len, PLURAL(len, "s"));
+                     state->trackno, PLURAL(len, "s"));
     } else
         PRINT_HANDLER_INFO(val);
 

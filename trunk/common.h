@@ -10,16 +10,16 @@
 
 #define EXPORTED __attribute__((__visibility__("default")))
 
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-
-#define PLURAL(val, suffix) ((val) == 1 ? "" : suffix)
-
 #ifndef NO_ASSERT_MACROS
 static __thread int asserttmp;
 
 #define ERRNO (asserttmp = errno, assert(asserttmp > 0), asserttmp)
 #define MINUS_ERRNO (asserttmp = -errno, assert(asserttmp < 0), asserttmp)
 #endif
+
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+#define PLURAL(val, suffix) val, (val) == 1 ? "" : (suffix)
 
 #endif
 

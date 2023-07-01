@@ -329,7 +329,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     (void)keyframe;
 
     fprintf(stderr, "%s(): %" PRIu64 ": length %zu byte%s", __FUNCTION__,
-            trackno, len, PLURAL(len, "s"));
+            trackno, PLURAL(len, "s"));
 
     e.trackno = trackno;
     res = avl_tree_search(ctxp->tcb, &e, &e);
