@@ -19,7 +19,8 @@ static __thread int asserttmp;
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-#define PLURAL(val, suffix) val, (val) == 1 ? "" : (suffix)
+#define PLURAL(val) PLURAL_SUF(val, "s")
+#define PLURAL_SUF(val, suffix) val, (val) == 1 ? "" : (suffix)
 
 #endif
 
