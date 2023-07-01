@@ -79,7 +79,7 @@ parse_track_spec(const char *trackno, const char *path, struct avl_tree *tcb)
         goto err1;
     }
 
-    e.trackno = strtoull(trackno, NULL, 10);
+    e.trackno = strtoumax(trackno, NULL, 10);
 
     err = avl_tree_insert(tcb, &e);
     if (err)
