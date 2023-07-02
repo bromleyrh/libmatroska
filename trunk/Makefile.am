@@ -9,7 +9,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = include
 
 EXTRA_DIST = bootstrap build-aux doc libmatroskalite.map libmatroskalite.pc.in \
-	lsmkv schemas .version
+	lsmkv schema_parse_cached schemas .version
 
 build_date = "$(shell date)"
 build_vers = "$(shell git rev-parse HEAD)"
@@ -54,15 +54,15 @@ ebml_schema = schemas/ebml_schema.xml
 ebml_semantics_schema = schemas/ebml_semantics_schema.xml
 
 ebml_schema.h: schema_parse $(ebml_schema) schemas/ebml.m4
-	m4 schemas/ebml.m4 | ./schema_parse $(ebml_schema) ebml >|$@
+	./schema_parse_cached schemas/ebml.m4 $(ebml_schema) ebml $@
 
 matroska_schema.h: schema_parse $(ebml_schema) schemas/matroska.m4
-	m4 schemas/matroska.m4 | ./schema_parse $(ebml_schema) matroska >|$@
+	./schema_parse_cached schemas/matroska.m4 $(ebml_schema) matroska $@
 
 matroska_semantics.h: schema_parse $(ebml_semantics_schema) \
 	schemas/matroska_semantics.m4
-	m4 schemas/matroska_semantics.m4 \
-		| ./schema_parse $(ebml_semantics_schema) matroska_semantics >|$@
+	./schema_parse_cached schemas/matroska_semantics.m4 \
+		$(ebml_semantics_schema) matroska_semantics $@
 
 version.c:
 	echo "const char build_date[] = \"$(build_date_str)\";" >|$@

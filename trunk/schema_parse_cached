@@ -1,0 +1,29 @@
+#!/bin/sh
+
+cache=schemas/include
+
+noupdate=0
+
+set -eu
+
+m4_file=$1
+ebml_schema=$2
+ebml_doc_type=$3
+header_file=$4
+test "${5:-}" = "-n" && noupdate=1
+
+tmp_file=${header_file%.h}_tmp.h
+cached_file=$cache/$header_file
+
+if m4 "$m4_file" \
+	| ./schema_parse "$ebml_schema" "$ebml_doc_type" >|"$tmp_file"; then
+	if [ $noupdate -eq 0 ]; then
+		cmp -s "$cached_file" "$tmp_file" || cp -f "$tmp_file" "$cached_file"
+	fi
+	mv -f "$tmp_file" "$header_file"
+else
+	rm -f "$tmp_file"
+	ln -fs "$cached_file" .
+fi
+
+# vi: set noexpandtab sw=4 ts=4:

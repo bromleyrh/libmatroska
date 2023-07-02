@@ -1,0 +1,1570 @@
+#include "parser.h"
+#include "parser_defs.h"
+
+#include <stddef.h>
+
+#define TRIE_NODE_PREFIX matroska
+
+#define matroska_TRIE_ROOT (&matroska_trie_node_fc6756374c878b20)
+
+DEF_TRIE_NODE_INFORMATION(360033f1501d7d09, "/oC",
+	"./oC -> CodecInfoURL", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(7af5abcc0364ea2d, "0",
+	".0 -> ChapterDisplay", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(98f7bb82dfbbc353, "1",
+	".1 -> TrickTrackUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(e705612272e0cf79, "4",
+	".74 -> ContentEncoding", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(66248b1c1f7813b9, "f7",
+	".7f7 -> CodecDownloadURL", NULL, 8
+);
+
+DEF_TRIE_NODE_BRANCH(896cd96f23db0f6d, "7",
+	ENTRY('4', e705612272e0cf79),
+	ENTRY('f', 66248b1c1f7813b9)
+);
+
+DEF_TRIE_NODE_INFORMATION(008fd315348cab53, "3",
+	".D3 -> AlphaMode", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(688e3713021f6fdf, "4",
+	".D4 -> Targets", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(27b12ac6571e6ae9, "D",
+	ENTRY('3', 008fd315348cab53),
+	ENTRY('4', 688e3713021f6fdf)
+);
+
+DEF_TRIE_NODE_INFORMATION(f60305136fa2ef43, "2",
+	".q2 -> MuxingApp", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(d9f9f690702d5d2b, "4",
+	".q4 -> ContentEncodings", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(220dafe4930a1765, "q",
+	ENTRY('2', f60305136fa2ef43),
+	ENTRY('4', d9f9f690702d5d2b)
+);
+
+DEF_TRIE_NODE_BRANCH(73aff553c3b798d0, ".",
+	ENTRY('/', 360033f1501d7d09),
+	ENTRY('0', 7af5abcc0364ea2d),
+	ENTRY('1', 98f7bb82dfbbc353),
+	ENTRY('7', 896cd96f23db0f6d),
+	ENTRY('D', 27b12ac6571e6ae9),
+	ENTRY('q', 220dafe4930a1765)
+);
+
+DEF_TRIE_NODE_INFORMATION(113fc0b420de3d3f, "1",
+	"/1 -> TrickTrackSegmentUID", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(190d85b9aaf5a169, "R3",
+	"/R3 -> WritingApp", NULL, 16
+);
+
+DEF_TRIE_NODE_BRANCH(9d898ada302fceb2, "/",
+	ENTRY('1', 113fc0b420de3d3f),
+	ENTRY('R', 190d85b9aaf5a169)
+);
+
+DEF_TRIE_NODE_INFORMATION(325625c121e6b562, "0",
+	"10 -> TrackType", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(9c77122e7c0e15fe, "Cy6",
+	"1Cy6 -> DefaultDuration", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(5c78d3f940fd10ac, "D4",
+	"1D4 -> ChapterPhysicalEquiv", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(918f785ef9f47841, "1",
+	ENTRY('0', 325625c121e6b562),
+	ENTRY('C', 9c77122e7c0e15fe),
+	ENTRY('D', 5c78d3f940fd10ac)
+);
+
+DEF_TRIE_NODE_INFORMATION(ee5bf0fbfcdf1ed0, "1",
+	"21 -> TrickMasterTrackSegmentUID", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(4f5755ca16d0de1f, "C5",
+	"2C5 -> SegmentFilename", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(84ee494c6845ff39, "4",
+	"2D4 -> TagChapterUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(2cbc772032ceed91, "5",
+	"2D5 -> ChapterUID", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(a7376796491e90c5, "D",
+	ENTRY('4', 84ee494c6845ff39),
+	ENTRY('5', 2cbc772032ceed91)
+);
+
+DEF_TRIE_NODE_INFORMATION(fed8a1fdb61e5f36, "F2",
+	"2F2 -> SegmentFamily", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(064f1e0739352be1, "G2",
+	"2G2 -> TagDefault", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(29bff4865e097f39, "Z4",
+	"2Z4 -> ChapProcess", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(b332bf60b355b9ff, "2",
+	ENTRY('1', ee5bf0fbfcdf1ed0),
+	ENTRY('C', 4f5755ca16d0de1f),
+	ENTRY('D', a7376796491e90c5),
+	ENTRY('F', fed8a1fdb61e5f36),
+	ENTRY('G', 064f1e0739352be1),
+	ENTRY('Z', 29bff4865e097f39)
+);
+
+DEF_TRIE_NODE_INFORMATION(85db67b8e89b5631, "0",
+	"30 -> ChapString", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(8ee376c6e40f4ed8, "4",
+	"3D4 -> TagTrackUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(e6a14233d9b75d3e, "5",
+	"3D5 -> TrackUID", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(4a8b1bd40139b3e1, "D",
+	ENTRY('4', 8ee376c6e40f4ed8),
+	ENTRY('5', e6a14233d9b75d3e)
+);
+
+DEF_TRIE_NODE_INFORMATION(4349cb9f3d6eb597, "G2",
+	"3G2 -> TagBinary", NULL, 128
+);
+
+DEF_TRIE_NODE_BRANCH(cd604219a43e018a, "3",
+	ENTRY('0', 85db67b8e89b5631),
+	ENTRY('D', 4a8b1bd40139b3e1),
+	ENTRY('G', 4349cb9f3d6eb597)
+);
+
+DEF_TRIE_NODE_INFORMATION(56a735d09f752130, "0",
+	"40 -> CodecID", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(12a6e6d3ae231fcd, "1",
+	"41 -> TrickTrackFlag", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(f9ec3be5ffbbb79e, "D4",
+	"4D4 -> TagAttachmentUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(7e395a5190fc87cd, "F5",
+	"4F5 -> AttachmentLink", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(71575d48e036cab6, "4",
+	ENTRY('0', 56a735d09f752130),
+	ENTRY('1', 12a6e6d3ae231fcd),
+	ENTRY('D', f9ec3be5ffbbb79e),
+	ENTRY('F', 7e395a5190fc87cd)
+);
+
+DEF_TRIE_NODE_INFORMATION(a8da68bf67e70f14, "1",
+	"51 -> TrickMasterTrackUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(dd800141d8be384c, "G2",
+	"5G2 -> TagString", NULL, 16
+);
+
+DEF_TRIE_NODE_BRANCH(71abaa91ff246fef, "5",
+	ENTRY('1', a8da68bf67e70f14),
+	ENTRY('G', dd800141d8be384c)
+);
+
+DEF_TRIE_NODE_INFORMATION(b834d0df140b0df3, "0",
+	"60 -> FlagDefault", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(6e63d74b2d4c8922, "1",
+	"61 -> ReferenceFrame", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(536fbf46f7ab07d9, "OM7",
+	"6OM7 -> CodecName", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(a73f1d21411d6d43, "T4",
+	"6T4 -> SimpleTag", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(9a09ab43b668572e, "6",
+	ENTRY('0', b834d0df140b0df3),
+	ENTRY('1', 6e63d74b2d4c8922),
+	ENTRY('O', 536fbf46f7ab07d9),
+	ENTRY('T', a73f1d21411d6d43)
+);
+
+DEF_TRIE_NODE_INFORMATION(706b235597af2ba9, "0",
+	"70 -> ChapterTrackUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(760120d8fe77e35e, "1",
+	"71 -> ReferenceOffset", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(6a419b8e222dbd42, "D4",
+	"7D4 -> TagEditionUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(3dde4fe88b7ce7c1, "G2",
+	"7G2 -> Duration", NULL, 4
+);
+
+DEF_TRIE_NODE_BRANCH(c92a6e263eb99374, "7",
+	ENTRY('0', 706b235597af2ba9),
+	ENTRY('1', 760120d8fe77e35e),
+	ENTRY('D', 6a419b8e222dbd42),
+	ENTRY('G', 3dde4fe88b7ce7c1)
+);
+
+DEF_TRIE_NODE_INFORMATION(ce33744b34517f57, "1",
+	"81 -> ReferenceTimestamp", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(e49648a62c02258a, "D4",
+	"8D4 -> TargetType", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(da9e1c8cb9c9fa1e, "X4",
+	"8X4 -> TargetTypeValue", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(daff86be72f684cc, "8",
+	ENTRY('1', ce33744b34517f57),
+	ENTRY('D', e49648a62c02258a),
+	ENTRY('X', da9e1c8cb9c9fa1e)
+);
+
+DEF_TRIE_NODE_INFORMATION(372cf5309b0b0c5f, "91",
+	"91 -> BlockAdditionID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(6c5a201fc936809a, "1",
+	"A1 -> LaceNumber", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(d7e934c325bc41b9, "H3",
+	"AH3 -> PixelCropLeft", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(78472b06e829d6e6, "A",
+	ENTRY('1', 6c5a201fc936809a),
+	ENTRY('H', d7e934c325bc41b9)
+);
+
+DEF_TRIE_NODE_INFORMATION(9b7434eb68593b67, "1",
+	"B1 -> FrameNumber", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(be45418217ba2b85, "I2",
+	"BI2 -> ChapProcessPrivate", NULL, 128
+);
+
+DEF_TRIE_NODE_BRANCH(e07ca4fc0b483347, "B",
+	ENTRY('1', 9b7434eb68593b67),
+	ENTRY('I', be45418217ba2b85)
+);
+
+DEF_TRIE_NODE_INFORMATION(39f5970b6860ac1e, "0",
+	"C0 -> Slices", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(75f0db061f55cdf2, "1",
+	"C1 -> Delay", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(b74736edb67a857c, "C",
+	ENTRY('0', 39f5970b6860ac1e),
+	ENTRY('1', 75f0db061f55cdf2)
+);
+
+DEF_TRIE_NODE_INFORMATION(4ba1a7e50ab45e2c, "0",
+	"D0 -> ChapterTrack", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(9eca11c77b4842ab, "1",
+	"D1 -> SliceDuration", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(b315ad181945ee97, "3n6",
+	"D3n6 -> TrackTimestampScale", NULL, 4
+);
+
+DEF_TRIE_NODE_BRANCH(8face3e1c7cea748, "D",
+	ENTRY('0', 4ba1a7e50ab45e2c),
+	ENTRY('1', 9eca11c77b4842ab),
+	ENTRY('3', b315ad181945ee97)
+);
+
+DEF_TRIE_NODE_INFORMATION(18b4ec78ff8aabf6, "EL3",
+	"EL3 -> MasteringMetadata", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(c5d9736c191a136c, "0",
+	"F0 -> ChapterTimeStart", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(c10716a7a6bb54a5, "L3",
+	"FL3 -> PrimaryRChromaticityX", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(ffbfc6ee635e2476, "Y4",
+	"FY4 -> ChapProcessCommand", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(74501d7cc501ff4c, "F",
+	ENTRY('0', c5d9736c191a136c),
+	ENTRY('L', c10716a7a6bb54a5),
+	ENTRY('Y', ffbfc6ee635e2476)
+);
+
+DEF_TRIE_NODE_INFORMATION(7956b1f0f721b17f, "0",
+	"G0 -> ChapterTimeEnd", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(d16d8cd3d6d44dfb, "L3",
+	"GL3 -> PrimaryRChromaticityY", NULL, 4
+);
+
+DEF_TRIE_NODE_BRANCH(73cf80c609c270a8, "G",
+	ENTRY('0', 7956b1f0f721b17f),
+	ENTRY('L', d16d8cd3d6d44dfb)
+);
+
+DEF_TRIE_NODE_INFORMATION(6ed9e98dbf21d174, "HL3",
+	"HL3 -> PrimaryGChromaticityX", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(d7780f775e9e3be3, "72",
+	"I72 -> ContentCompAlgo", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(89c0c2447bf8c655, "L3",
+	"IL3 -> PrimaryGChromaticityY", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(8b2797cf2929b36d, "N3",
+	"IN3 -> ChapterStringUID", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(65a2f00bcd83c564, "V3",
+	"IV3 -> SilentTracks", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(3072b22d9255681b, "I",
+	ENTRY('7', d7780f775e9e3be3),
+	ENTRY('L', 89c0c2447bf8c655),
+	ENTRY('N', 8b2797cf2929b36d),
+	ENTRY('V', 65a2f00bcd83c564)
+);
+
+DEF_TRIE_NODE_INFORMATION(cfdc62bbb3dcd001, "72",
+	"J72 -> ContentCompSettings", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(2ccc4f2f851ee84f, "L3",
+	"JL3 -> PrimaryBChromaticityX", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(d225d738fa311e16, "Z4",
+	"JZ4 -> ChapProcessCodecID", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(30a8912e5d8719f4, "J",
+	ENTRY('7', cfdc62bbb3dcd001),
+	ENTRY('L', 2ccc4f2f851ee84f),
+	ENTRY('Z', d225d738fa311e16)
+);
+
+DEF_TRIE_NODE_INFORMATION(073a5b346dbb0fb8, "0",
+	"K0 -> CueRefTime", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(b42c40d20d229982, "L3",
+	"KL3 -> PrimaryBChromaticityY", NULL, 4
+);
+
+DEF_TRIE_NODE_BRANCH(dd9eafcb882d9b4d, "K",
+	ENTRY('0', 073a5b346dbb0fb8),
+	ENTRY('L', b42c40d20d229982)
+);
+
+DEF_TRIE_NODE_INFORMATION(eb521a8602f35781, "0",
+	"L0 -> CueRefCluster", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(c931fcad602aee4f, "1",
+	"L1 -> TrackNumber", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(b32a55abf0986360, "L3",
+	"LL3 -> WhitePointChromaticityX", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(dfca12d9a6af520e, "OdC",
+	"LOdC -> CodecSettings", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(eb95c3e1efdf53a3, "X3",
+	"LX3 -> SilentTrackNumber", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(61f4e36da62f7515, "L",
+	ENTRY('0', eb521a8602f35781),
+	ENTRY('1', c931fcad602aee4f),
+	ENTRY('L', b32a55abf0986360),
+	ENTRY('O', dfca12d9a6af520e),
+	ENTRY('X', eb95c3e1efdf53a3)
+);
+
+DEF_TRIE_NODE_INFORMATION(a51eec9c928a9b88, "0",
+	"M0 -> ChapterFlagHidden", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(c39e2b13f0dfd5c9, "K2",
+	"MK2 -> ChapterFlagEnabled", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(a0d268f6a8693ad4, "L3",
+	"ML3 -> WhitePointChromaticityY", NULL, 4
+);
+
+DEF_TRIE_NODE_BRANCH(a4efaaaf883b1465, "M",
+	ENTRY('0', a51eec9c928a9b88),
+	ENTRY('K', c39e2b13f0dfd5c9),
+	ENTRY('L', a0d268f6a8693ad4)
+);
+
+DEF_TRIE_NODE_INFORMATION(7e180fcdc73478d7, "NL3",
+	"NL3 -> LuminanceMax", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(e1304cd828528ec7, "0",
+	"O0 -> FlagInterlaced", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(6a60b94ebea541da, "L3",
+	"OL3 -> LuminanceMin", NULL, 4
+);
+
+DEF_TRIE_NODE_BRANCH(b614d3f88c86003d, "O",
+	ENTRY('0', e1304cd828528ec7),
+	ENTRY('L', 6a60b94ebea541da)
+);
+
+DEF_TRIE_NODE_INFORMATION(537e41b8950da0b7, "0",
+	"P0 -> BlockDuration", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(fff9ef37cb8e1f35, "1",
+	"P1 -> CueReference", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(284dc04e36e3e320, "L2",
+	"PL2 -> EditionFlagDefault", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(c7226c963fe5b7b9, "P",
+	ENTRY('0', 537e41b8950da0b7),
+	ENTRY('1', fff9ef37cb8e1f35),
+	ENTRY('L', 284dc04e36e3e320)
+);
+
+DEF_TRIE_NODE_INFORMATION(e95ec3c741c236e0, "0",
+	"Q0 -> FlagLacing", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(dd84d1ea981cd8ef, "Kf6",
+	"QKf6 -> Language", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(4c14266c3e83abfc, "N2",
+	"QN2 -> FileData", NULL, 128
+);
+
+DEF_TRIE_NODE_BRANCH(20ec2f9c2ba8d445, "Q",
+	ENTRY('0', e95ec3c741c236e0),
+	ENTRY('K', dd84d1ea981cd8ef),
+	ENTRY('N', 4c14266c3e83abfc)
+);
+
+DEF_TRIE_NODE_INFORMATION(02d515d95e00a82b, "0",
+	"R0 -> FieldOrder", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(29e55084e6c97a6c, "H3",
+	"RH3 -> PixelCropRight", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(90b028d536abb64e, "Kf6",
+	"RKf6 -> LanguageIETF", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(013af674a53fe3ab, "L2",
+	"RL2 -> EditionFlagOrdered", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(ba01f106772b14f7, "R",
+	ENTRY('0', 02d515d95e00a82b),
+	ENTRY('H', 29e55084e6c97a6c),
+	ENTRY('K', 90b028d536abb64e),
+	ENTRY('L', 013af674a53fe3ab)
+);
+
+DEF_TRIE_NODE_INFORMATION(3ba5b57281e22942, "0",
+	"T0 -> Channels", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(472ebdf8202e550b, "B3",
+	"TB3 -> CueRefNumber", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(0506e2c997c6f26d, "T",
+	ENTRY('0', 3ba5b57281e22942),
+	ENTRY('B', 472ebdf8202e550b)
+);
+
+DEF_TRIE_NODE_INFORMATION(8286bbf87954eb2a, "0",
+	"U0 -> BlockGroup", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(5b3560389f8ff85f, "1",
+	"U1 -> Video", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(a333d34c6a2aa2d9, "N2",
+	"UN2 -> FileMimeType", NULL, 8
+);
+
+DEF_TRIE_NODE_BRANCH(03295afccc6abd35, "U",
+	ENTRY('0', 8286bbf87954eb2a),
+	ENTRY('1', 5b3560389f8ff85f),
+	ENTRY('N', a333d34c6a2aa2d9)
+);
+
+DEF_TRIE_NODE_INFORMATION(1146e5ca5e9375dc, "0",
+	"V0 -> Block", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(7862f041da9919e6, "1",
+	"V1 -> Audio", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(dfa513cb71cd25ac, "F2",
+	"VF2 -> DateUTC", NULL, 32
+);
+
+DEF_TRIE_NODE_INFORMATION(5aca6fea68337281, "K5",
+	"VK5 -> BlockAdditions", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(d5eef5a83d4ba715, "N2",
+	"VN2 -> FileUsedStartTime", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(7e7c7fd5094b3eb9, "T2",
+	"VT2 -> ContentEncAlgo", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(2e67dd8f81d577a6, "V",
+	ENTRY('0', 1146e5ca5e9375dc),
+	ENTRY('1', 7862f041da9919e6),
+	ENTRY('F', dfa513cb71cd25ac),
+	ENTRY('K', 5aca6fea68337281),
+	ENTRY('N', d5eef5a83d4ba715),
+	ENTRY('T', 7e7c7fd5094b3eb9)
+);
+
+DEF_TRIE_NODE_INFORMATION(f66ba82f04965e68, "0",
+	"W0 -> BlockVirtual", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(a72be74cc43f56f1, "1",
+	"W1 -> TrackOperation", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(56d612415d4e313e, "C4",
+	"WC4 -> CodecPrivate", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(7e8454d584ced483, "K5",
+	"WK5 -> DiscardPadding", NULL, 1
+);
+
+DEF_TRIE_NODE_INFORMATION(2fea16fa52b20857, "N2",
+	"WN2 -> FileUsedEndTime", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(533d57f1ef71a3f8, "T2",
+	"WT2 -> ContentEncKeyID", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(ea9999f1b9c985a9, "Y4",
+	"WY4 -> ChapProcessTime", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(f432c053111b8598, "W",
+	ENTRY('0', f66ba82f04965e68),
+	ENTRY('1', a72be74cc43f56f1),
+	ENTRY('C', 56d612415d4e313e),
+	ENTRY('K', 7e8454d584ced483),
+	ENTRY('N', 2fea16fa52b20857),
+	ENTRY('T', 533d57f1ef71a3f8),
+	ENTRY('Y', ea9999f1b9c985a9)
+);
+
+DEF_TRIE_NODE_INFORMATION(ada454612220a077, "0",
+	"X0 -> SimpleBlock", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(5992b4f87cfe12fa, "1",
+	"X1 -> TrackCombinePlanes", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(40c116ebcac037c5, "Ds6",
+	"XDs6 -> FrameRate", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(3c426b84870f4e82, "Iv9",
+	"XIv9 -> GammaValue", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(6f74bd110c30a0dc, "K2",
+	"XK2 -> TagName", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(1d25814aad07ed40, "T2",
+	"XT2 -> ContentSignature", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(35cc96c645346601, "9D",
+	"XY9D -> PrevUID", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(2a75fcacc3e7a358, "fD",
+	"XYfD -> NextUID", NULL, 128
+);
+
+DEF_TRIE_NODE_BRANCH(2d66bd90f81b00b1, "Y",
+	ENTRY('9', 35cc96c645346601),
+	ENTRY('f', 2a75fcacc3e7a358)
+);
+
+DEF_TRIE_NODE_BRANCH(b3e98967825c210f, "X",
+	ENTRY('0', ada454612220a077),
+	ENTRY('1', 5992b4f87cfe12fa),
+	ENTRY('D', 40c116ebcac037c5),
+	ENTRY('I', 3c426b84870f4e82),
+	ENTRY('K', 6f74bd110c30a0dc),
+	ENTRY('T', 1d25814aad07ed40),
+	ENTRY('Y', 2d66bd90f81b00b1)
+);
+
+DEF_TRIE_NODE_INFORMATION(d0c3d32927f8b31b, "0",
+	"Y0 -> CodecState", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(a1eb93afbb6bce37, "1",
+	"Y1 -> TrackPlane", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(a694ee5271b95175, "42",
+	"Y42 -> BlockAddIDName", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(1e2897810bbe2374, "52",
+	"Y52 -> BlockAdditionMapping", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(68d3498a1e7d6f98, "74",
+	"Y74 -> BitDepth", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(4e39660048f8bf73, "C5",
+	"YC5 -> SegmentUID", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(c1b93c5a732b7668, "If9",
+	"YIf9 -> UncompressedFourCC", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(2e9f22ba258c7dcf, "M4",
+	"YM4 -> TrackTranslate", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(d7e517b04eb5dbb8, "T2",
+	"YT2 -> ContentSigKeyID", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(d28f2db7ede235dc, "Y4",
+	"YY4 -> ChapterTranslate", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(ad01703c03c9e9f9, "Y",
+	ENTRY('0', d0c3d32927f8b31b),
+	ENTRY('1', a1eb93afbb6bce37),
+	ENTRY('4', a694ee5271b95175),
+	ENTRY('5', 1e2897810bbe2374),
+	ENTRY('7', 68d3498a1e7d6f98),
+	ENTRY('C', 4e39660048f8bf73),
+	ENTRY('I', c1b93c5a732b7668),
+	ENTRY('M', 2e9f22ba258c7dcf),
+	ENTRY('T', d7e517b04eb5dbb8),
+	ENTRY('Y', d28f2db7ede235dc)
+);
+
+DEF_TRIE_NODE_INFORMATION(d681f7bafd9252d3, "0",
+	"Z0 -> BlockAdditional", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(a786ca1f86920ae7, "1",
+	"Z1 -> TrackPlaneUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(1ae5aa6efdb2a402, "O4",
+	"ZO4 -> TrackTranslateTrackID", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(2dfbd625a7be8f0c, "T2",
+	"ZT2 -> ContentSigAlgo", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(52096e21fd9ba91e, "a4",
+	"Za4 -> ChapterTranslateID", NULL, 128
+);
+
+DEF_TRIE_NODE_BRANCH(740fb6564a3afc83, "Z",
+	ENTRY('0', d681f7bafd9252d3),
+	ENTRY('1', a786ca1f86920ae7),
+	ENTRY('O', 1ae5aa6efdb2a402),
+	ENTRY('T', 2dfbd625a7be8f0c),
+	ENTRY('a', 52096e21fd9ba91e)
+);
+
+DEF_TRIE_NODE_INFORMATION(698fe70a5abf3c84, "0",
+	"a0 -> BlockMore", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(cba4b88de380017e, "1",
+	"a1 -> TrackPlaneType", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(d631f43ad607d9d6, "T2",
+	"aT2 -> ContentSigHashAlgo", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(3c3c54eba7983e39, "ZOGJ",
+	"aZOGJ -> Info", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(488e732daf1d17a7, "a",
+	ENTRY('0', 698fe70a5abf3c84),
+	ENTRY('1', cba4b88de380017e),
+	ENTRY('T', d631f43ad607d9d6),
+	ENTRY('Z', 3c3c54eba7983e39)
+);
+
+DEF_TRIE_NODE_INFORMATION(5bb52bc7516a3fb9, "/sIM",
+	"b/sIM -> Segment", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(d03679389ad358df, "0",
+	"b0 -> Position", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(8c735f49b25acb2d, "1",
+	"b1 -> Timestamp", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(003f6d7b6c37a3a2, "44",
+	"b44 -> AttachedFile", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(faa09b124258279b, "52",
+	"b52 -> BlockAddIDType", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(ef6562feb9e8be5b, "BAJG",
+	"bBAJG -> Tags", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(bfbda71c7e2a59d9, "T2",
+	"bT2 -> ContentEncAESSettings", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(e0954080118c66eb, "r4",
+	"br4 -> MinCache", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(fcb43b1ce3579f6f, "t4",
+	"bt4 -> ChapterSegmentUID", NULL, 128
+);
+
+DEF_TRIE_NODE_BRANCH(866e90ec866b779e, "b",
+	ENTRY('/', 5bb52bc7516a3fb9),
+	ENTRY('0', d03679389ad358df),
+	ENTRY('1', 8c735f49b25acb2d),
+	ENTRY('4', 003f6d7b6c37a3a2),
+	ENTRY('5', faa09b124258279b),
+	ENTRY('B', ef6562feb9e8be5b),
+	ENTRY('T', bfbda71c7e2a59d9),
+	ENTRY('r', e0954080118c66eb),
+	ENTRY('t', fcb43b1ce3579f6f)
+);
+
+DEF_TRIE_NODE_INFORMATION(340c797677e38a3b, "1",
+	"c1 -> TimeSlice", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(c6ada550fabacb0d, "T2",
+	"cT2 -> AESSettingsCipherMode", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(83dfd6d3d11772a1, "c",
+	ENTRY('1', 340c797677e38a3b),
+	ENTRY('T', c6ada550fabacb0d)
+);
+
+DEF_TRIE_NODE_INFORMATION(42f928c527d2ed9f, "1",
+	"d1 -> TrackJoinBlocks", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(b6c6b7292473a087, "FOEN",
+	"dFOEN -> Attachments", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(b968df5966c87b2e, "i5",
+	"di5 -> Title", NULL, 16
+);
+
+DEF_TRIE_NODE_BRANCH(dc495ac75433f290, "d",
+	ENTRY('1', 42f928c527d2ed9f),
+	ENTRY('F', b6c6b7292473a087),
+	ENTRY('i', b968df5966c87b2e)
+);
+
+DEF_TRIE_NODE_INFORMATION(0d1d29fef33f9418, "0",
+	"e0 -> CodecDecodeAll", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(0ce49a801aab1642, "1",
+	"e1 -> CueCodecState", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(9d38ce52a44425a8, "G3",
+	"eG3 -> PixelCropBottom", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(9eebe6ce3f5f5265, "K3",
+	"eK3 -> FlagForced", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(6c27b264406b3a75, "O3",
+	"eO3 -> CodecDelay", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(cc00412308fdebbc, "e",
+	ENTRY('0', 0d1d29fef33f9418),
+	ENTRY('1', 0ce49a801aab1642),
+	ENTRY('G', 9d38ce52a44425a8),
+	ENTRY('K', 9eebe6ce3f5f5265),
+	ENTRY('O', 6c27b264406b3a75)
+);
+
+DEF_TRIE_NODE_INFORMATION(c88ca90fb47d09bc, "0",
+	"f0 -> PrevSize", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(0f50732a1544c5ef, "1",
+	"f1 -> CueRefCodecState", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(8368cc558a7ea9a0, "3",
+	"fC3 -> SeekID", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(28607315af4e8846, "6D",
+	"fC6D -> PrevFilename", NULL, 16
+);
+
+DEF_TRIE_NODE_BRANCH(f049e5e62fbbc004, "C",
+	ENTRY('3', 8368cc558a7ea9a0),
+	ENTRY('6', 28607315af4e8846)
+);
+
+DEF_TRIE_NODE_INFORMATION(14d0d2f53869e1ae, "K3",
+	"fK3 -> FlagHearingImpaired", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(355272d763cf79b8, "hvIQ",
+	"fhvIQ -> Cues", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(8aeb953c60204df3, "t8JK",
+	"ft8JK -> Tracks", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(6896a69eb27f35f7, "y4",
+	"fy4 -> TrackOverlay", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(6db6f7aaa08ef211, "f",
+	ENTRY('0', c88ca90fb47d09bc),
+	ENTRY('1', 0f50732a1544c5ef),
+	ENTRY('C', f049e5e62fbbc004),
+	ENTRY('K', 14d0d2f53869e1ae),
+	ENTRY('h', 355272d763cf79b8),
+	ENTRY('t', 8aeb953c60204df3),
+	ENTRY('y', 6896a69eb27f35f7)
+);
+
+DEF_TRIE_NODE_INFORMATION(3a309113c0999667, "C3",
+	"gC3 -> SeekPosition", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(85eda84e6b36c6fc, "K3",
+	"gK3 -> FlagVisualImpaired", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(488dabf04dcd8461, "g",
+	ENTRY('C', 3a309113c0999667),
+	ENTRY('K', 85eda84e6b36c6fc)
+);
+
+DEF_TRIE_NODE_INFORMATION(cab3338e55f9e808, "1",
+	"h1 -> TrackJoinUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(d18593aadd1fc858, "52",
+	"h52 -> BlockAddIDExtraData", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(a92e6ed72538acfd, "K3",
+	"hK3 -> FlagTextDescriptions", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(79b7595fe461945f, "h",
+	ENTRY('1', cab3338e55f9e808),
+	ENTRY('5', d18593aadd1fc858),
+	ENTRY('K', a92e6ed72538acfd)
+);
+
+DEF_TRIE_NODE_INFORMATION(9e29b8cd1b2f0cea, "0",
+	"i0 -> TrackEntry", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(9e556c8cbbc109aa, "1",
+	"i1 -> BlockAddID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(b1a437ca192ca02b, "B3",
+	"iB3 -> Name", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(281fbe8742871828, "K3",
+	"iK3 -> FlagOriginal", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(647d7548bba9b894, "L3",
+	"iL3 -> MaxBlockAdditionID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(b8b1e756246efc7b, "N2",
+	"iN2 -> FileName", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(f937b4a8ee1ee4ee, "O2",
+	"iO2 -> FileUID", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(0b47c4cf5833a32f, "i",
+	ENTRY('0', 9e29b8cd1b2f0cea),
+	ENTRY('1', 9e556c8cbbc109aa),
+	ENTRY('B', b1a437ca192ca02b),
+	ENTRY('K', 281fbe8742871828),
+	ENTRY('L', 647d7548bba9b894),
+	ENTRY('N', b8b1e756246efc7b),
+	ENTRY('O', f937b4a8ee1ee4ee)
+);
+
+DEF_TRIE_NODE_INFORMATION(ec4f6b475062cb0d, "0",
+	"j0 -> EncryptedBlock", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(5815de6424702558, "K3",
+	"jK3 -> FlagCommentary", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(9aaddf7c07757efe, "j",
+	ENTRY('0', ec4f6b475062cb0d),
+	ENTRY('K', 5815de6424702558)
+);
+
+DEF_TRIE_NODE_INFORMATION(87cd61241424ff48, "0",
+	"k0 -> PixelWidth", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(47364a91dff236f5, "1",
+	"k1 -> CueRelativePosition", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(c31fa670f205eef8, "52",
+	"k52 -> BlockAddIDValue", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(d078f5856276da06, "G3",
+	"kG3 -> DisplayWidth", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(40ed6636ae07bcad, "K3",
+	"kK3 -> Colour", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(80464450b4ca7ef0, "N5",
+	"kN5 -> Projection", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(7a8fe2f0b7967da7, "RuEE",
+	"kRuEE -> Chapters", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(cdf6c95222c4f4ab, "k",
+	ENTRY('0', 87cd61241424ff48),
+	ENTRY('1', 47364a91dff236f5),
+	ENTRY('5', c31fa670f205eef8),
+	ENTRY('G', d078f5856276da06),
+	ENTRY('K', 40ed6636ae07bcad),
+	ENTRY('N', 80464450b4ca7ef0),
+	ENTRY('R', 7a8fe2f0b7967da7)
+);
+
+DEF_TRIE_NODE_INFORMATION(9ed787a4a200f179, ".3",
+	"l.3 -> ContentEncodingOrder", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(4754edad3831d6a3, "1",
+	"l1 -> CueClusterPosition", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(fd66e6662dca68c7, "K3",
+	"lK3 -> MatrixCoefficients", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(56325386fa47b172, "N5",
+	"lN5 -> ProjectionType", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(fd1b00ffd9f61b34, "Sh8",
+	"lSh8 -> TimestampScale", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(9c5beafceb311d6e, "l",
+	ENTRY('.', 9ed787a4a200f179),
+	ENTRY('1', 4754edad3831d6a3),
+	ENTRY('K', fd66e6662dca68c7),
+	ENTRY('N', 56325386fa47b172),
+	ENTRY('S', fd1b00ffd9f61b34)
+);
+
+DEF_TRIE_NODE_INFORMATION(1f69b75bd6324dee, ".3",
+	"m.3 -> ContentEncodingScope", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(47f3f2fff005c63a, "0",
+	"m0 -> CueDuration", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(1233a3ef4ff6a8e0, "92",
+	"m92 -> EBMLMaxIDLength", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(21be6aa74e1437ac, "G3",
+	"mG3 -> DisplayUnit", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(ffac6c9f818f4748, "K3",
+	"mK3 -> BitsPerChannel", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(d9343666e8446959, "N5",
+	"mN5 -> ProjectionPrivate", NULL, 128
+);
+
+DEF_TRIE_NODE_BRANCH(456012cc87fc22ee, "m",
+	ENTRY('.', 1f69b75bd6324dee),
+	ENTRY('0', 47f3f2fff005c63a),
+	ENTRY('9', 1233a3ef4ff6a8e0),
+	ENTRY('G', 21be6aa74e1437ac),
+	ENTRY('K', ffac6c9f818f4748),
+	ENTRY('N', d9343666e8446959)
+);
+
+DEF_TRIE_NODE_INFORMATION(d6141cadb5b254e3, ".3",
+	"n.3 -> ContentEncodingType", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(6a762f2c13c8b57f, "0",
+	"n0 -> CueTime", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(a2267594b24b4031, "92",
+	"n92 -> EBMLMaxSizeLength", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(c55343c377a61f54, "B5",
+	"nB5 -> Tag", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(f3593332d656b942, "G3",
+	"nG3 -> AspectRatioType", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(c788e0820379bb40, "K3",
+	"nK3 -> ChromaSubsamplingHorz", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(d6089bac5a02c176, "N5",
+	"nN5 -> ProjectionPoseYaw", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(5fe8fdf2de9c5c0c, "Y4",
+	"nY4 -> ChapProcessData", NULL, 128
+);
+
+DEF_TRIE_NODE_BRANCH(09329ed5ca9bd531, "n",
+	ENTRY('.', d6141cadb5b254e3),
+	ENTRY('0', 6a762f2c13c8b57f),
+	ENTRY('9', a2267594b24b4031),
+	ENTRY('B', c55343c377a61f54),
+	ENTRY('G', f3593332d656b942),
+	ENTRY('K', c788e0820379bb40),
+	ENTRY('N', d6089bac5a02c176),
+	ENTRY('Y', 5fe8fdf2de9c5c0c)
+);
+
+DEF_TRIE_NODE_INFORMATION(a21d5c20feba5048, ".3",
+	"o.3 -> ContentCompression", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(25bbab1ac94b370f, "G2",
+	"oG2 -> TagDefaultBogus", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(0f0ef4a903231f84, "K3",
+	"oK3 -> ChromaSubsamplingVert", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(8cb28aeaeec254cf, "N5",
+	"oN5 -> ProjectionPosePitch", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(288579568d0448ba, "hNHF",
+	"ohNHF -> SeekHead", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(01e083a9768b7606, "o",
+	ENTRY('.', a21d5c20feba5048),
+	ENTRY('G', 25bbab1ac94b370f),
+	ENTRY('K', 0f0ef4a903231f84),
+	ENTRY('N', 8cb28aeaeec254cf),
+	ENTRY('h', 288579568d0448ba)
+);
+
+DEF_TRIE_NODE_INFORMATION(11dea4a77fc59591, ".3",
+	"p.3 -> ContentEncryption", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(7797231a64f1793d, "0",
+	"p0 -> SamplingFrequency", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(2c4629e6031b433d, "K3",
+	"pK3 -> CbSubsamplingHorz", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(3e5488abf15c7b3c, "2",
+	"pN2 -> FileReferral", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(1f8b268a289c3fff, "5",
+	"pN5 -> ProjectionPoseRoll", NULL, 4
+);
+
+DEF_TRIE_NODE_INFORMATION(267afdef48a00534, "vET",
+	"pNvET -> Cluster", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(cec2e060ea4afb02, "N",
+	ENTRY('2', 3e5488abf15c7b3c),
+	ENTRY('5', 1f8b268a289c3fff),
+	ENTRY('v', 267afdef48a00534)
+);
+
+DEF_TRIE_NODE_INFORMATION(072d43ba22f12165, "W5",
+	"pW5 -> OutputSamplingFrequency", NULL, 4
+);
+
+DEF_TRIE_NODE_BRANCH(c9ad799af3664fb3, "p",
+	ENTRY('.', 11dea4a77fc59591),
+	ENTRY('0', 7797231a64f1793d),
+	ENTRY('K', 2c4629e6031b433d),
+	ENTRY('N', cec2e060ea4afb02),
+	ENTRY('W', 072d43ba22f12165)
+);
+
+DEF_TRIE_NODE_INFORMATION(6173e943fa7af50c, "0",
+	"q0 -> ChapterAtom", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(c13da108ac2c68a6, "K3",
+	"qK3 -> CbSubsamplingVert", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(a6b70059d9c203b2, "q",
+	ENTRY('0', 6173e943fa7af50c),
+	ENTRY('K', c13da108ac2c68a6)
+);
+
+DEF_TRIE_NODE_INFORMATION(9992c5024fb0982b, "0",
+	"r0 -> CueTrackPositions", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(de6ed30dc5aa19b6, "1",
+	"r1 -> CueTrack", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(a89ba795c1c85359, "K3",
+	"rK3 -> ChromaSitingHorz", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(09d409d1651c5cca, "r",
+	ENTRY('0', 9992c5024fb0982b),
+	ENTRY('1', de6ed30dc5aa19b6),
+	ENTRY('K', a89ba795c1c85359)
+);
+
+DEF_TRIE_NODE_INFORMATION(63d8100fd02c6e6f, "B3",
+	"sB3 -> CueBlockNumber", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(192d0da857eb88dd, "C3",
+	"sC3 -> StereoMode", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(3f353ecd916da540, "K3",
+	"sK3 -> ChromaSitingVert", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(481de4b58eb6b033, "r4",
+	"sr4 -> MaxCache", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(b74932ae6548060b, "s",
+	ENTRY('B', 63d8100fd02c6e6f),
+	ENTRY('C', 192d0da857eb88dd),
+	ENTRY('K', 3f353ecd916da540),
+	ENTRY('r', 481de4b58eb6b033)
+);
+
+DEF_TRIE_NODE_INFORMATION(45aa3b1dc8ee4ce4, "0",
+	"t0 -> FlagEnabled", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(ea9c70750a3e8b0c, "C3",
+	"tC3 -> OldStereoMode", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(974b5c2429258e28, "2",
+	"tK2 -> EditionEntry", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(00f3cae08c3a229b, "3",
+	"tK3 -> Range", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(ac11ee4627f51b8f, "K",
+	ENTRY('2', 974b5c2429258e28),
+	ENTRY('3', 00f3cae08c3a229b)
+);
+
+DEF_TRIE_NODE_BRANCH(df0fbec59f687df0, "t",
+	ENTRY('0', 45aa3b1dc8ee4ce4),
+	ENTRY('C', ea9c70750a3e8b0c),
+	ENTRY('K', ac11ee4627f51b8f)
+);
+
+DEF_TRIE_NODE_INFORMATION(f8d3d5e5f01980e0, "0",
+	"u0 -> PixelHeight", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(a45ecc3c528d689e, "1",
+	"u1 -> ReferencePriority", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(859ed18def3b7632, "F2",
+	"uF2 -> TagLanguage", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(f7564d4f2eacc684, "G3",
+	"uG3 -> DisplayHeight", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(303ada0e8f4d6a83, "K3",
+	"uK3 -> TransferCharacteristics", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(300703dd80220893, "to6",
+	"uto6 -> DefaultDecodedFieldDuration", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(6089487f986afaa2, "u",
+	ENTRY('0', f8d3d5e5f01980e0),
+	ENTRY('1', a45ecc3c528d689e),
+	ENTRY('F', 859ed18def3b7632),
+	ENTRY('G', f7564d4f2eacc684),
+	ENTRY('K', 303ada0e8f4d6a83),
+	ENTRY('t', 300703dd80220893)
+);
+
+DEF_TRIE_NODE_INFORMATION(cba26cb32b36a5a9, "0",
+	"v0 -> CuePoint", NULL, 64
+);
+
+DEF_TRIE_NODE_INFORMATION(4cfd3dfcc4e1ce71, "1",
+	"v1 -> ReferenceBlock", NULL, 1
+);
+
+DEF_TRIE_NODE_INFORMATION(7e9bc850d000b0fc, "CcD",
+	"vCcD -> NextFilename", NULL, 16
+);
+
+DEF_TRIE_NODE_INFORMATION(868aad82b8ef219f, "F2",
+	"vF2 -> TagLanguageIETF", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(99aecc7cccb5c35e, "G3",
+	"vG3 -> PixelCropTop", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(bbd59b5d37a264dd, "K3",
+	"vK3 -> Primaries", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(0dbd0b561db0676f, "O3",
+	"vO3 -> SeekPreRoll", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(ea61b6a5246cb0f3, "p5",
+	"vp5 -> ChannelPositions", NULL, 128
+);
+
+DEF_TRIE_NODE_INFORMATION(9238476623fb43d9, "q2",
+	"vq2 -> Seek", NULL, 64
+);
+
+DEF_TRIE_NODE_BRANCH(d516c92652948ae7, "v",
+	ENTRY('0', cba26cb32b36a5a9),
+	ENTRY('1', 4cfd3dfcc4e1ce71),
+	ENTRY('C', 7e9bc850d000b0fc),
+	ENTRY('F', 868aad82b8ef219f),
+	ENTRY('G', 99aecc7cccb5c35e),
+	ENTRY('K', bbd59b5d37a264dd),
+	ENTRY('O', 0dbd0b561db0676f),
+	ENTRY('p', ea61b6a5246cb0f3),
+	ENTRY('q', 9238476623fb43d9)
+);
+
+DEF_TRIE_NODE_INFORMATION(9cfa6e88e9b4b2cc, "B2",
+	"wB2 -> ChapLanguage", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(c1d450a77268ac98, "2",
+	"wK2 -> EditionUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(77be0cbac4da7fb9, "3",
+	"wK3 -> MaxCLL", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(cf255bc9c5eca051, "K",
+	ENTRY('2', c1d450a77268ac98),
+	ENTRY('3', 77be0cbac4da7fb9)
+);
+
+DEF_TRIE_NODE_INFORMATION(a255fc3e8388e158, "P4",
+	"wP4 -> TrackTranslateEditionUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(28f19251d3ea9227, "b4",
+	"wb4 -> ChapterTranslateEditionUID", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(e18aec4980c6b5b8, "u4",
+	"wu4 -> ChapterSegmentEditionUID", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(7c8c753f2ce2f82d, "w",
+	ENTRY('B', 9cfa6e88e9b4b2cc),
+	ENTRY('K', cf255bc9c5eca051),
+	ENTRY('P', a255fc3e8388e158),
+	ENTRY('b', 28f19251d3ea9227),
+	ENTRY('u', e18aec4980c6b5b8)
+);
+
+DEF_TRIE_NODE_INFORMATION(d2c9d594a46f6d5b, "1",
+	"x1 -> ReferenceVirtual", NULL, 1
+);
+
+DEF_TRIE_NODE_INFORMATION(989ac0af5ebcedc6, "B2",
+	"xB2 -> ChapLanguageIETF", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(5072b4e43a9e1be7, "2",
+	"xK2 -> EditionFlagHidden", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(c0721b7738f3a8ed, "3",
+	"xK3 -> MaxFALL", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(f7e7f2c1eaed95ac, "K",
+	ENTRY('2', 5072b4e43a9e1be7),
+	ENTRY('3', c0721b7738f3a8ed)
+);
+
+DEF_TRIE_NODE_BRANCH(2cc86099b81b5a85, "x",
+	ENTRY('1', d2c9d594a46f6d5b),
+	ENTRY('B', 989ac0af5ebcedc6),
+	ENTRY('K', f7e7f2c1eaed95ac)
+);
+
+DEF_TRIE_NODE_INFORMATION(b67a03dbf8b2f30c, "B2",
+	"yB2 -> ChapCountry", NULL, 8
+);
+
+DEF_TRIE_NODE_INFORMATION(34f700bcaa919210, "N2",
+	"yN2 -> FileDescription", NULL, 16
+);
+
+DEF_TRIE_NODE_BRANCH(0ee576101a224096, "y",
+	ENTRY('B', b67a03dbf8b2f30c),
+	ENTRY('N', 34f700bcaa919210)
+);
+
+DEF_TRIE_NODE_INFORMATION(b8f405298b7ba8bd, "B3",
+	"zB3 -> TrackOffset", NULL, 1
+);
+
+DEF_TRIE_NODE_INFORMATION(5c04d9c0a59e6917, "O4",
+	"zO4 -> TrackTranslateCodec", NULL, 2
+);
+
+DEF_TRIE_NODE_INFORMATION(e4d2d4e386e84af8, "a4",
+	"za4 -> ChapterTranslateCodec", NULL, 2
+);
+
+DEF_TRIE_NODE_BRANCH(184b38fd2eed944a, "z",
+	ENTRY('B', b8f405298b7ba8bd),
+	ENTRY('O', 5c04d9c0a59e6917),
+	ENTRY('a', e4d2d4e386e84af8)
+);
+
+DEF_TRIE_NODE_BRANCH(fc6756374c878b20, "NULL",
+	ENTRY('.', 73aff553c3b798d0),
+	ENTRY('/', 9d898ada302fceb2),
+	ENTRY('1', 918f785ef9f47841),
+	ENTRY('2', b332bf60b355b9ff),
+	ENTRY('3', cd604219a43e018a),
+	ENTRY('4', 71575d48e036cab6),
+	ENTRY('5', 71abaa91ff246fef),
+	ENTRY('6', 9a09ab43b668572e),
+	ENTRY('7', c92a6e263eb99374),
+	ENTRY('8', daff86be72f684cc),
+	ENTRY('9', 372cf5309b0b0c5f),
+	ENTRY('A', 78472b06e829d6e6),
+	ENTRY('B', e07ca4fc0b483347),
+	ENTRY('C', b74736edb67a857c),
+	ENTRY('D', 8face3e1c7cea748),
+	ENTRY('E', 18b4ec78ff8aabf6),
+	ENTRY('F', 74501d7cc501ff4c),
+	ENTRY('G', 73cf80c609c270a8),
+	ENTRY('H', 6ed9e98dbf21d174),
+	ENTRY('I', 3072b22d9255681b),
+	ENTRY('J', 30a8912e5d8719f4),
+	ENTRY('K', dd9eafcb882d9b4d),
+	ENTRY('L', 61f4e36da62f7515),
+	ENTRY('M', a4efaaaf883b1465),
+	ENTRY('N', 7e180fcdc73478d7),
+	ENTRY('O', b614d3f88c86003d),
+	ENTRY('P', c7226c963fe5b7b9),
+	ENTRY('Q', 20ec2f9c2ba8d445),
+	ENTRY('R', ba01f106772b14f7),
+	ENTRY('T', 0506e2c997c6f26d),
+	ENTRY('U', 03295afccc6abd35),
+	ENTRY('V', 2e67dd8f81d577a6),
+	ENTRY('W', f432c053111b8598),
+	ENTRY('X', b3e98967825c210f),
+	ENTRY('Y', ad01703c03c9e9f9),
+	ENTRY('Z', 740fb6564a3afc83),
+	ENTRY('a', 488e732daf1d17a7),
+	ENTRY('b', 866e90ec866b779e),
+	ENTRY('c', 83dfd6d3d11772a1),
+	ENTRY('d', dc495ac75433f290),
+	ENTRY('e', cc00412308fdebbc),
+	ENTRY('f', 6db6f7aaa08ef211),
+	ENTRY('g', 488dabf04dcd8461),
+	ENTRY('h', 79b7595fe461945f),
+	ENTRY('i', 0b47c4cf5833a32f),
+	ENTRY('j', 9aaddf7c07757efe),
+	ENTRY('k', cdf6c95222c4f4ab),
+	ENTRY('l', 9c5beafceb311d6e),
+	ENTRY('m', 456012cc87fc22ee),
+	ENTRY('n', 09329ed5ca9bd531),
+	ENTRY('o', 01e083a9768b7606),
+	ENTRY('p', c9ad799af3664fb3),
+	ENTRY('q', a6b70059d9c203b2),
+	ENTRY('r', 09d409d1651c5cca),
+	ENTRY('s', b74932ae6548060b),
+	ENTRY('t', df0fbec59f687df0),
+	ENTRY('u', 6089487f986afaa2),
+	ENTRY('v', d516c92652948ae7),
+	ENTRY('w', 7c8c753f2ce2f82d),
+	ENTRY('x', 2cc86099b81b5a85),
+	ENTRY('y', 0ee576101a224096),
+	ENTRY('z', 184b38fd2eed944a)
+);
+
+#undef TRIE_NODE_PREFIX
+
