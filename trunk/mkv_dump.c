@@ -416,7 +416,7 @@ err1:
 int
 main(int argc, char **argv)
 {
-    int err;
+    int err, tmp;
     struct ctx ctx = {0};
 
     if (parse_cmdline(argc, argv, &ctx) != 0)
@@ -424,8 +424,12 @@ main(int argc, char **argv)
 
     err = dump_mkv(STDIN_FILENO, STDOUT_FILENO, &ctx);
 
-    free_tcb(ctx.tcb);
-    free_ecb(ctx.ecb);
+    tmp = free_tcb(ctx.tcb);
+    if (tmp != 0)
+        err = tmp;
+    tmp = free_ecb(ctx.ecb);
+    if (tmp != 0)
+        err = tmp;
 
     return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }
