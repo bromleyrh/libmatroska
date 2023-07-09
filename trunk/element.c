@@ -90,7 +90,8 @@ unpack_float_4(const char *x, edata_t *y, size_t sz)
 
     for (i = 0; i < 4; i++)
         y->bytes[i] = x[~i & 3];
-    *(uint32_t *)&y->bytes[4] = 0;
+    for (; i < sizeof(y->bytes); i++)
+        y->bytes[i] = 0;
 
     y->dbl = 0;
 
