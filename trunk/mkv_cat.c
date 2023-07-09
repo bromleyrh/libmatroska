@@ -223,26 +223,26 @@ static int
 output_mkv(int infd, struct ctx *ctx)
 {
     const char *errmsg;
-    int err;
+    int res;
     matroska_hdl_t hdl;
     struct matroska_file_args args;
 
     args.fd = infd;
     args.pathname = NULL;
-    err = matroska_open(&hdl, NULL, NULL, &bitstream_cb, &args, ctx);
-    if (err) {
+    res = matroska_open(&hdl, NULL, NULL, &bitstream_cb, &args, ctx);
+    if (res != 0) {
         errmsg = "Error opening input file";
         goto err1;
     }
 
-    err = matroska_read(NULL, hdl);
-    if (err) {
+    res = matroska_read(NULL, hdl);
+    if (res != 0 && res != 1) {
         errmsg = "Error dumping file";
         goto err2;
     }
 
-    err = matroska_close(hdl);
-    if (err) {
+    res = matroska_close(hdl);
+    if (res != 0) {
         errmsg = "Error closing input file";
         goto err1;
     }
@@ -252,8 +252,8 @@ output_mkv(int infd, struct ctx *ctx)
 err2:
     matroska_close(hdl);
 err1:
-    fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
-    return err;
+    fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
+    return res;
 }
 
 int
