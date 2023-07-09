@@ -848,10 +848,10 @@ ebml_close(ebml_hdl_t hdl)
 EXPORTED int
 ebml_read(FILE *f, ebml_hdl_t hdl)
 {
-    int err;
+    int res;
 
-    err = parse_header(f, hdl);
-    return err ? err : parse_body(f, hdl);
+    res = parse_header(f, hdl);
+    return res == 0 ? parse_body(f, hdl) : res;
 }
 
 EXPORTED int

@@ -360,14 +360,14 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
 {
     const char *errmsg;
     FILE *f;
-    int err;
+    int res;
     matroska_hdl_t hdl;
     struct matroska_file_args args;
 
     args.fd = infd;
     args.pathname = NULL;
-    err = matroska_open(&hdl, NULL, &metadata_cb, &bitstream_cb, &args, ctx);
-    if (err) {
+    res = matroska_open(&hdl, NULL, &metadata_cb, &bitstream_cb, &args, ctx);
+    if (res != 0) {
         errmsg = "Error opening input file";
         goto err1;
     }
@@ -376,35 +376,35 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
-        err = MINUS_ERRNO;
+        res = MINUS_ERRNO;
         goto err2;
     }
     if (setvbuf(f, NULL, _IOLBF, 0) == EOF) {
-        err = -ENOMEM;
+        res = -ENOMEM;
         goto err3;
     }
 
-    err = matroska_read(f, hdl);
-    if (err) {
+    res = matroska_read(f, hdl);
+    if (res != 0 && res != 1) {
         errmsg = "Error dumping file";
         goto err3;
     }
 
     if (fsync(fileno(f)) == -1
         && errno != EBADF && errno != EINVAL && errno != ENOTSUP) {
-        err = MINUS_ERRNO;
+        res = MINUS_ERRNO;
         errmsg = "Error closing output file";
         goto err3;
     }
 
     if (fclose(f) == EOF) {
-        err = MINUS_ERRNO;
+        res = MINUS_ERRNO;
         errmsg = "Error closing output file";
         goto err2;
     }
 
-    err = matroska_close(hdl);
-    if (err) {
+    res = matroska_close(hdl);
+    if (res != 0) {
         errmsg = "Error closing input file";
         goto err1;
     }
@@ -416,8 +416,8 @@ err3:
 err2:
     matroska_close(hdl);
 err1:
-    fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
-    return err;
+    fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
+    return res;
 }
 
 int
