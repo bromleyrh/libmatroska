@@ -292,7 +292,7 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
 
     res = l64a_r(eid, idstr, sizeof(idstr));
     if (res != 0)
-        return res;
+        return -EIO;
 
     if (f != NULL
         && fprintf(f, "%" PRIu64 "\t%s\t%" PRIx64 "\t%" PRIu64 "\t%" PRIu64,
