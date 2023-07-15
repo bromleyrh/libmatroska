@@ -131,6 +131,8 @@ vint_test_LDADD = $(matroskalite_link) $(matroskalite_link_dep)
 vint_test_LDFLAGS = -rpath @abs_top_builddir@/.libs
 vint_test_DEPENDENCIES = libmatroskalite.la
 
+TESTS = element_test vint_test
+
 include scripts/Makefile.am
 
 install-exec-hook:
