@@ -13,7 +13,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+int err_print(FILE *, int *);
+
+static int print_err(FILE *, int);
+
 static int zlib_stream_cb(const void *, size_t, void *);
+
+static int
+print_err(FILE *f, int errdes)
+{
+    err_print(f, &errdes);
+    return errdes;
+}
 
 static int
 zlib_stream_cb(const void *buf, size_t len, void *ctx)
@@ -39,6 +50,8 @@ main(int argc, char **argv)
 
     res = zlib_stream_init(&hdl, &zlib_stream_cb, &f);
     if (res != 0) {
+        if (res > 0)
+            res = print_err(stderr, res);
         fprintf(stderr, "Error initializing output: %s\n", strerror(-res));
         return EXIT_FAILURE;
     }
@@ -61,6 +74,8 @@ main(int argc, char **argv)
             if (res == 0)
                 break;
             if (res != 1) {
+                if (res > 0)
+                    res = print_err(stderr, res);
                 fprintf(stderr, "Error decompressing input: %s\n",
                         strerror(-res));
                 goto err;
@@ -72,6 +87,8 @@ main(int argc, char **argv)
 
             res = zlib_stream_init(&hdl, &zlib_stream_cb, &f);
             if (res != 0) {
+                if (res > 0)
+                    res = print_err(stderr, res);
                 fprintf(stderr, "Error initializing output: %s\n",
                         strerror(-res));
                 return EXIT_FAILURE;

@@ -37,6 +37,8 @@ struct ctx {
     size_t          datalen;
 };
 
+int matroska_print_err(FILE *, int);
+
 static int parse_track_spec(const char *, const char *, int, struct avl_tree *);
 
 static int parse_cmdline(int, char **, struct ctx *);
@@ -252,6 +254,8 @@ output_mkv(int infd, struct ctx *ctx)
 err2:
     matroska_close(hdl);
 err1:
+    if (res > 0)
+        res = matroska_print_err(stderr, res);
     fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
     return res;
 }

@@ -5,6 +5,7 @@
 #define _FILE_OFFSET_BITS 64
 
 #include "common.h"
+#include "debug.h"
 #include "ebml.h"
 #include "element.h"
 #include "matroska.h"
@@ -105,7 +106,7 @@ ebml_file_open(void **ctx, void *args)
     struct ebml_file_ctx *ret;
 
     if (omalloc(&ret) == NULL)
-        return MINUS_ERRNO;
+        return ERR_TAG(errno);
 
     a = args;
 
@@ -114,7 +115,7 @@ ebml_file_open(void **ctx, void *args)
     else {
         ret->fd = openat(a->fd, a->pathname, O_CLOEXEC | O_RDONLY);
         if (ret->fd == -1) {
-            err = MINUS_ERRNO;
+            err = ERR_TAG(errno);
             free(ret);
             return err;
         }
@@ -148,7 +149,7 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
         if (ret >= 0)
             break;
         if (errno != EINTR)
-            return MINUS_ERRNO;
+            return ERR_TAG(errno);
     }
 
     *nbytes = ret;
@@ -163,7 +164,7 @@ ebml_file_get_fpos(void *ctx, off_t *offset)
 
     ret = lseek(fctx->fd, 0, SEEK_CUR);
     if (ret == -1)
-        return MINUS_ERRNO;
+        return ERR_TAG(errno);
 
     *offset = ret;
     return 0;
@@ -230,6 +231,7 @@ static int
 parse_eid(uint64_t *eid, size_t *sz, char *bufp)
 {
     int byteidx;
+    int notsup;
     int res;
     size_t retsz;
     uint64_t ret;
@@ -239,13 +241,17 @@ parse_eid(uint64_t *eid, size_t *sz, char *bufp)
     } conv;
 
     res = eid_to_u64(bufp, &ret, &retsz);
-    if (res != 0 && res != -ENOTSUP)
+    if (res == 0)
+        notsup = 0;
+    else if (err_get_code(res) == -ENOTSUP)
+        notsup = 1;
+    else
         return res;
 
     if (retsz > EID_MAX_LEN)
-        return -EIO;
+        return ERR_TAG(EIO);
 
-    if (res == -ENOTSUP)
+    if (notsup)
         fputs("Error resilience: found invalid all-zero element ID\n", stderr);
 
     /* reenable marker bit in EBML element ID */
@@ -270,7 +276,7 @@ parse_edatasz(uint64_t *elen, size_t *sz, char *bufp)
         return res;
 
     if (retsz > EDATASZ_MAX_LEN)
-        return -EIO;
+        return ERR_TAG(EIO);
 
     *elen = ret;
     *sz = retsz;
@@ -292,12 +298,12 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
 
     res = l64a_r(eid, idstr, sizeof(idstr));
     if (res != 0)
-        return -EIO;
+        return ERR_TAG(EIO);
 
     if (f != NULL
         && fprintf(f, "%" PRIu64 "\t%s\t%" PRIx64 "\t%" PRIu64 "\t%" PRIu64,
                    n, idstr, eid, elen, totlen) < 0)
-        return -EIO;
+        return ERR_TAG(EIO);
 
     parsers[!ebml] = hdl->parser_ebml;
     parsers[ebml] = hdl->parser_doc;
@@ -305,16 +311,16 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
     for (i = 0; i < ARRAY_SIZE(parsers); i++) {
         res = parser_look_up(parsers[i], idstr, &val, &ret);
         if (res < 0)
-            return res;
+            return ERR_TAG(-res);
         if (f != NULL && res == 1
             && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), val) < 0)
-            return -EIO;
+            return ERR_TAG(EIO);
     }
 
     res = semantic_processor_look_up(hdl->sproc, idstr, &action);
     if (res != 0) {
         if (res != 1)
-            return res;
+            return ERR_TAG(-res);
 
         res = (*action)(val, ret, NULL, NULL, 0, 0, hdl->off, hdl->sproc_ctx);
         if (res != 0)
@@ -437,7 +443,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
     struct timespec tm;
 
     if (elen > ETYPE_MAX_FIXED_WIDTH)
-        return -EINVAL;
+        return ERR_TAG(EINVAL);
 
     si = *sip;
     di = *dip;
@@ -460,7 +466,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
 
     res = edata_unpack(si, &val, etype, elen);
     if (res != 0) {
-        if (res != -EINVAL)
+        if (err_get_code(res) != -EINVAL)
             return res;
         goto end;
     }
@@ -487,7 +493,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
             abort();
         }
         if (res < 0)
-            return -EIO;
+            return ERR_TAG(EIO);
     }
 
     res = invoke_value_handler(val.type, act, &val, hdl);
@@ -551,7 +557,7 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         if (f != NULL) {
             res = fprintf(f, "%s", val.ptr);
             if (res < 0) {
-                res = -EIO;
+                res = ERR_TAG(EIO);
                 goto err;
             }
         }
@@ -605,7 +611,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
     if (res != 0)
         return res;
     if (eid != EBML_ELEMENT_ID)
-        return -EILSEQ;
+        return ERR_TAG(EILSEQ);
     totlen = sz;
     si = buf + sz;
     hdl->off += sz;
@@ -625,7 +631,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
             || fprintf(f,
                        "1\t\t%" PRIx64 "\t%" PRIu64 "\t%" PRIu64 "\tEBML\t\n",
                        (uint64_t)EBML_ELEMENT_ID, elen, totlen) < 0))
-        return -EIO;
+        return ERR_TAG(EIO);
 
     /* read remaining EBML element data */
     tmp = si;
@@ -670,10 +676,10 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
             return res;
 
         if (sz_unknown && etype != ETYPE_MASTER)
-            return -EILSEQ;
+            return ERR_TAG(EILSEQ);
 
         if (f != NULL && fputc('\n', f) == EOF)
-            return -EIO;
+            return ERR_TAG(EIO);
 
         hdl->off += elen;
 
@@ -721,7 +727,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
                 return res;
             if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
                 && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
-                return -EIO;
+                return ERR_TAG(EIO);
             break;
         }
 
@@ -746,20 +752,20 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
 
         if (f != NULL && hdl->n == 1
             && fprintf(f, "body\t\t\t%" PRIu64 "\n", elen) < 0)
-            return -EIO;
+            return ERR_TAG(EIO);
 
         res = look_up_elem(hdl, eid, elen, totlen, &act, &etype, &val, 0,
                            hdl->n, f);
         if (res != 0)
             return res;
         if (etype == ETYPE_NONE)
-            return -EILSEQ;
+            return ERR_TAG(EILSEQ);
 
         if (sz_unknown && etype != ETYPE_MASTER)
-            return -EILSEQ;
+            return ERR_TAG(EILSEQ);
 
         if (f != NULL && fprintf(f, "\t%s\t", typestrmap[etype]) < 0)
-            return -EIO;
+            return ERR_TAG(EIO);
 
         sz = hdl->di - hdl->si;
 
@@ -787,7 +793,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
         }
 
         if (f != NULL && fputc('\n', f) == EOF)
-            return -EIO;
+            return ERR_TAG(EIO);
 
         ++hdl->n;
 
@@ -809,7 +815,7 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     struct ebml_hdl *ret;
 
     if (ocalloc(&ret, 1) == NULL)
-        return MINUS_ERRNO;
+        return ERR_TAG(errno);
 
     err = (*fns->open)(&ret->ctx, args);
     if (err) {

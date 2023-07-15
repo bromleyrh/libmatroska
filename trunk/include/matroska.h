@@ -63,6 +63,10 @@ typedef int matroska_metadata_cb_t(const char *, matroska_metadata_t *, size_t,
 typedef int matroska_bitstream_cb_t(uint64_t, const void *, size_t, size_t,
                                     off_t, int16_t, int, void *);
 
+struct matroska_error_info {
+    int errcode;
+};
+
 #define MATROSKA_METADATA_FLAG_FRAGMENT 1
 
 int matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
@@ -76,6 +80,8 @@ int matroska_read(FILE *f, matroska_hdl_t hdl);
 int matroska_read_header(FILE *f, matroska_hdl_t hdl);
 
 int matroska_read_body(FILE *f, matroska_hdl_t hdl);
+
+int matroska_error(struct matroska_error_info *info, int errdes, int flags);
 
 #ifdef __cplusplus
 }

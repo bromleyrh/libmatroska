@@ -3,6 +3,7 @@
  */
 
 #include "common.h"
+#include "debug.h"
 #include "zlib_stream.h"
 
 #include <malloc_ext.h>
@@ -57,7 +58,7 @@ zlib_stream_init(zlib_stream_hdl_t *hdl,
     struct zlib_stream *ret;
 
     if (omalloc(&ret) == NULL)
-        return MINUS_ERRNO;
+        return ERR_TAG(errno);
 
     ret->s.next_in = NULL;
 
@@ -81,7 +82,7 @@ zlib_stream_destroy(zlib_stream_hdl_t hdl)
 
     free(hdl);
 
-    return ret == Z_OK ? 0 : -EIO;
+    return ret == Z_OK ? 0 : ERR_TAG(EIO);
 }
 
 int
@@ -100,7 +101,7 @@ zlib_stream_inflate(zlib_stream_hdl_t hdl, void *buf, size_t len,
     if (first) {
         ret = inflateInit(&hdl->s);
         if (ret != Z_OK)
-            return xlat_zlib_err(ret);
+            return ERR_TAG(-xlat_zlib_err(ret));
     }
 
     for (;;) {
@@ -111,7 +112,7 @@ zlib_stream_inflate(zlib_stream_hdl_t hdl, void *buf, size_t len,
         if (ret != Z_OK) {
             end = ret == Z_STREAM_END;
             if (!end)
-                return xlat_zlib_err(ret);
+                return ERR_TAG(-xlat_zlib_err(ret));
         } else
             end = 0;
 

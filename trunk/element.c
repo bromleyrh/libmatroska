@@ -3,6 +3,7 @@
  */
 
 #include "common.h"
+#include "debug.h"
 #include "element.h"
 #include "vint.h"
 
@@ -120,7 +121,7 @@ unpack_string(const char *x, edata_t *y, size_t sz)
 
     ret = malloc(sz + 1);
     if (ret == NULL)
-        return MINUS_ERRNO;
+        return ERR_TAG(errno);
 
     ret[sz] = '\0';
 
@@ -148,7 +149,7 @@ unpack_binary(const char *x, edata_t *y, size_t sz)
 
     ret = malloc(sz);
     if (ret == NULL)
-        return MINUS_ERRNO;
+        return ERR_TAG(errno);
 
     y->ptr = memcpy(ret, x, sz);
     return 0;
@@ -158,8 +159,7 @@ EXPORTED int
 eid_to_u64(const char *x, uint64_t *y, size_t *sz)
 {
     char buf[8];
-    int err;
-    int fixup = 0;
+    int err, err_fixup = 0;
     size_t bufsz, tmpsz;
     uint64_t tmp;
 
@@ -168,9 +168,9 @@ eid_to_u64(const char *x, uint64_t *y, size_t *sz)
         return err;
 
     if (tmp == VINT_MAX_VAL(tmpsz)) /* VINT_DATA must not be set to all 1 */
-        return -EINVAL;
+        return ERR_TAG(EINVAL);
     if (tmp == 0) /* VINT_DATA must not be set to all 0 */
-        fixup = 1;
+        err_fixup = ERR_TAG(ENOTSUP);
 
     bufsz = sizeof(buf);
     err = u64_to_vint(tmp, buf, &bufsz);
@@ -180,11 +180,11 @@ eid_to_u64(const char *x, uint64_t *y, size_t *sz)
         ++bufsz;
 
     if (tmpsz != bufsz) /* a shorter VINT_DATA encoding is available */
-        return -EINVAL;
+        return ERR_TAG(EINVAL);
 
     *y = tmp;
     *sz = tmpsz;
-    return fixup ? -ENOTSUP : 0;
+    return err_fixup;
 }
 
 EXPORTED int
@@ -289,19 +289,19 @@ edata_unpack(const char *x, edata_t *y, enum etype etype, size_t sz)
     const struct ent *fnsp;
 
     if (etype >= ARRAY_SIZE(fns))
-        return -EINVAL;
+        return ERR_TAG(EINVAL);
     fnsp = &fns[etype];
     if (fnsp->nfns == 0)
-        return -EINVAL;
+        return ERR_TAG(EINVAL);
 
     if (fnsp->nfns == -1)
         fn = fnsp->fn;
     else {
         if (sz > INT_MAX || (int)sz >= fnsp->nfns)
-            return -EINVAL;
+            return ERR_TAG(EINVAL);
         fn = fnsp->fns[sz];
         if (fn == NULL)
-            return -EINVAL;
+            return ERR_TAG(EINVAL);
     }
 
     err = (*fn)(x, y, sz);
@@ -324,9 +324,9 @@ edata_to_timespec(edata_t *x, struct timespec *y)
 
     if (s >= 0) {
         if ((int64_t)(TIME_T_MAX - reftm) < s)
-            return -EOVERFLOW;
+            return ERR_TAG(EOVERFLOW);
     } else if ((int64_t)(TIME_T_MIN - reftm) > s)
-        return -EOVERFLOW;
+        return ERR_TAG(EOVERFLOW);
 
     y->tv_sec = reftm + s;
     y->tv_nsec = x->date % TIME_GRAN;

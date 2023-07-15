@@ -2,6 +2,7 @@
  * vint.c
  */
 
+#include "debug.h"
 #include "util.h"
 #include "vint.h"
 
@@ -85,7 +86,7 @@ vint_to_u64(const char *x, uint64_t *y, size_t *sz)
 
     /* find VINT_MARKER */
     if (*x == 0)
-        return -EINVAL;
+        return ERR_TAG(EINVAL);
 
     if (sz == NULL && y == NULL)
         return 0;
@@ -133,7 +134,7 @@ u64_to_vint(uint64_t x, char *y, size_t *bufsz)
         bnd <<= CHAR_BIT;
     }
     if (*bufsz < len)
-        return -EINVAL;
+        return ERR_TAG(EINVAL);
 
     if (y == NULL)
         goto end;
@@ -141,13 +142,13 @@ u64_to_vint(uint64_t x, char *y, size_t *bufsz)
     err = _u64_to_vint(x, y, len);
     if (err) {
         if (err != -ERANGE)
-            return err;
+            return ERR_TAG(-err);
         ++len;
         if (*bufsz < len)
-            return -EINVAL;
+            return ERR_TAG(EINVAL);
         err = _u64_to_vint(x, y, len);
         if (err)
-            return err;
+            return ERR_TAG(-err);
     }
 
 end:
@@ -158,7 +159,10 @@ end:
 EXPORTED int
 u64_to_vint_l(uint64_t x, char *y, size_t bufsz)
 {
-    return _u64_to_vint(x, y, bufsz);
+    int err;
+
+    err = _u64_to_vint(x, y, bufsz);
+    return err ? ERR_TAG(-err) : 0;
 }
 
 /* vi: set expandtab sw=4 ts=4: */

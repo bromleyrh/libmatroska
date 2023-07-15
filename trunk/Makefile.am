@@ -94,16 +94,16 @@ mkv_dump_LDADD = $(matroskalite_link) $(matroskalite_link_dep) \
 mkv_dump_LDFLAGS = -rpath @abs_top_builddir@/.libs
 mkv_dump_DEPENDENCIES = libmatroskalite.la
 
-zlib_cat_SOURCES = zlib_cat.c zlib_stream.c
-zlib_cat_CPPFLAGS = $(AM_CPPFLAGS) @zlib_cppflags@
+zlib_cat_SOURCES = debug.c zlib_cat.c zlib_stream.c
+zlib_cat_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @zlib_cppflags@
 zlib_cat_CFLAGS = $(AM_CFLAGS)
-zlib_cat_LDADD = @zlib_link_dep@
+zlib_cat_LDADD = @libutil_link_dep@ @zlib_link_dep@
 
 bin_SCRIPTS = lsmkv
 
 noinst_PROGRAMS = schema_parse
 
-schema_parse_SOURCES = element.c radix_tree.c schema_parse.c vint.c
+schema_parse_SOURCES = debug.c element.c radix_tree.c schema_parse.c vint.c
 schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @libxml2_cppflags@
 schema_parse_CFLAGS = $(AM_CFLAGS)
 schema_parse_LDADD = @libutil_link_dep@ @libxml2_link_dep@

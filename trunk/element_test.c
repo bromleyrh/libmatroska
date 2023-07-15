@@ -2,7 +2,10 @@
  * element_test.c
  */
 
+#define _FILE_OFFSET_BITS 64
+
 #include "element.h"
+#include "matroska.h"
 
 #define NO_ASSERT_MACROS
 #include "common.h"
@@ -12,6 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+int matroska_print_err(FILE *, int);
 
 int
 main(int argc, char **argv)
@@ -51,9 +56,10 @@ main(int argc, char **argv)
     while (i < ARRAY_SIZE(tests_eid_to_u64)) {
         const struct test_eid_to_u64 *t = &tests_eid_to_u64[i];
         size_t ressz;
+        struct matroska_error_info info;
         uint64_t res;
 
-        err = eid_to_u64(t->src, &res, &ressz);
+        err = matroska_error(&info, eid_to_u64(t->src, &res, &ressz), 0);
         if (err != t->err) {
             fputs("eid_to_u64() returned incorrect result\n", stderr);
             return EXIT_FAILURE;
@@ -70,6 +76,8 @@ main(int argc, char **argv)
 
         err = edatasz_to_u64(t->src, &res, &ressz);
         if (err) {
+            if (err > 0)
+                err = matroska_print_err(stderr, err);
             fprintf(stderr, "edatasz_to_u64() returned \"%s\"\n",
                     strerror(-err));
             return EXIT_FAILURE;

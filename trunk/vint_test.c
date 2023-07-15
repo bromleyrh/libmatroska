@@ -2,6 +2,9 @@
  * vint_test.c
  */
 
+#define _FILE_OFFSET_BITS 64
+
+#include "matroska.h"
 #include "vint.h"
 
 #define NO_ASSERT_MACROS
@@ -12,6 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+int matroska_print_err(FILE *, int);
 
 int
 main(int argc, char **argv)
@@ -63,6 +68,8 @@ main(int argc, char **argv)
             func = "u64_to_vint_l";
         }
         if (err) {
+            if (err > 0)
+                err = matroska_print_err(stderr, err);
             fprintf(stderr, "%s() returned \"%s\"\n", func, strerror(-err));
             return EXIT_FAILURE;
         }
@@ -83,6 +90,8 @@ main(int argc, char **argv)
 
         err = vint_to_u64(t->src, &res, &ressz);
         if (err) {
+            if (err > 0)
+                err = matroska_print_err(stderr, err);
             fprintf(stderr, "vint_to_u64() returned \"%s\"\n", strerror(-err));
             return EXIT_FAILURE;
         }

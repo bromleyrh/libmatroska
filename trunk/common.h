@@ -17,6 +17,9 @@ static __thread int asserttmp;
 #define MINUS_ERRNO (asserttmp = -errno, assert(asserttmp < 0), asserttmp)
 #endif
 
+#define _STR(x) #x
+#define STR(x) _STR(x)
+
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 #define PL(val) PL_SUF(val, "", "s")

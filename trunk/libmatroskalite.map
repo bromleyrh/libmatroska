@@ -32,3 +32,9 @@ LIBMATROSKALITE_3 {
     global:
         matroska_open;
 } LIBMATROSKALITE_2;
+
+LIBMATROSKALITE_27 {
+    global:
+        matroska_error;
+        matroska_print_err;
+} LIBMATROSKALITE_3;
