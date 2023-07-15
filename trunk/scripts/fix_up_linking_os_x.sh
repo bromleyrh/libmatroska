@@ -14,7 +14,7 @@ replace_path()
 file=$1
 lib=$2
 
-set -- "mkv_cat" "mkv_dump"
+set -- "element_test" "mkv_cat" "mkv_dump" "vint_test"
 
 for i; do
 	if [ "$file" = "$i" ]; then
