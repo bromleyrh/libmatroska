@@ -23,7 +23,7 @@ main(int argc, char **argv)
         const char  *src;
         int         err;
     } tests_eid_to_u64[] = {
-        {"\x80",        -EINVAL},
+        {"\x80",        -ENOTSUP},
         {"\x40\x00",    -EINVAL},
         {"\x81",        0},
         {"\x40\x01",    -EINVAL},
