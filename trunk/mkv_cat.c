@@ -74,7 +74,7 @@ parse_track_spec(const char *trackno, const char *path, int fd,
     }
     if (e.f == NULL) {
         err = MINUS_ERRNO;
-        fprintf(stderr, "Error opening input file: %s\n", strerror(-err));
+        fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
         goto err1;
     }
 
