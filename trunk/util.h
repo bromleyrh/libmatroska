@@ -7,6 +7,7 @@
 
 #include "config.h"
 
+#include <time.h>
 #include <stddef.h>
 
 #ifdef HAVE_FLS
@@ -24,6 +25,8 @@ int al64(const char *a, long int *l);
 int strerror_rp(int errnum, char *strerrbuf, size_t buflen);
 
 char *strperror_r(int errnum, char *strerrbuf, size_t buflen);
+
+char *_strptime(const char *s, const char *format, struct tm *tm);
 
 #endif
 
