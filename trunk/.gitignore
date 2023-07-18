@@ -43,6 +43,7 @@ version.c
 /mkv_cat
 /mkv_dump
 /mkv_ls
+/mkv_write
 /zlib_cat
 
 /element_test
