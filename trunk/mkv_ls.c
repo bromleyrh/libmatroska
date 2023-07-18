@@ -107,7 +107,7 @@ parse_elem_spec(const char *path, int fd, struct cb *cb)
     }
     if (cb->f == NULL) {
         err = MINUS_ERRNO;
-        fprintf(stderr, "Error opening input file: %s\n", strerror(-err));
+        fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
         free(cb->path);
         return err;
     }
