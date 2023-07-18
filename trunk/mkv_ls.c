@@ -330,7 +330,7 @@ cvt_date_to_string(json_val_t *dst, matroska_metadata_t *src, size_t len,
     gmtime_r(&date, &tm);
 
     len = strftime(buf, sizeof(buf), "%Y %m %d %H %M %S", &tm);
-    len += snprintf(buf + len, sizeof(buf) - len, " %010" PRIi64,
+    len += snprintf(buf + len, sizeof(buf) - len, " %09" PRIi64,
                     src->integer % TIME_GRAN);
 
     return _cvt_utf8_to_string(dst, buf, len + 1);
