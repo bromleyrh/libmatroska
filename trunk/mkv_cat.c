@@ -50,7 +50,7 @@ static int free_tcb(struct avl_tree *);
 
 static matroska_bitstream_cb_t bitstream_cb;
 
-static int output_mkv(int, struct ctx *);
+static int cvt_mkv(int, struct ctx *);
 
 static int
 parse_track_spec(const char *trackno, const char *path, int fd,
@@ -222,7 +222,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
 }
 
 static int
-output_mkv(int infd, struct ctx *ctx)
+cvt_mkv(int infd, struct ctx *ctx)
 {
     const char *errmsg;
     int res;
@@ -269,7 +269,7 @@ main(int argc, char **argv)
     if (parse_cmdline(argc, argv, &ctx) != 0)
         return EXIT_FAILURE;
 
-    err = output_mkv(STDIN_FILENO, &ctx);
+    err = cvt_mkv(STDIN_FILENO, &ctx);
 
     tmp = free_tcb(ctx.tcb);
     if (tmp != 0)

@@ -85,7 +85,7 @@ static matroska_metadata_cb_t metadata_cb;
 
 static size_t json_write_cb(const char *, size_t, size_t, void *);
 
-static int output_mkv(int, struct ctx *);
+static int cvt_mkv(int, struct ctx *);
 
 static int
 parse_elem_spec(const char *path, int fd, struct cb *cb)
@@ -565,7 +565,7 @@ json_write_cb(const char *buf, size_t off, size_t len, void *ctx)
 }
 
 static int
-output_mkv(int infd, struct ctx *ctx)
+cvt_mkv(int infd, struct ctx *ctx)
 {
     const char *errmsg;
     int res;
@@ -643,7 +643,7 @@ main(int argc, char **argv)
     if (parse_cmdline(argc, argv, &ctx) != 0)
         return EXIT_FAILURE;
 
-    err = output_mkv(STDIN_FILENO, &ctx);
+    err = cvt_mkv(STDIN_FILENO, &ctx);
 
     free_cb(&ctx.cb);
 
