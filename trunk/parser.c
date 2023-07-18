@@ -144,7 +144,7 @@ parser_desc(const struct parser *parser)
     return parser->desc;
 }
 
-int
+EXPORTED int
 parser_look_up(const struct parser *parser, const char *str, const char **val,
                enum etype *etype)
 {

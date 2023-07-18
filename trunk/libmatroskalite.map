@@ -38,3 +38,8 @@ LIBMATROSKALITE_27 {
         matroska_error;
         matroska_print_err;
 } LIBMATROSKALITE_3;
+
+LIBMATROSKALITE_28 {
+    global:
+        parser_look_up;
+} LIBMATROSKALITE_27;

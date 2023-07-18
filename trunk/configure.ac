@@ -60,6 +60,13 @@ AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
 AC_CHECK_FUNCS_ONCE([fls])
 
+PKG_CHECK_MODULES([libjson], [libjson],
+                  [libjson_cppflags=$libjson_CFLAGS
+                   libjson_link_dep=$libjson_LIBS]
+)
+AC_SUBST([libjson_cppflags])
+AC_SUBST([libjson_link_dep])
+
 PKG_CHECK_MODULES([libutil], [libutil],
                   [libutil_cppflags=$libutil_CFLAGS
                    libutil_link_dep=$libutil_LIBS]
