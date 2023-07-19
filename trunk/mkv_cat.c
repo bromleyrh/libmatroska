@@ -237,7 +237,7 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err1;
     }
 
-    res = matroska_read(NULL, hdl);
+    res = matroska_read(NULL, hdl, 0);
     if (res != 0 && res != 1) {
         errmsg = "Error dumping file";
         goto err2;

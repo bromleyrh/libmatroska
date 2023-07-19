@@ -386,7 +386,7 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
         goto err3;
     }
 
-    res = matroska_read(f, hdl);
+    res = matroska_read(f, hdl, 0);
     if (res != 0 && res != 1) {
         errmsg = "Error dumping file";
         goto err3;

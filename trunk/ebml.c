@@ -87,9 +87,9 @@ static int handle_variable_length_value(char *, char **, char **, size_t,
                                         uint64_t, semantic_action_t *, FILE *,
                                         struct ebml_hdl *);
 
-static int parse_header(FILE *, struct ebml_hdl *);
+static int parse_header(FILE *, struct ebml_hdl *, int);
 
-static int parse_body(FILE *, struct ebml_hdl *);
+static int parse_body(FILE *, struct ebml_hdl *, int);
 
 EXPORTED const ebml_io_fns_t ebml_file_fns = {
     .open       = &ebml_file_open,
@@ -385,6 +385,11 @@ invoke_user_cb(const char *value, enum etype etype, edata_t *val, char *buf,
 
     memset(&d, 0, sizeof(d));
 
+    if (etype == ETYPE_MASTER) {
+        ret = (*hdl->cb)(value, &d, totlen, 0, hdl->metactx);
+        goto end;
+    }
+
     if (val == NULL) {
         d.data = buf;
         d.len = len;
@@ -590,7 +595,7 @@ err:
 }
 
 static int
-parse_header(FILE *f, struct ebml_hdl *hdl)
+parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
 {
     char buf[4096], *di, *si, *tmp;
     int res;
@@ -599,6 +604,8 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
     uint64_t eid, elen;
     uint64_t n;
     uint64_t totlen;
+
+    (void)flags;
 
     /* read EBML element ID and length */
     di = buf;
@@ -690,10 +697,12 @@ parse_header(FILE *f, struct ebml_hdl *hdl)
 }
 
 static int
-parse_body(FILE *f, struct ebml_hdl *hdl)
+parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
 {
     char *tmp;
     int res;
+
+    (void)flags;
 
     for (;;) {
         const char *val;
@@ -773,6 +782,13 @@ parse_body(FILE *f, struct ebml_hdl *hdl)
             memmove(hdl->buf, hdl->si, sz);
             hdl->si = hdl->buf;
             hdl->di = hdl->si + sz;
+
+            if (flags & EBML_READ_FLAG_MASTER) {
+                res = invoke_user_cb(val, ETYPE_MASTER, NULL, NULL, 0, elen,
+                                     hdl);
+                if (res != 0)
+                    return res;
+            }
         } else {
             if (ETYPE_IS_FIXED_WIDTH(etype)) {
                 res = handle_fixed_width_value(&hdl->si, &hdl->di, sz, etype,
@@ -852,24 +868,24 @@ ebml_close(ebml_hdl_t hdl)
 }
 
 EXPORTED int
-ebml_read(FILE *f, ebml_hdl_t hdl)
+ebml_read(FILE *f, ebml_hdl_t hdl, int flags)
 {
     int res;
 
-    res = parse_header(f, hdl);
-    return res == 0 ? parse_body(f, hdl) : res;
+    res = parse_header(f, hdl, flags);
+    return res == 0 ? parse_body(f, hdl, flags) : res;
 }
 
 EXPORTED int
-ebml_read_header(FILE *f, ebml_hdl_t hdl)
+ebml_read_header(FILE *f, ebml_hdl_t hdl, int flags)
 {
-    return parse_header(f, hdl);
+    return parse_header(f, hdl, flags);
 }
 
 EXPORTED int
-ebml_read_body(FILE *f, ebml_hdl_t hdl)
+ebml_read_body(FILE *f, ebml_hdl_t hdl, int flags)
 {
-    return parse_body(f, hdl);
+    return parse_body(f, hdl, flags);
 }
 
 /* vi: set expandtab sw=4 ts=4: */

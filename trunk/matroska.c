@@ -930,21 +930,39 @@ matroska_close(matroska_hdl_t hdl)
 }
 
 int
-matroska_read(FILE *f, matroska_hdl_t hdl)
+matroska_read(FILE *f, matroska_hdl_t hdl, int flags)
 {
-    return ebml_read(f, hdl->hdl);
+    int fl;
+    size_t i;
+
+    static const struct ent {
+        int src;
+        int dst;
+    } flagmap[] = {
+        {MATROSKA_READ_FLAG_MASTER, EBML_READ_FLAG_MASTER}
+    };
+
+    fl = 0;
+    for (i = 0; i < ARRAY_SIZE(flagmap); i++) {
+        const struct ent *ent = &flagmap[i];
+
+        if (flags & ent->src)
+            fl |= ent->dst;
+    }
+
+    return ebml_read(f, hdl->hdl, fl);
 }
 
 int
 matroska_read_header(FILE *f, matroska_hdl_t hdl)
 {
-    return ebml_read_header(f, hdl->hdl);
+    return ebml_read_header(f, hdl->hdl, 0);
 }
 
 int
 matroska_read_body(FILE *f, matroska_hdl_t hdl)
 {
-    return ebml_read_body(f, hdl->hdl);
+    return ebml_read_body(f, hdl->hdl, 0);
 }
 
 int
