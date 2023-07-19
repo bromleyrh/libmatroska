@@ -34,6 +34,7 @@ struct ctx {
     char        *data;
     size_t      len;
     int         first_fragment;
+    int         export;
 };
 
 #define LEN_MAX 128
@@ -119,6 +120,7 @@ static int
 parse_cmdline(int argc, char **argv, struct ctx *ctx)
 {
     char *sep;
+    int err;
     int fd;
 
     if (argc != 2) {
@@ -133,7 +135,7 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
     if (*sep == '\0')
         return -EINVAL;
     fd = *sep == '#';
-    ++sep;
+    *sep++ = '\0';
 
     if (fd) {
         fd = strtoimax(sep, NULL, 10);
@@ -141,7 +143,11 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
     } else
         fd = -1;
 
-    return parse_elem_spec(sep, fd, &ctx->cb);
+    err = parse_elem_spec(sep, fd, &ctx->cb);
+    if (!err)
+        ctx->export = strcmp(argv[1], "e") == 0;
+
+    return err;
 }
 
 static int
@@ -481,7 +487,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
     for (;;) {
         wchar_t *tmp;
 
-        id = value;
+        id = ctxp->export ? buf : value;
         if (mbsrtowcs(key, &id, buflen, memset(&s, 0, sizeof(s)))
             == (size_t)-1) {
             res = MINUS_ERRNO;
