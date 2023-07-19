@@ -77,7 +77,7 @@ static int cvt_utf8_to_string(json_val_t *, matroska_metadata_t *, size_t,
                               const char *);
 static int cvt_date_to_string(json_val_t *, matroska_metadata_t *, size_t,
                               const char *);
-static int cvt_master_to_string(json_val_t *, matroska_metadata_t *, size_t,
+static int cvt_master_to_number(json_val_t *, matroska_metadata_t *, size_t,
                                 const char *);
 static int cvt_binary_to_string(json_val_t *, matroska_metadata_t *, size_t,
                                 const char *);
@@ -343,13 +343,22 @@ cvt_date_to_string(json_val_t *dst, matroska_metadata_t *src, size_t len,
 }
 
 static int
-cvt_master_to_string(json_val_t *dst, matroska_metadata_t *src, size_t len,
+cvt_master_to_number(json_val_t *dst, matroska_metadata_t *src, size_t len,
                      const char *name)
 {
-    (void)src;
-    (void)len;
+    json_val_t ret;
 
-    return _cvt_utf8_to_string(dst, name, strlen(name) + 1);
+    (void)src;
+    (void)name;
+
+    ret = json_val_new(JSON_TYPE_NUMBER);
+    if (ret == NULL)
+        return -ENOMEM;
+
+    json_val_numeric_set(ret, len);
+
+    *dst = ret;
+    return 0;
 }
 
 static int
@@ -420,7 +429,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
         [ETYPE_STRING]      = &cvt_utf8_to_string,
         [ETYPE_UTF8]        = &cvt_utf8_to_string,
         [ETYPE_DATE]        = &cvt_date_to_string,
-        [ETYPE_MASTER]      = &cvt_master_to_string,
+        [ETYPE_MASTER]      = &cvt_master_to_number,
         [ETYPE_BINARY]      = &cvt_binary_to_string
     };
 
