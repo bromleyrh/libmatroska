@@ -424,10 +424,10 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
         [ETYPE_BINARY]      = &cvt_binary_to_string
     };
 
-    if (len > LEN_MAX)
-        return 0;
-
     if (flags & MATROSKA_METADATA_FLAG_FRAGMENT) {
+        if (len > LEN_MAX)
+            return 0;
+
         if (ctxp->first_fragment) {
             buf = realloc(ctxp->data, len);
             if (buf == NULL)
@@ -466,6 +466,9 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
             goto err1;
         goto end;
     }
+
+    if (etype != ETYPE_MASTER && len > LEN_MAX)
+        goto end;
 
     if (etype >= ARRAY_SIZE(fns)) {
         res = -EIO;
@@ -602,7 +605,7 @@ cvt_mkv(int infd, struct ctx *ctx)
     ctx->first_fragment = 1;
     ctx->cb.jval = jval;
 
-    res = matroska_read(NULL, hdl);
+    res = matroska_read(NULL, hdl, MATROSKA_READ_FLAG_MASTER);
     free(ctx->data);
     if (res != 0 && res != 1) {
         errmsg = "Error dumping file";
