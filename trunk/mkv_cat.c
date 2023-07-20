@@ -48,7 +48,7 @@ static int track_cb_free(const void *, void *);
 
 static int free_tcb(struct avl_tree *);
 
-static matroska_bitstream_cb_t bitstream_cb;
+static matroska_bitstream_output_cb_t bitstream_cb;
 
 static int cvt_mkv(int, struct ctx *);
 
@@ -231,12 +231,15 @@ cvt_mkv(int infd, struct ctx *ctx)
 {
     const char *errmsg;
     int res;
+    matroska_bitstream_cb_t cb;
     matroska_hdl_t hdl;
     struct matroska_file_args args;
 
+    cb.output_cb = &bitstream_cb;
     args.fd = infd;
     args.pathname = NULL;
-    res = matroska_open(&hdl, NULL, NULL, &bitstream_cb, &args, ctx);
+    res = matroska_open(&hdl, NULL, NULL, &cb, MATROSKA_OPEN_FLAG_RDONLY, &args,
+                        ctx);
     if (res != 0) {
         errmsg = "Error opening input file";
         goto err1;

@@ -104,9 +104,9 @@ static int cvt_master_to_number(json_val_t *, matroska_metadata_t *, size_t,
 static int cvt_binary_to_string(json_val_t *, matroska_metadata_t *, size_t,
                                 const char *);
 
-static matroska_metadata_cb_t metadata_cb;
+static matroska_metadata_output_cb_t metadata_cb;
 
-static matroska_bitstream_cb_t bitstream_cb;
+static matroska_bitstream_output_cb_t bitstream_cb;
 
 static size_t json_write_cb(const char *, size_t, size_t, void *);
 
@@ -1064,6 +1064,8 @@ cvt_mkv(int infd, struct ctx *ctx)
     int res;
     json_val_t jval;
     matroska_hdl_t hdl;
+    matroska_bitstream_cb_t cb;
+    matroska_metadata_cb_t metacb;
     struct matroska_file_args args;
 
     errmsg = "Error initializing";
@@ -1094,9 +1096,12 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err2;
     }
 
+    metacb.output_cb = &metadata_cb;
+    cb.output_cb = &bitstream_cb;
     args.fd = infd;
     args.pathname = NULL;
-    res = matroska_open(&hdl, NULL, &metadata_cb, &bitstream_cb, &args, ctx);
+    res = matroska_open(&hdl, NULL, &metacb, &cb, MATROSKA_OPEN_FLAG_RDONLY,
+                        &args, ctx);
     if (res != 0) {
         errmsg = "Error opening input file";
         goto err3;

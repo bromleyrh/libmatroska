@@ -58,9 +58,9 @@ static int elem_cb_free(const void *, void *);
 static int free_tcb(struct avl_tree *);
 static int free_ecb(struct avl_tree *);
 
-static matroska_metadata_cb_t metadata_cb;
+static matroska_metadata_output_cb_t metadata_cb;
 
-static matroska_bitstream_cb_t bitstream_cb;
+static matroska_bitstream_output_cb_t bitstream_cb;
 
 static int dump_mkv(int, int, struct ctx *);
 
@@ -369,12 +369,17 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
     const char *errmsg;
     FILE *f;
     int res;
+    matroska_bitstream_cb_t cb;
     matroska_hdl_t hdl;
+    matroska_metadata_cb_t metacb;
     struct matroska_file_args args;
 
+    metacb.output_cb = &metadata_cb;
+    cb.output_cb = &bitstream_cb;
     args.fd = infd;
     args.pathname = NULL;
-    res = matroska_open(&hdl, NULL, &metadata_cb, &bitstream_cb, &args, ctx);
+    res = matroska_open(&hdl, NULL, &metacb, &cb, MATROSKA_OPEN_FLAG_RDONLY,
+                        &args, ctx);
     if (res != 0) {
         errmsg = "Error opening input file";
         goto err1;

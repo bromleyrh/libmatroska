@@ -4,6 +4,10 @@
 
 #include "config.h"
 
+#define NO_ASSERT_MACROS
+#include "common.h"
+#undef NO_ASSERT_MACROS
+
 #include "util.h"
 
 #include <strings_ext.h>
@@ -98,6 +102,58 @@ fls(int i)
 }
 
 #endif
+
+#define BITS_PER_CHAR 6
+
+int
+al64(const char *a, long int *l)
+{
+    long int ret = 0;
+    size_t i;
+
+    for (i = 0; a[i] != '\0'; i++) {
+        long int val;
+        size_t hi, lo;
+
+        static const struct ent {
+            char    first;
+            char    last;
+            int     base;
+        } cmap[] = {
+            {'.', '.',  0},
+            {'/', '/',  1},
+            {'0', '9',  2},
+            {'A', 'Z', 12},
+            {'a', 'z', 38}
+        };
+        const struct ent *ent;
+
+        lo = 0;
+        hi = ARRAY_SIZE(cmap);
+        for (;;) {
+            size_t idx;
+
+            idx = lo + (hi - lo) / 2;
+            ent = &cmap[idx];
+            if (a[i] >= ent->first && a[i] <= ent->last)
+                break;
+            if (a[i] < ent->first)
+                hi = idx;
+            else
+                lo = idx + 1;
+            if (hi == lo)
+                return -1;
+        }
+        val = a[i] - ent->first + ent->base;
+
+        ret |= val << i * BITS_PER_CHAR;
+    }
+
+    *l = ret;
+    return 0;
+}
+
+#undef BITS_PER_CHAR
 
 int
 strerror_rp(int errnum, char *strerrbuf, size_t buflen)

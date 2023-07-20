@@ -63,7 +63,7 @@ struct track_data {
 struct matroska_state {
     ebml_hdl_t              hdl;
     ebml_io_fns_t           iofns;
-    matroska_bitstream_cb_t *cb;
+    matroska_bitstream_cb_t cb;
     void                    *ctx;
     int                     block_hdr;
     int                     lacing_hdr;
@@ -100,10 +100,16 @@ struct matroska_error_info_debug {
 #define DEBUG_OUTPUT
 #endif
 
-#define BLOCK_FLAG_KEYFRAME 128
+#define MAX_OUTPUT_HDR_LEN 32
+
+#define BLOCK_FLAG_KEYFRAME_IDX 7
+#define BLOCK_FLAG_INVISIBLE_IDX 3
+#define BLOCK_FLAG_DISCARDABLE_IDX 0
+
+#define BLOCK_FLAG_KEYFRAME (1 << BLOCK_FLAG_KEYFRAME_IDX)
 #define BLOCK_FLAG_RESERVED 112
-#define BLOCK_FLAG_INVISIBLE 8
-#define BLOCK_FLAG_DISCARDABLE 1
+#define BLOCK_FLAG_INVISIBLE (1 << BLOCK_FLAG_INVISIBLE_IDX)
+#define BLOCK_FLAG_DISCARDABLE (1 << BLOCK_FLAG_DISCARDABLE_IDX)
 
 #define BLOCK_FLAG_LACING_SHIFT 1
 #define BLOCK_FLAG_LACING_MASK (3 << BLOCK_FLAG_LACING_SHIFT)
@@ -150,8 +156,12 @@ static int get_track_data(struct matroska_state *, uint64_t,
 static int return_track_data(const char *, size_t, size_t, size_t, off_t,
                              struct track_data *, struct matroska_state *);
 
-static int block_handler(const char *, enum etype, const void *, size_t, size_t,
-                         size_t, off_t, int, void *);
+static int block_output_handler(const char *, enum etype, void **, size_t *,
+                                void **, size_t *, size_t, size_t, off_t, int,
+                                void *);
+static int block_input_handler(const char *, enum etype, void **, size_t *,
+                               void **, size_t *, size_t, size_t, off_t, int,
+                               void *);
 
 #ifdef DEBUG_OUTPUT
 static int
@@ -392,13 +402,16 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
         framelen = tdata->frame_sz[tdata->frame_idx];
 
         if (new_frame) {
-            if (state->cb != NULL
+            if (state->cb.output_cb != NULL
                 && tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
-                res = (*state->cb)(state->trackno, tdata->stripped_bytes,
-                                   tdata->num_stripped_bytes,
-                                   tdata->num_stripped_bytes + framelen, totlen,
-                                   hdrlen, num_logical_bytes, off, tdata->ts, 1,
-                                   tdata->keyframe, state->ctx);
+                res = (*state->cb.output_cb)(state->trackno,
+                                             tdata->stripped_bytes,
+                                             tdata->num_stripped_bytes,
+                                             tdata->num_stripped_bytes
+                                             + framelen,
+                                             totlen, hdrlen, num_logical_bytes,
+                                             off, tdata->ts, new_frame,
+                                             tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
             }
@@ -410,11 +423,13 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
         seglen = dp - sp;
 
         if (seglen > 0) {
-            if (state->cb != NULL) {
-                res = (*state->cb)(state->trackno, sp, seglen,
-                                   tdata->num_stripped_bytes + framelen, totlen,
-                                   hdrlen, num_logical_bytes, off, tdata->ts,
-                                   new_frame, tdata->keyframe, state->ctx);
+            if (state->cb.output_cb != NULL) {
+                res = (*state->cb.output_cb)(state->trackno, sp, seglen,
+                                             tdata->num_stripped_bytes
+                                             + framelen,
+                                             totlen, hdrlen, num_logical_bytes,
+                                             off, tdata->ts, new_frame,
+                                             tdata->keyframe, state->ctx);
                 if (res != 0) {
                     if (res != 1)
                         return res;
@@ -445,15 +460,21 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
 #define FLAG_VAL(flags, which) (!!((flags) & BLOCK_FLAG_##which))
 
 static int
-block_handler(const char *val, enum etype etype, const void *buf, size_t len,
-              size_t totlen, size_t hdrlen, off_t off, int simple, void *ctx)
+block_output_handler(const char *val, enum etype etype, void **outbuf,
+                     size_t *outlen, void **bufp, size_t *lenp, size_t totlen,
+                     size_t hdrlen, off_t off, int simple, void *ctx)
 {
+    const void *buf;
     int ret = 0;
     int offset;
     lldiv_t q;
     size_t datalen, sz;
+    size_t len;
     struct matroska_state *state;
     struct track_data *tdata;
+
+    (void)outbuf;
+    (void)outlen;
 
     if (etype != ETYPE_BINARY)
         return ERR_TAG(EILSEQ);
@@ -467,6 +488,9 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         PRINT_HANDLER_INFO(val);
         return 0;
     }
+
+    buf = bufp == NULL ? NULL : *bufp;
+    len = lenp == NULL ? 0 : *lenp;
 
     if (buf == NULL) {
         int interrupt_read;
@@ -488,7 +512,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
     }
 
     if (state->block_hdr == 1) {
-        if (state->lacing_hdr == 1 || state->cb != NULL) {
+        if (state->lacing_hdr == 1 || state->cb.output_cb != NULL) {
             ret = get_track_data(state, state->trackno, &tdata);
             if (ret != 0)
                 return ret;
@@ -515,7 +539,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             state->lacing_hdr = 2;
         }
 
-        if (state->cb != NULL) {
+        if (state->cb.output_cb != NULL) {
             ret = return_track_data(buf, len, totlen - state->hdr_len,
                                     state->ebml_hdr_len, state->data_off, tdata,
                                     state);
@@ -734,24 +758,136 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
                              state->data_off, tdata, state);
 }
 
-#undef BLOCK_HDR_FIXED_LEN
-
 #undef FLAG_VAL
+
+static int
+block_input_handler(const char *val, enum etype etype, void **outbuf,
+                    size_t *outlen, void **bufp, size_t *lenp, size_t totlen,
+                    size_t hdrlen, off_t off, int simple, void *ctx)
+{
+    char buf[MAX_OUTPUT_HDR_LEN];
+    int err;
+    int keyframe;
+    int resize;
+    size_t len;
+    ssize_t nbytes;
+    struct matroska_state *state = ctx;
+    uint64_t trackno;
+    union {
+        int16_t val;
+        char    bytes[2];
+    } timestamp;
+    void *ret;
+
+    (void)val;
+    (void)etype;
+    (void)totlen;
+    (void)hdrlen;
+    (void)off;
+
+    if (!simple)
+        return ERR_TAG(ENOSYS);
+
+    err = (*state->cb.input_cb)(&trackno, NULL, &nbytes, NULL, NULL,
+                                state->ctx);
+    if (err)
+        return err;
+
+    if (bufp == NULL) {
+        /* track number */
+        len = sizeof(buf);
+        err = u64_to_vint(trackno, buf, &len);
+        if (err)
+            return err;
+
+        /* timestamp and flags */
+        len += BLOCK_HDR_FIXED_LEN;
+
+        *lenp = len;
+        return 0;
+    }
+
+    len = nbytes;
+
+    if (*bufp == NULL || len != *lenp) {
+        ret = malloc(len);
+        if (ret == NULL)
+            return MINUS_ERRNO;
+        resize = 1;
+    } else {
+        ret = *bufp;
+        resize = 0;
+    }
+
+    err = (*state->cb.input_cb)(&trackno, ret, &nbytes, &timestamp.val,
+                                &keyframe, state->ctx);
+    if (err)
+        goto err;
+    if ((size_t)nbytes != len) {
+        err = -EIO;
+        goto err;
+    }
+
+    fprintf(stderr, "Header:\n"
+                    "Track number %" PRIu64 "\n"
+                    "Timestamp %" PRIi16 "\n"
+                    "Keyframe %d\n",
+            trackno, timestamp.val, keyframe);
+
+    /* track number */
+    len = sizeof(buf);
+    err = u64_to_vint(trackno, buf, &len);
+    if (err)
+        goto err;
+
+    /* timestamp */
+    buf[len++] = timestamp.bytes[1];
+    buf[len++] = timestamp.bytes[0];
+
+    /* flags */
+    buf[len] = keyframe << BLOCK_FLAG_KEYFRAME_IDX;
+
+    err = (*state->iofns.write)(ebml_ctx(state->hdl), buf, len + 1);
+    if (err)
+        goto err;
+
+    if (resize) {
+        free(*bufp);
+        *bufp = ret;
+        *lenp = nbytes;
+    }
+    *outbuf = *bufp;
+    *outlen = *lenp;
+    return 0;
+
+err:
+    if (resize)
+        free(ret);
+    return err;
+}
+
+#undef BLOCK_HDR_FIXED_LEN
 
 int
 matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
-                             const void *buf, size_t len, size_t totlen,
-                             size_t hdrlen, off_t off, void *ctx)
+                             void **outbuf, size_t *outlen, void **buf,
+                             size_t *len, size_t totlen, size_t hdrlen,
+                             off_t off, void *ctx, int encode)
 {
     int err;
     struct matroska_state *state = ctx;
     struct track_data *tdata;
 
+    (void)outbuf;
+    (void)outlen;
     (void)buf;
     (void)len;
     (void)totlen;
     (void)hdrlen;
     (void)off;
+
+    if (encode)
+        return 0;
 
     if (state->track_data == NULL) {
         err = avl_tree_new(&state->track_data, sizeof(struct track_data *),
@@ -798,38 +934,48 @@ err:
 
 int
 matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
-                             const void *buf, size_t len, size_t totlen,
-                             size_t hdrlen, off_t off, void *ctx)
+                             void **outbuf, size_t *outlen, void **buf,
+                             size_t *len, size_t totlen, size_t hdrlen,
+                             off_t off, void *ctx, int encode)
 {
     (void)edata;
 
-    return block_handler(val, etype, buf, len, totlen, hdrlen, off, 1, ctx);
+    return (encode ? block_input_handler : block_output_handler)
+           (val, etype, outbuf, outlen, buf, len, totlen, hdrlen, off, 1, ctx);
 }
 
 int
 matroska_block_handler(const char *val, enum etype etype, edata_t *edata,
-                       const void *buf, size_t len, size_t totlen,
-                       size_t hdrlen, off_t off, void *ctx)
+                       void **outbuf, void *outlen, void **buf, size_t *len,
+                       size_t totlen, size_t hdrlen, off_t off, void *ctx,
+                       int encode)
 {
     (void)edata;
 
-    return block_handler(val, etype, buf, len, totlen, hdrlen, off, 0, ctx);
+    return (encode ? block_input_handler : block_output_handler)
+           (val, etype, outbuf, outlen, buf, len, totlen, hdrlen, off, 0, ctx);
 }
 
 int
 matroska_contentcompalgo_handler(const char *val, enum etype etype,
-                                 edata_t *edata, const void *buf, size_t len,
-                                 size_t totlen, size_t hdrlen, off_t off,
-                                 void *ctx)
+                                 edata_t *edata, void **outbuf, size_t *outlen,
+                                 void **buf, size_t *len, size_t totlen,
+                                 size_t hdrlen, off_t off, void *ctx,
+                                 int encode)
 {
     int err;
     struct matroska_state *state;
 
+    (void)outbuf;
+    (void)outlen;
     (void)buf;
     (void)len;
     (void)totlen;
     (void)hdrlen;
     (void)off;
+
+    if (encode)
+        return 0;
 
     if (etype != ETYPE_UINTEGER)
         return ERR_TAG(EILSEQ);
@@ -857,18 +1003,25 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
 
 int
 matroska_contentcompsettings_handler(const char *val, enum etype etype,
-                                     edata_t *edata, const void *buf,
-                                     size_t len, size_t totlen, size_t hdrlen,
-                                     off_t off, void *ctx)
+                                     edata_t *edata, void **outbuf,
+                                     size_t *outlen, void **buf, size_t *len,
+                                     size_t totlen, size_t hdrlen, off_t off,
+                                     void *ctx, int encode)
 {
     int err;
+    size_t length;
     struct matroska_state *state;
     struct track_data *tdata;
 
     (void)edata;
+    (void)outbuf;
+    (void)outlen;
     (void)totlen;
     (void)hdrlen;
     (void)off;
+
+    if (encode)
+        return 0;
 
     if (etype != ETYPE_BINARY)
         return ERR_TAG(EILSEQ);
@@ -879,8 +1032,10 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
     if (err)
         return err;
 
+    length = len == NULL ? 0 : *len;
+
     if (buf == NULL) {
-        if (tdata->num_stripped_bytes != len)
+        if (tdata->num_stripped_bytes != length)
             return ERR_TAG(EIO);
         return 0;
     }
@@ -889,18 +1044,19 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
         size_t num_stripped_bytes;
         void *stripped_bytes;
 
-        num_stripped_bytes = tdata->num_stripped_bytes + len;
+        num_stripped_bytes = tdata->num_stripped_bytes + length;
 
         stripped_bytes = realloc(tdata->stripped_bytes, num_stripped_bytes);
         if (stripped_bytes == NULL)
             return ERR_TAG(errno);
-        memcpy((char *)stripped_bytes + tdata->num_stripped_bytes, buf, len);
+        memcpy((char *)stripped_bytes + tdata->num_stripped_bytes, *buf,
+               length);
 
         tdata->stripped_bytes = stripped_bytes;
         tdata->num_stripped_bytes = num_stripped_bytes;
 
         debug_printf("|ContentCompSettings(%" PRIu64 ")| += %zu byte%s\n",
-                     state->trackno, PL(len));
+                     state->trackno, PL(length));
     } else
         PRINT_HANDLER_INFO(val);
 
@@ -910,7 +1066,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 int
 matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
               matroska_metadata_cb_t *metacb, matroska_bitstream_cb_t *cb,
-              void *args, void *ctx)
+              int flags, void *args, void *ctx)
 {
     const ebml_io_fns_t *ebmlfns;
     int err;
@@ -924,6 +1080,7 @@ matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
     if (fns == NULL) {
         struct matroska_file_args *fileargsp = args;
 
+        ret->iofns = *EBML_FILE_FNS;
         ebmlfns = EBML_FILE_FNS;
 
         fileargs.fd = fileargsp->fd;
@@ -933,6 +1090,8 @@ matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
         ret->iofns.open = fns->open;
         ret->iofns.close = fns->close;
         ret->iofns.read = fns->read;
+        ret->iofns.write = fns->write;
+        ret->iofns.sync = fns->sync;
         ret->iofns.get_fpos = fns->get_fpos;
         ebmlfns = &ret->iofns;
 
@@ -940,13 +1099,18 @@ matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
     }
 
     err = ebml_open(&ret->hdl, ebmlfns, MATROSKA_PARSER,
-                    MATROSKA_SEMANTIC_PROCESSOR, metacb, argsp, ret, ctx);
+                    MATROSKA_SEMANTIC_PROCESSOR,
+                    metacb == NULL ? NULL : metacb->output_cb,
+                    !!(flags & MATROSKA_OPEN_FLAG_RDONLY), argsp, ret, ctx);
     if (err) {
         free(ret);
         return err;
     }
 
-    ret->cb = cb;
+    if (flags & MATROSKA_OPEN_FLAG_RDONLY)
+        ret->cb.output_cb = cb == NULL ? NULL : cb->output_cb;
+    else
+        ret->cb.input_cb = cb == NULL ? NULL : cb->input_cb;
     ret->ctx = ctx;
 
     *hdl = ret;
@@ -1009,6 +1173,31 @@ int
 matroska_read_body(FILE *f, matroska_hdl_t hdl)
 {
     return ebml_read_body(f, hdl->hdl, 0);
+}
+
+int
+matroska_write(matroska_hdl_t hdl, const char *id, matroska_metadata_t *val,
+               size_t len, int flags)
+{
+    int fl;
+    size_t i;
+
+    static const struct ent {
+        int src;
+        int dst;
+    } flagmap[] = {
+        {MATROSKA_WRITE_FLAG_HEADER, EBML_WRITE_FLAG_HEADER}
+    };
+
+    fl = 0;
+    for (i = 0; i < ARRAY_SIZE(flagmap); i++) {
+        const struct ent *ent = &flagmap[i];
+
+        if (flags & ent->src)
+            fl |= ent->dst;
+    }
+
+    return ebml_write(hdl->hdl, id, val, len, fl);
 }
 
 int
