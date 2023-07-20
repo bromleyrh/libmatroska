@@ -33,7 +33,8 @@ struct ctx {
     struct cb   cb;
     char        *data;
     size_t      len;
-    int         first_fragment;
+    unsigned    header:1;
+    unsigned    first_fragment:1;
     int         export;
 };
 
@@ -433,6 +434,19 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
         [ETYPE_BINARY]      = &cvt_binary_to_string
     };
 
+    if (ctxp->header && !(flags & MATROSKA_METADATA_FLAG_HEADER)) {
+        ctxp->header = 0;
+
+        jval = json_val_new(JSON_TYPE_NULL);
+        if (jval == NULL)
+            return -ENOMEM;
+
+        res = json_val_array_insert_elem(ctxp->cb.jval, jval);
+        json_val_free(jval);
+        if (res != 0)
+            return res;
+    }
+
     if (flags & MATROSKA_METADATA_FLAG_FRAGMENT) {
         if (len > LEN_MAX)
             return 0;
@@ -469,7 +483,9 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
     if (sscanf(id, "%s -> %s", buf, value) != 2)
         goto end;
 
-    res = parser_look_up(MATROSKA_PARSER, buf, &id, &etype);
+    res = parser_look_up(flags & MATROSKA_METADATA_FLAG_HEADER
+                         ? EBML_PARSER : MATROSKA_PARSER,
+                         buf, &id, &etype);
     if (res != 1) {
         if (res != 0)
             goto err1;
@@ -611,10 +627,12 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err3;
     }
 
+    ctx->header = 1;
     ctx->first_fragment = 1;
     ctx->cb.jval = jval;
 
-    res = matroska_read(NULL, hdl, MATROSKA_READ_FLAG_MASTER);
+    res = matroska_read(NULL, hdl,
+                        MATROSKA_READ_FLAG_HEADER | MATROSKA_READ_FLAG_MASTER);
     free(ctx->data);
     if (res != 0 && res != 1) {
         errmsg = "Error dumping file";
