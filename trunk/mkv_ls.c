@@ -75,8 +75,8 @@ struct ctx {
 
 #define TIME_GRAN 1000000000
 
-int parser_look_up(const struct parser *, const char *, const char **,
-                   enum etype *);
+int parser_look_up(const struct parser *, const char *,
+                   const struct elem_data **, const struct elem_data **);
 
 int matroska_print_err(FILE *, int);
 
@@ -104,9 +104,9 @@ static int cvt_master_to_number(json_val_t *, matroska_metadata_t *, size_t,
 static int cvt_binary_to_string(json_val_t *, matroska_metadata_t *, size_t,
                                 const char *);
 
-static matroska_metadata_cb_t metadata_cb;
+static matroska_metadata_output_cb_t metadata_cb;
 
-static matroska_bitstream_cb_t bitstream_cb;
+static matroska_bitstream_output_cb_t bitstream_cb;
 
 static size_t json_write_cb(const char *, size_t, size_t, void *);
 
@@ -562,7 +562,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             int flags, void *ctx)
 {
     char *buf, *idbuf, *value;
-    enum etype etype = ETYPE_NONE;
+    const struct elem_data *data = NULL;
     int (*fn)(json_val_t *, matroska_metadata_t *, size_t, const char *);
     int block;
     int new_val;
@@ -656,18 +656,18 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
     res = parser_look_up(flags & MATROSKA_METADATA_FLAG_HEADER
                          ? EBML_PARSER : MATROSKA_PARSER,
-                         idbuf, &id, &etype);
+                         idbuf, &data, NULL);
     if (res != 1) {
         if (res != 0)
             goto err1;
         goto end2;
     }
 
-    if (etype >= ARRAY_SIZE(fns)) {
+    if (data->etype >= ARRAY_SIZE(fns)) {
         res = -EIO;
         goto err1;
     }
-    fn = fns[etype];
+    fn = fns[data->etype];
     if (fn == NULL) {
         res = -EIO;
         goto err1;
@@ -741,7 +741,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         json_val_free(elem.value);
 
-        if (etype != ETYPE_MASTER) {
+        if (data->etype != ETYPE_MASTER) {
             elem.value = json_val_new(JSON_TYPE_NUMBER);
             if (elem.value == NULL) {
                 res = -ENOMEM;
@@ -778,7 +778,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 end2:
     if (new_val && !block) {
         ctxp->totmdlen += hdrlen;
-        if (etype != ETYPE_MASTER)
+        if (data == NULL || data->etype != ETYPE_MASTER)
             ctxp->totmdlen += len;
     }
 end1:
@@ -835,7 +835,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         fputs("Synchronization error: total length of frames in block output "
               "too small\n",
               stderr);
-        return -EIO;
+/*        return -EIO;*/
     }
     ctxp->remlen = framelen;
 
@@ -933,7 +933,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
             fprintf(stderr, "Synchronization error: offset %" PRIi64 " byte%s "
                             "(%+" PRIi64 " byte%s)\n",
                     PL(off), PL(off - ctxp->off));
-            return -EIO;
+/*            return -EIO;*/
         }
     }
 
@@ -971,7 +971,7 @@ end:
         fputs("Synchronization error: total length of frames in block output "
               "too large\n",
               stderr);
-        return -EIO;
+/*        return -EIO;*/
     }
     ctxp->remlen -= len;
 
@@ -1064,6 +1064,8 @@ cvt_mkv(int infd, struct ctx *ctx)
     int res;
     json_val_t jval;
     matroska_hdl_t hdl;
+    matroska_bitstream_cb_t cb;
+    matroska_metadata_cb_t metacb;
     struct matroska_file_args args;
 
     errmsg = "Error initializing";
@@ -1094,9 +1096,12 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err2;
     }
 
+    metacb.output_cb = &metadata_cb;
+    cb.output_cb = &bitstream_cb;
     args.fd = infd;
     args.pathname = NULL;
-    res = matroska_open(&hdl, NULL, &metadata_cb, &bitstream_cb, &args, ctx);
+    res = matroska_open(&hdl, NULL, &metacb, &cb, MATROSKA_OPEN_FLAG_RDONLY,
+                        &args, ctx);
     if (res != 0) {
         errmsg = "Error opening input file";
         goto err3;

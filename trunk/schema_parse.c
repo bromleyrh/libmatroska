@@ -2,6 +2,8 @@
  * schema_parse.c
  */
 
+#define _WITH_GETLINE
+
 #include "element.h"
 #include "radix_tree.h"
 
@@ -9,6 +11,7 @@
 #include "common.h"
 #undef NO_ASSERT_MACROS
 
+#include <avl_tree.h>
 #include <crypto.h>
 #include <strings_ext.h>
 
@@ -16,6 +19,7 @@
 #include <libxml/tree.h>
 #include <libxml/xmlschemas.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <setjmp.h>
@@ -30,32 +34,304 @@
 
 #include <sys/param.h>
 
-struct id_node {
-    char        *name;
-    char        *handler;
-    enum etype  type;
+enum op {
+    PROCESS_SCHEMA = 1,
+    DUMP_PATHS,
+    PROCESS_PATHS
 };
+
+struct id_node {
+    char            *name;
+    char            *handler;
+    enum etype      type;
+    struct id_node  *parent_idnode;
+    const char      *ref;
+};
+
+enum ns_obj_type {
+    TYPE_DIR = 1,
+    TYPE_ENT
+};
+
+struct ns_key {
+    void                *addr;
+    char                *name;
+    enum ns_obj_type    type;
+    void                *dir_addr;
+    struct id_node      *idnode;
+};
+
+#define EBML_ELEMENT_ID 0xa45dfa3
+#define EBML_ELEMENT_ID_WITH_MARKER 0x1a45dfa3
+
+static int ns_key_cmp(const void *, const void *, void *);
+
+static int ns_key_output(const void *, void *);
+static int ns_key_free(const void *, void *);
+
+static int ns_init(struct avl_tree **);
+static void ns_destroy(struct avl_tree *);
+static int ns_insert(struct avl_tree *, struct ns_key *, const char *);
+static int ns_look_up(struct avl_tree *, const char *, struct ns_key *);
+static int ns_dump(FILE *, struct avl_tree *);
 
 static int do_printf(jmp_buf *, const char *, ...);
 
-static int parse_EBMLSchema(xmlNode *, struct radix_tree *);
-static int parse_element(xmlNode *, struct radix_tree *);
-static int parse_enum(xmlNode *, struct radix_tree *);
-static int parse_restriction(xmlNode *, struct radix_tree *);
-static int parse_documentation(xmlNode *, struct radix_tree *);
-static int parse_implementation_note(xmlNode *, struct radix_tree *);
-static int parse_extension(xmlNode *, struct radix_tree *);
+static int parse_EBMLSchema(enum op, xmlNode *, struct avl_tree *,
+                            struct radix_tree *);
+static int parse_element(enum op, xmlNode *, struct avl_tree *,
+                         struct radix_tree *);
+static int parse_enum(enum op, xmlNode *, struct avl_tree *,
+                      struct radix_tree *);
+static int parse_restriction(enum op, xmlNode *, struct avl_tree *,
+                             struct radix_tree *);
+static int parse_documentation(enum op, xmlNode *, struct avl_tree *,
+                               struct radix_tree *);
+static int parse_implementation_note(enum op, xmlNode *, struct avl_tree *,
+                                     struct radix_tree *);
+static int parse_extension(enum op, xmlNode *, struct avl_tree *,
+                           struct radix_tree *);
 
-static uint64_t get_node_id(const struct radix_tree_node *);
+static uint64_t get_node_id(const void *);
 
 static int sr_fn(const struct radix_tree_node *, const char *, void *, void *);
 static int free_fn(const char *, void *, void *);
 
 static int do_radix_tree_free(struct radix_tree *);
 
-static int _output_parser_data(xmlNode *, int, struct radix_tree *);
+static int _output_parser_data(enum op, xmlNode *, int, struct avl_tree *,
+                               struct radix_tree *);
 
-static int output_parser_data(xmlDocPtr, const char *);
+static int output_parser_data(enum op, xmlDocPtr, const char *);
+
+static int process_paths(int, int);
+
+static int
+ns_key_cmp(const void *k1, const void *k2, void *ctx)
+{
+    const struct ns_key *key1 = *(struct ns_key *const *)k1;
+    const struct ns_key *key2 = *(struct ns_key *const *)k2;
+    int cmp;
+
+    (void)ctx;
+
+    cmp = (key1->addr > key2->addr) - (key1->addr < key2->addr);
+    return cmp == 0 ? strcmp(key1->name, key2->name) : cmp;
+}
+
+static int
+ns_key_output(const void *k, void *ctx)
+{
+    const struct ns_key *key = *(struct ns_key *const *)k;
+    const struct ns_key **dir_stk;
+    FILE *f = ctx;
+    int err;
+    size_t len, sz;
+
+    sz = 16;
+    dir_stk = malloc(sz * sizeof(*dir_stk));
+    if (dir_stk == NULL)
+        return -errno;
+
+    dir_stk[0] = key;
+    len = 1;
+
+    for (key = key->addr; key != NULL; key = key->addr) {
+        if (len == sz) {
+            const struct ns_key **tmp;
+
+            sz *= 2;
+            tmp = realloc(dir_stk, sz * sizeof(*tmp));
+            if (tmp == NULL) {
+                err = -errno;
+                goto err;
+            }
+            dir_stk = tmp;
+        }
+        dir_stk[len++] = key;
+    }
+
+    --len;
+    for (;;) {
+        if (fprintf(f, "/%s", dir_stk[len]->name) < 0) {
+            err = -EIO;
+            goto err;
+        }
+        if (len == 0)
+            break;
+        --len;
+    }
+
+    free(dir_stk);
+
+    key = *(struct ns_key *const *)k;
+    return fprintf(f, "%s\n", key->type == TYPE_DIR ? "/" : "") < 0 ? -EIO : 0;
+
+err:
+    free(dir_stk);
+    return err;
+}
+
+static int
+ns_key_free(const void *k, void *ctx)
+{
+    struct ns_key *key = *(struct ns_key *const *)k;
+
+    (void)ctx;
+
+    free(key->name);
+    free(key->idnode);
+
+    free(key);
+
+    return 0;
+}
+
+static int
+ns_init(struct avl_tree **ns)
+{
+    return avl_tree_new(ns, sizeof(struct ns_key *), &ns_key_cmp, 0, NULL, NULL,
+                        NULL);
+}
+
+static void
+ns_destroy(struct avl_tree *ns)
+{
+    avl_tree_walk_ctx_t wctx = NULL;
+
+    avl_tree_walk(ns, NULL, &ns_key_free, NULL, &wctx);
+    avl_tree_free(ns);
+}
+
+static int
+ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
+{
+    int err;
+    struct id_node *idnode;
+    struct ns_key *k;
+
+    k = malloc(sizeof(*k));
+    if (k == NULL)
+        return -errno;
+
+    k->addr = key->addr;
+    k->name = key->name;
+    k->type = key->type;
+    if (k->type == TYPE_DIR)
+        k->dir_addr = k;
+    k->idnode = key->idnode;
+
+    err = avl_tree_insert(ns, &k);
+    if (err) {
+        free(k);
+        return err;
+    }
+
+    if (idstr == NULL)
+        return 0;
+
+    idnode = k->idnode;
+
+    if (idnode->handler != NULL
+        && printf("int %s(const char *, enum etype, edata_t *, void **, "
+                  "size_t *, void **, size_t *, size_t, size_t, struct buf *, "
+                  "off_t, void *, int);\n\n",
+                  idnode->handler)
+           < 0)
+        return -EIO;
+
+    if (printf("DEF_EBML_DATA(%016" PRIx64 ", \"%s -> %s\", %s%s, %d, "
+               "%s%s);\n\n",
+               get_node_id(idnode), idstr, idnode->name,
+               idnode->handler == NULL ? "" : "&",
+               idnode->handler == NULL ? "NULL" : idnode->handler,
+               idnode->type, idnode->ref == NULL ? "" : "&",
+               idnode->ref == NULL ? "NULL" : idnode->ref)
+        < 0)
+        return -EIO;
+
+    return 0;
+}
+
+static int
+ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
+{
+    char *name, *saveptr;
+    char *s;
+    int res;
+    struct ns_key k, *kp;
+
+    s = strdup(path);
+    if (s == NULL)
+        return -errno;
+
+    name = strtok_r(s, "/", &saveptr);
+    if (name == NULL) {
+        res = -EINVAL;
+        goto err;
+    }
+
+    k.addr = NULL;
+
+    for (;;) {
+        k.name = name;
+        kp = &k;
+        res = avl_tree_search(ns, &kp, &kp);
+        if (res != 1) {
+            if (res != 0)
+                return res;
+            if (strtok_r(NULL, "/", &saveptr) != NULL) {
+                res = -ENOENT;
+                goto err;
+            }
+            break;
+        }
+
+        if (kp->type == TYPE_ENT) {
+            if (strtok_r(NULL, "/", &saveptr) != NULL) {
+                res = -ENOTDIR;
+                goto err;
+            }
+            res = 1;
+            break;
+        }
+        assert(kp->type == TYPE_DIR);
+
+        name = strtok_r(NULL, "/", &saveptr);
+        if (name == NULL) {
+            res = -EISDIR;
+            goto err;
+        }
+
+        k.addr = kp->dir_addr;
+    }
+
+    if (res == 0) {
+        k.name = strdup(k.name);
+        if (k.name == NULL) {
+            res = -errno;
+            goto err;
+        }
+        *retkey = k;
+    } else
+        *retkey = *kp;
+
+    free(s);
+
+    return res;
+
+err:
+    free(s);
+    return res;
+}
+
+static int
+ns_dump(FILE *f, struct avl_tree *ns)
+{
+    avl_tree_walk_ctx_t wctx = NULL;
+
+    return avl_tree_walk(ns, NULL, &ns_key_output, f, &wctx);
+}
 
 static int
 do_printf(jmp_buf *env, const char *fmt, ...)
@@ -74,135 +350,219 @@ do_printf(jmp_buf *env, const char *fmt, ...)
 }
 
 static int
-parse_EBMLSchema(xmlNode *node, struct radix_tree *rt)
+parse_EBMLSchema(enum op op, xmlNode *node, struct avl_tree *ns,
+                 struct radix_tree *rt)
 {
+    (void)op;
     (void)node;
+    (void)ns;
     (void)rt;
 
     return 0;
 }
 
 static int
-parse_element(xmlNode *node, struct radix_tree *rt)
+parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
+              struct radix_tree *rt)
 {
+    char *endptr, *path;
     char idstr[7];
-    char *endptr;
-    int err;
-    struct id_node idnode;
+    int res;
+    struct id_node *idnode;
+    struct ns_key *k, retkey;
     unsigned long id;
     xmlChar *prop;
 
-    idnode.name = (char *)xmlGetProp(node, (unsigned char *)"name");
-    if (idnode.name == NULL) {
+    idnode = malloc(sizeof(*idnode));
+    if (idnode == NULL)
+        return -errno;
+
+    prop = xmlGetProp(node, (unsigned char *)"type");
+    if (prop == NULL) {
+        fputs("Element is missing type\n", stderr);
+        res = -EINVAL;
+        goto err1;
+    }
+
+    idnode->type = str_to_etype((const char *)prop);
+
+    xmlFree(prop);
+
+    path = (char *)xmlGetProp(node, (unsigned char *)"path");
+    if (path == NULL) {
+        fputs("Element is missing path\n", stderr);
+        res = -EINVAL;
+        goto err1;
+    }
+    if (op == DUMP_PATHS) {
+        res = printf("%s%s\n", path, idnode->type == ETYPE_MASTER ? "/" : "")
+              < 0
+              ? -EIO : 0;
+        xmlFree(path);
+        goto err1;
+    }
+
+    idnode->name = (char *)xmlGetProp(node, (unsigned char *)"name");
+    if (idnode->name == NULL) {
         fputs("Element is missing name\n", stderr);
-        return -EINVAL;
+        res = -EINVAL;
+        goto err2;
     }
 
     prop = xmlGetProp(node, (unsigned char *)"id");
     if (prop == NULL) {
         fputs("Element is missing ID\n", stderr);
-        err = -EINVAL;
-        goto err1;
+        res = -EINVAL;
+        goto err3;
     }
 
     errno = 0;
     id = strtoul((const char *)prop, &endptr, 16);
-    err = -errno;
-    if (!err && *endptr != '\0')
-        err = -EINVAL;
+    res = -errno;
+    if (res != 0 && *endptr != '\0')
+        res = -EINVAL;
 
     xmlFree(prop);
 
-    if (err) {
+    if (res != 0) {
         fputs("Invalid element ID\n", stderr);
-        goto err1;
+        goto err3;
     }
 
-    prop = xmlGetProp(node, (unsigned char *)"type");
-    if (prop == NULL) {
-        fputs("Element is missing type\n", stderr);
-        err = -EINVAL;
-        goto err1;
-    }
-
-    idnode.type = str_to_etype((const char *)prop);
-
-    xmlFree(prop);
-
-    if (idnode.type == ETYPE_NONE) {
+    if (idnode->type == ETYPE_NONE) {
         fputs("Invalid element type\n", stderr);
-        goto err1;
+        goto err3;
     }
 
-    idnode.handler = (char *)xmlGetProp(node, (unsigned char *)"handler");
+    idnode->handler = (char *)xmlGetProp(node, (unsigned char *)"handler");
 
-    err = l64a_r(id, idstr, sizeof(idstr));
-    if (err)
-        goto err2;
+    res = l64a_r(id, idstr, sizeof(idstr));
+    if (res != 0)
+        goto err4;
 
-    err = radix_tree_insert(rt, idstr, &idnode);
-    if (err)
-        goto err2;
+    res = ns_look_up(ns, path, &retkey);
+    if (res != 0) {
+        if (res == 1)
+            res = -EILSEQ;
+        goto err4;
+    }
+
+    xmlFree(path);
+    path = NULL;
+
+    k = malloc(sizeof(*k));
+    if (k == NULL) {
+        res = -errno;
+        goto err5;
+    }
+
+    k->addr = retkey.addr;
+    k->name = retkey.name;
+    k->type = idnode->type == ETYPE_MASTER ? TYPE_DIR : TYPE_ENT;
+    k->idnode = idnode;
+    idnode->ref = NULL;
+
+    res = ns_insert(ns, k, idstr);
+    if (res != 0)
+        goto err6;
+
+    idnode->parent_idnode = k->addr == NULL
+                            ? NULL : ((struct ns_key *)k->addr)->idnode;
+
+    res = radix_tree_insert(rt, idstr, &idnode);
+    if (res != 0)
+        goto err4;
+
+    if (id == EBML_ELEMENT_ID_WITH_MARKER
+        && printf("const struct elem_data *ebml_data = EBML_DATA(%016" PRIx64
+                  ");\n\n",
+                  get_node_id(idnode))
+           < 0)
+        return -EIO;
 
     fprintf(stderr, "ID %s\n", idstr);
 
     return 0;
 
+err6:
+    free(k);
+err5:
+    free(retkey.name);
+err4:
+    if (idnode->handler != NULL)
+        xmlFree(idnode->handler);
+err3:
+    xmlFree(idnode->name);
 err2:
-    if (idnode.handler != NULL)
-        xmlFree(idnode.handler);
+    if (path != NULL)
+        xmlFree(path);
 err1:
-    xmlFree(idnode.name);
-    return err;
+    free(idnode);
+    return res;
 }
 
 static int
-parse_enum(xmlNode *node, struct radix_tree *rt)
+parse_enum(enum op op, xmlNode *node, struct avl_tree *ns,
+           struct radix_tree *rt)
 {
+    (void)op;
     (void)node;
+    (void)ns;
     (void)rt;
 
     return 0;
 }
 
 static int
-parse_restriction(xmlNode *node, struct radix_tree *rt)
+parse_restriction(enum op op, xmlNode *node, struct avl_tree *ns,
+                  struct radix_tree *rt)
 {
+    (void)op;
     (void)node;
+    (void)ns;
     (void)rt;
 
     return 0;
 }
 
 static int
-parse_documentation(xmlNode *node, struct radix_tree *rt)
+parse_documentation(enum op op, xmlNode *node, struct avl_tree *ns,
+                    struct radix_tree *rt)
 {
+    (void)op;
     (void)node;
+    (void)ns;
     (void)rt;
 
     return 1;
 }
 
 static int
-parse_implementation_note(xmlNode *node, struct radix_tree *rt)
+parse_implementation_note(enum op op, xmlNode *node, struct avl_tree *ns,
+                          struct radix_tree *rt)
 {
+    (void)op;
     (void)node;
+    (void)ns;
     (void)rt;
 
     return 1;
 }
 
 static int
-parse_extension(xmlNode *node, struct radix_tree *rt)
+parse_extension(enum op op, xmlNode *node, struct avl_tree *ns,
+                struct radix_tree *rt)
 {
+    (void)op;
     (void)node;
+    (void)ns;
     (void)rt;
 
     return 0;
 }
 
 static uint64_t
-get_node_id(const struct radix_tree_node *node)
+get_node_id(const void *node)
 {
     size_t i;
     static int init;
@@ -220,6 +580,7 @@ get_node_id(const struct radix_tree_node *node)
 static int
 sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
 {
+    (void)str;
     (void)ctx;
 
     if (val == NULL) {
@@ -232,9 +593,24 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
             goto err;
 
         for (i = 0; i < ARRAY_SIZE(node->children); i++) {
-            if (node->children[i] != NULL
-                && printf(",\n\tENTRY('%c', %016" PRIx64 ")",
-                          (int)i, get_node_id(node->children[i]))
+            const struct radix_tree_node *child = node->children[i];
+            const void *nodep;
+            union {
+                struct id_node  *ptr;
+                char            bytes[sizeof(struct id_node *)];
+            } val;
+
+            if (child == NULL)
+                continue;
+
+            if (child->type == NODE_TYPE_INFORMATION) {
+                memcpy(val.bytes, child->val, sizeof(struct id_node *));
+                nodep = val.ptr;
+            } else
+                nodep = child;
+
+            if (printf(",\n\tENTRY('%c', %016" PRIx64 ")",
+                       (int)i, get_node_id(nodep))
                    < 0)
                 goto err;
         }
@@ -242,23 +618,27 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
         if (putchar('\n') == EOF)
             goto err;
     } else {
-        struct id_node *idnode = val;
+        struct id_node *idnode = *(struct id_node **)val;
 
-        if (idnode->handler != NULL
-            && printf("int %s(const char *, enum etype, edata_t *, "
-                      "const void *, size_t, size_t, size_t, off_t, "
-                      "void *);\n\n",
-                      idnode->handler)
-               < 0)
-            goto err;
-
-        if (printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
-                   "\t\"%s -> %s\", %s%s, %d\n",
-                   get_node_id(node), node->label, str, idnode->name,
-                   idnode->handler == NULL ? "" : "&",
-                   idnode->handler == NULL ? "NULL" : idnode->handler,
-                   idnode->type)
-            < 0)
+        if (idnode->ref == NULL) {
+            if (printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
+                       "\t%s(%016" PRIx64 ")\n",
+                       get_node_id(idnode), node->label,
+                       idnode->parent_idnode == NULL
+                       ? "EBML_DATA_NIL" : "EBML_DATA",
+                       idnode->parent_idnode == NULL
+                       ? 0 : get_node_id(idnode->parent_idnode))
+                < 0)
+                goto err;
+        } else if (printf("DEF_TRIE_NODE_INFORMATION_REF(%016" PRIx64 ", "
+                          "\"%s\",\n"
+                          "\t\"%s\", %s(%016" PRIx64 ")\n",
+                          get_node_id(idnode), node->label, idnode->ref,
+                          idnode->parent_idnode == NULL
+                          ? "EBML_DATA_NIL" : "EBML_DATA",
+                          idnode->parent_idnode == NULL
+                          ? 0 : get_node_id(idnode->parent_idnode))
+                   < 0)
             goto err;
     }
 
@@ -272,13 +652,16 @@ err:
 static int
 free_fn(const char *str, void *val, void *ctx)
 {
-    struct id_node *node = val;
+    struct id_node *node = *(struct id_node **)val;
 
     (void)str;
     (void)ctx;
 
-    xmlFree(node->name);
-    xmlFree(node->handler);
+    if (strcmp("EBML", node->name) != 0
+        && strcmp("EBMLSemantics", node->name) != 0) {
+        xmlFree(node->name);
+        xmlFree(node->handler);
+    }
 
     return 0;
 }
@@ -299,14 +682,16 @@ do_radix_tree_free(struct radix_tree *rt)
         = {#name, &parse_##name}
 
 static int
-_output_parser_data(xmlNode *node, int level, struct radix_tree *rt)
+_output_parser_data(enum op op, xmlNode *node, int level, struct avl_tree *ns,
+                    struct radix_tree *rt)
 {
     int ret;
     xmlNode *cur;
 
     static const struct ent {
         const char  *name;
-        int         (*fn)(xmlNode *, struct radix_tree *);
+        int         (*fn)(enum op, xmlNode *, struct avl_tree *,
+                          struct radix_tree *);
     } elem_map[256 * 256] = {
         INIT_ENTRY('E', 'B', EBMLSchema),
         INIT_ENTRY('e', 'l', element),
@@ -331,7 +716,7 @@ _output_parser_data(xmlNode *node, int level, struct radix_tree *rt)
         if (ent->name == NULL)
             goto inval_err;
 
-        ret = (*ent->fn)(cur, rt);
+        ret = (*ent->fn)(op, cur, ns, rt);
         if (ret != 0) {
             if (ret != 1)
                 return ret;
@@ -342,7 +727,7 @@ _output_parser_data(xmlNode *node, int level, struct radix_tree *rt)
                 &tabs[sizeof(tabs) - 1 - MIN((int)sizeof(tabs) - 1, level)],
                 cur->name);
 
-        ret = _output_parser_data(cur->children, level + 1, rt);
+        ret = _output_parser_data(op, cur->children, level + 1, ns, rt);
         if (ret != 0)
             return ret;
     }
@@ -357,51 +742,233 @@ inval_err:
 #undef INIT_ENTRY
 
 static int
-output_parser_data(xmlDocPtr doc, const char *doctype)
+output_parser_data(enum op op, xmlDocPtr doc, const char *doctype)
 {
     int err;
-    jmp_buf env;
+    struct avl_tree *ns;
+    struct id_node *idnode;
     struct radix_tree *rt;
 
-    err = radix_tree_new(&rt, sizeof(struct id_node));
+    if (op == PROCESS_SCHEMA) {
+        char idstr[7];
+        jmp_buf env;
+        struct ns_key k;
+
+        err = ns_init(&ns);
+        if (err)
+            return err;
+
+        err = setjmp(env);
+        if (err)
+            goto err1;
+
+        do_printf(&env, "#include \"parser.h\"\n");
+        do_printf(&env, "#include \"parser_defs.h\"\n\n");
+
+        do_printf(&env, "#include <stddef.h>\n\n");
+
+        do_printf(&env, "#define TRIE_NODE_PREFIX %s\n\n", doctype);
+
+        do_printf(&env, "extern const struct elem_data *ebml_data;\n\n");
+
+        if (strcmp("ebml", doctype) != 0) {
+            idnode = malloc(sizeof(*idnode));
+            if (idnode == NULL) {
+                err = -errno;
+                goto err1;
+            }
+
+            err = l64a_r(EBML_ELEMENT_ID, idstr, sizeof(idstr));
+            if (err)
+                goto err3;
+
+            k.name = strdup(strcmp("matroska_semantics", doctype) == 0
+                            ? "EBMLSemantics" : "EBML");
+            if (k.name == NULL) {
+                err = -errno;
+                goto err3;
+            }
+            k.addr = NULL;
+            k.type = TYPE_DIR;
+
+            idnode->name = k.name;
+            idnode->handler = NULL;
+            idnode->type = ETYPE_MASTER;
+            idnode->parent_idnode = NULL;
+            idnode->ref = "ebml_data";
+            k.idnode = idnode;
+
+            err = ns_insert(ns, &k, idstr);
+            if (err) {
+                free(k.name);
+                goto err3;
+            }
+        }
+
+        err = radix_tree_new(&rt, sizeof(struct id_node *));
+        if (err)
+            goto err1;
+    } else {
+        ns = NULL;
+        rt = NULL;
+    }
+
+    err = _output_parser_data(op, xmlDocGetRootElement(doc), 0, ns, rt);
     if (err)
-        return err;
+        goto err2;
 
-    err = _output_parser_data(xmlDocGetRootElement(doc), 0, rt);
-    if (err)
-        goto end;
+    if (op == PROCESS_SCHEMA) {
+        if (printf("#define %s_TRIE_ROOT (&%s_trie_node_%016" PRIx64 ")\n\n",
+                   doctype, doctype, get_node_id(rt->root))
+            < 0) {
+            err = -EIO;
+            goto err2;
+        }
 
-    err = setjmp(env);
-    if (err)
-        goto end;
+        err = radix_tree_serialize(rt, &sr_fn, NULL);
+        if (err)
+            goto err2;
 
-    do_printf(&env, "#include \"parser.h\"\n");
-    do_printf(&env, "#include \"parser_defs.h\"\n\n");
-
-    do_printf(&env, "#include <stddef.h>\n\n");
-
-    do_printf(&env, "#define TRIE_NODE_PREFIX %s\n\n", doctype);
-
-    do_printf(&env, "#define %s_TRIE_ROOT (&%s_trie_node_%016" PRIx64 ")\n\n",
-              doctype, doctype, get_node_id(rt->root));
-
-    err = radix_tree_serialize(rt, &sr_fn, NULL);
-    if (err)
-        goto end;
-
-    if (printf("#undef TRIE_NODE_PREFIX\n\n") < 0) {
-        err = -EIO;
-        goto end;
+        if (printf("#undef TRIE_NODE_PREFIX\n\n") < 0) {
+            err = -EIO;
+            goto err2;
+        }
     }
 
     if (fflush(stdout) == EOF
         || (fsync(STDOUT_FILENO) == -1
-            && errno != EBADF && errno != EINVAL && errno != ENOTSUP))
+            && errno != EBADF && errno != EINVAL && errno != ENOTSUP)) {
         err = -errno;
+        goto err2;
+    }
 
-end:
-    do_radix_tree_free(rt);
+    if (op == PROCESS_SCHEMA) {
+        do_radix_tree_free(rt);
+        ns_destroy(ns);
+    }
+
+    return 0;
+
+err3:
+    free(idnode);
+    ns_destroy(ns);
     return err;
+
+err2:
+    do_radix_tree_free(rt);
+err1:
+    ns_destroy(ns);
+    return err;
+}
+
+static int
+process_paths(int infd, int outfd)
+{
+    char *line;
+    FILE *inf, *outf;
+    int res;
+    size_t linecap;
+    struct avl_tree *ns;
+    struct ns_key *k, retkey;
+
+    infd = dup(infd);
+    if (infd == -1)
+        return -errno;
+
+    inf = fdopen(infd, "r");
+    if (inf == NULL) {
+        res = -errno;
+        close(infd);
+        return res;
+    }
+
+    outfd = dup(outfd);
+    if (outfd == -1) {
+        res = -errno;
+        goto err1;
+    }
+
+    outf = fdopen(outfd, "w");
+    if (outf == NULL) {
+        res = -errno;
+        close(outfd);
+        goto err1;
+    }
+
+    res = ns_init(&ns);
+    if (res != 0)
+        goto err2;
+
+    line = NULL;
+    linecap = 0;
+    for (;;) {
+        size_t len;
+
+        if (getline(&line, &linecap, inf) == -1) {
+            free(line);
+            if (!feof(inf)) {
+                res = -errno;
+                goto err3;
+            }
+            break;
+        }
+        len = strlen(line);
+        if (len > 0 && line[len-1] == '\n') {
+            --len;
+            line[len] = '\0';
+        }
+
+        res = ns_look_up(ns, line, &retkey);
+        if (res != 0) {
+            if (res != 1)
+                goto err3;
+            continue;
+        }
+
+        k = malloc(sizeof(*k));
+        if (k == NULL) {
+            res = -errno;
+            goto err4;
+        }
+
+        k->addr = retkey.addr;
+        k->name = retkey.name;
+        k->type = len > 0 && line[len-1] == '/' ? TYPE_DIR : TYPE_ENT;
+
+        res = ns_insert(ns, k, NULL);
+        if (res != 0)
+            goto err5;
+    }
+
+    res = ns_dump(outf, ns);
+    if (res != 0)
+        goto err3;
+
+    ns_destroy(ns);
+
+    if (fflush(outf) == EOF
+        || (fsync(fileno(outf)) == -1
+            && errno != EBADF && errno != EINVAL && errno != ENOTSUP)) {
+        res = -errno;
+        goto err2;
+    }
+
+    res = fclose(outf) == EOF ? -errno : 0;
+    fclose(inf);
+
+    return res;
+
+err5:
+    free(k);
+err4:
+    free(retkey.name);
+err3:
+    ns_destroy(ns);
+err2:
+    fclose(outf);
+err1:
+    fclose(inf);
+    return res;
 }
 
 int
@@ -409,12 +976,18 @@ main(int argc, char **argv)
 {
     const char *doctype;
     const char *schemaf;
+    enum op op = PROCESS_SCHEMA;
     int status, tmp;
     unsigned seed;
     xmlDocPtr doc, schemadoc;
     xmlSchemaParserCtxtPtr ctx;
     xmlSchemaPtr schema;
     xmlSchemaValidCtxtPtr vctx;
+
+    if (strcmp(argv[1], "-p") == 0) {
+        return process_paths(STDIN_FILENO, STDOUT_FILENO) == 0
+               ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
 
     if (argc < 2) {
         fputs("Must specify XML schema path\n", stderr);
@@ -424,20 +997,25 @@ main(int argc, char **argv)
         fputs("Must specify EBML document type name\n", stderr);
         return EXIT_FAILURE;
     }
-    schemaf = argv[1];
-    tmp = 2;
-    if (strcmp("-", schemaf) == 0)
-        schemaf = NULL;
-    else if (argc > 2 && strcmp("-s", schemaf) == 0) {
+    if (argc > 2 && strcmp("-s", argv[1]) == 0) {
         schemaf = argv[2];
         tmp = 3;
+    } else {
+        schemaf = strcmp("-", argv[1]) == 0 ? NULL : argv[1];
+        tmp = 2;
     }
     doctype = argv[tmp++];
-    seed = argc > tmp ? atoi(argv[tmp]) : time(NULL) + getpid();
+    if (argc == tmp)
+        seed = time(NULL) + getpid();
+    else if (strcmp("-d", argv[tmp]) == 0)
+        op = DUMP_PATHS;
+    else
+        seed = atoi(argv[tmp]);
 
     LIBXML_TEST_VERSION
 
-    srand(seed);
+    if (op == PROCESS_SCHEMA)
+        srand(seed);
 
     doc = xmlParseFile("-");
     if (doc == NULL)
@@ -483,7 +1061,7 @@ main(int argc, char **argv)
 
     if (setvbuf(stdout, NULL, _IOLBF, 0) == EOF)
         fputs("Out of memory\n", stderr);
-    else if (output_parser_data(doc, doctype) != 0)
+    else if (output_parser_data(op, doc, doctype) != 0)
         fputs("Parsing error\n", stderr);
     else
         status = EXIT_SUCCESS;
@@ -493,7 +1071,7 @@ end:
     xmlFreeDoc(doc);
     xmlCleanupParser();
 
-    if (status == EXIT_SUCCESS)
+    if (op == PROCESS_SCHEMA && status == EXIT_SUCCESS)
         fprintf(stderr, "Seed: %u\n", seed);
 
     return status;

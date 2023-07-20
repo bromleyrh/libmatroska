@@ -60,7 +60,9 @@ typedef struct {
 
 int eid_to_u64(const char *x, uint64_t *y, size_t *sz);
 
-int u64_to_eid(uint64_t x, char *y, size_t *bufsz);
+#define FLAG_HAVE_MARKER 1
+
+int u64_to_eid(uint64_t x, char *y, size_t *bufsz, int flags);
 
 uint64_t vintmax(size_t len);
 
@@ -75,6 +77,8 @@ const char *etype_to_str(enum etype etype);
 enum etype str_to_etype(const char *str);
 
 int edata_unpack(const char *x, edata_t *y, enum etype etype, size_t sz);
+
+int edata_pack(const edata_t *x, char *y, enum etype etype, size_t *sz);
 
 int edata_to_timespec(edata_t *x, struct timespec *y);
 

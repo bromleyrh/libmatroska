@@ -9,6 +9,7 @@
 #include "vint.h"
 
 #include <errno.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -17,6 +18,8 @@
 #include <time.h>
 
 typedef int unpack_fn_t(const char *, edata_t *, size_t);
+
+typedef int pack_fn_t(const edata_t *, char *, size_t *);
 
 #define TIME_T_MIN (~(time_t)0)
 #define TIME_T_MAX ((time_t)((unsigned)TIME_T_MIN >> 1))
@@ -45,6 +48,16 @@ static unpack_fn_t unpack_string;
 static unpack_fn_t unpack_date_8;
 
 static unpack_fn_t unpack_binary;
+
+static pack_fn_t pack_integer;
+
+static pack_fn_t pack_uinteger;
+
+static pack_fn_t pack_float;
+
+static pack_fn_t pack_string;
+
+static pack_fn_t pack_date;
 
 static unpack_fn_t *const float_fns[] = {
     [4] = &unpack_float_4,
@@ -171,6 +184,102 @@ unpack_binary(const char *x, edata_t *y, size_t sz)
     return 0;
 }
 
+static int
+pack_integer(const edata_t *x, char *y, size_t *sz)
+{
+    char byte;
+    size_t i, len;
+
+    byte = x->integer < 0 ? 0xff : 0;
+
+    len = sizeof(x->integer) - 1;
+    for (;;) {
+        if (x->bytes[len] != byte) {
+/*            if (len == 2)
+                len = 3;*/
+            break;
+        }
+        --len;
+        if (len == 0)
+            break;
+    }
+
+    *sz = len + 1;
+
+    if (power_of_2(*sz)) {
+        for (i = 0; i <= len; i++)
+            y[~i & len] = x->bytes[i];
+    } else {
+        for (i = 0; i <= len; i++)
+            y[len - i] = x->bytes[i];
+    }
+
+    return 0;
+}
+
+static int
+pack_uinteger(const edata_t *x, char *y, size_t *sz)
+{
+    size_t i, len;
+
+    len = sizeof(x->uinteger) - 1;
+    for (;;) {
+        if (x->bytes[len] != 0) {
+/*            if (len == 2)
+                len = 3;*/
+            break;
+        }
+        --len;
+        if (len == 0)
+            break;
+    }
+
+    *sz = len + 1;
+
+    if (power_of_2(*sz)) {
+        for (i = 0; i <= len; i++)
+            y[~i & len] = x->bytes[i];
+    } else {
+        for (i = 0; i <= len; i++)
+            y[len - i] = x->bytes[i];
+    }
+
+    return 0;
+}
+
+static int
+pack_float(const edata_t *x, char *y, size_t *sz)
+{
+    size_t i, len;
+
+    len = x->dbl ? 7 : 3;
+
+    for (i = 0; i <= len; i++)
+        y[~i & len] = x->bytes[i];
+
+    *sz = len + 1;
+    return 0;
+}
+
+static int
+pack_string(const edata_t *x, char *y, size_t *sz)
+{
+    memcpy(y, x->ptr, *sz);
+    return 0;
+}
+
+static int
+pack_date(const edata_t *x, char *y, size_t *sz)
+{
+    size_t i;
+
+    for (i = 0; i < 8; i++)
+        y[~i & 7] = x->bytes[i];
+
+    *sz = 8;
+    return 0;
+}
+
 EXPORTED int
 eid_to_u64(const char *x, uint64_t *y, size_t *sz)
 {
@@ -204,8 +313,11 @@ eid_to_u64(const char *x, uint64_t *y, size_t *sz)
 }
 
 EXPORTED int
-u64_to_eid(uint64_t x, char *y, size_t *bufsz)
+u64_to_eid(uint64_t x, char *y, size_t *bufsz, int flags)
 {
+    if (flags & FLAG_HAVE_MARKER)
+        x &= ~(UINT64_C(1) << (fls(x) - 1));
+
     return u64_to_vint(x, y, bufsz);
 }
 
@@ -345,6 +457,30 @@ edata_unpack(const char *x, edata_t *y, enum etype etype, size_t sz)
         y->type = etype;
 
     return err;
+}
+
+int
+edata_pack(const edata_t *x, char *y, enum etype etype, size_t *sz)
+{
+    pack_fn_t *fn;
+
+    static pack_fn_t *const fns[] = {
+        [ETYPE_INTEGER]     = &pack_integer,
+        [ETYPE_UINTEGER]    = &pack_uinteger,
+        [ETYPE_FLOAT]       = &pack_float,
+        [ETYPE_STRING]      = &pack_string,
+        [ETYPE_UTF8]        = &pack_string,
+        [ETYPE_DATE]        = &pack_date,
+        [ETYPE_BINARY]      = &pack_string
+    };
+
+    if (etype >= ARRAY_SIZE(fns))
+        return ERR_TAG(EINVAL);
+    fn = fns[etype];
+    if (fn == NULL)
+        return ERR_TAG(EINVAL);
+
+    return (*fn)(x, y, sz);
 }
 
 int

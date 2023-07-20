@@ -69,7 +69,8 @@ static int find_trie_edge(const struct trie_node *, unsigned char,
 static int traverse_trie_edge(const struct trie_edge *, const char **);
 
 static int do_trie_search(const struct trie_node *, const char *,
-                          const char **, semantic_action_t **, enum etype *);
+                          const struct elem_data **, const struct elem_data **,
+                          semantic_action_t **);
 
 static int
 find_trie_edge(const struct trie_node *src, unsigned char digit,
@@ -95,7 +96,7 @@ traverse_trie_edge(const struct trie_edge *edge, const char **str)
         if (edge->label[i] != **str)
             break;
         if (**str == '\0') {
-            if (edge->dst->val != NULL)
+            if (edge->dst->data->val != NULL)
                 return -1;
             break;
         }
@@ -106,9 +107,12 @@ traverse_trie_edge(const struct trie_edge *edge, const char **str)
 }
 
 static int
-do_trie_search(const struct trie_node *node, const char *str, const char **val,
-               semantic_action_t **act, enum etype *etype)
+do_trie_search(const struct trie_node *node, const char *str,
+               const struct elem_data **data,
+               const struct elem_data **ebml_parent,
+               semantic_action_t **act)
 {
+    const struct elem_data *ret;
     struct trie_edge edge;
 
     for (;;) {
@@ -128,12 +132,21 @@ do_trie_search(const struct trie_node *node, const char *str, const char **val,
         node = edge.dst;
     }
 
-    if (val != NULL)
-        *val = edge.dst->val;
+    ret = edge.dst->data;
+    if (ret->ref != NULL)
+        ret = *ret->ref;
+
+    if (data != NULL)
+        *data = ret;
     if (act != NULL)
-        *act = edge.dst->act;
-    if (etype != NULL)
-        *etype = edge.dst->etype;
+        *act = ret->act;
+
+    if (ebml_parent != NULL) {
+        ret = edge.dst->ebml_parent;
+        if (ret != NULL && ret->ref != NULL)
+            ret = *ret->ref;
+        *ebml_parent = ret;
+    }
 
     return 1;
 }
@@ -145,17 +158,18 @@ parser_desc(const struct parser *parser)
 }
 
 EXPORTED int
-parser_look_up(const struct parser *parser, const char *str, const char **val,
-               enum etype *etype)
+parser_look_up(const struct parser *parser, const char *str,
+               const struct elem_data **data,
+               const struct elem_data **ebml_parent)
 {
-    return do_trie_search(parser->id_root, str, val, NULL, etype);
+    return do_trie_search(parser->id_root, str, data, ebml_parent, NULL);
 }
 
 int
 semantic_processor_look_up(const struct semantic_processor *sproc,
                            const char *str, semantic_action_t **act)
 {
-    return do_trie_search(sproc->id_root, str, NULL, act, NULL);
+    return do_trie_search(sproc->id_root, str, NULL, NULL, act);
 }
 
 /* vi: set expandtab sw=4 ts=4: */
