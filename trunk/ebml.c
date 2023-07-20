@@ -688,7 +688,8 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         if (f != NULL && fputc('\n', f) == EOF)
             return ERR_TAG(EIO);
 
-        hdl->off += elen;
+        if (etype != ETYPE_MASTER)
+            hdl->off += elen;
 
         ++n;
     }
