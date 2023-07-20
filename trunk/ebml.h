@@ -33,7 +33,8 @@ typedef int ebml_metadata_cb_t(const char *, matroska_metadata_t *, size_t, int,
 extern const ebml_io_fns_t ebml_file_fns;
 #define EBML_FILE_FNS (&ebml_file_fns)
 
-#define EBML_READ_FLAG_MASTER 1
+#define EBML_READ_FLAG_HEADER 1
+#define EBML_READ_FLAG_MASTER 2
 
 int ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
               const struct parser *parser,

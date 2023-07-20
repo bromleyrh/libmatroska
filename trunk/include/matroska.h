@@ -67,9 +67,11 @@ struct matroska_error_info {
     int errcode;
 };
 
-#define MATROSKA_READ_FLAG_MASTER 1
+#define MATROSKA_READ_FLAG_HEADER 1
+#define MATROSKA_READ_FLAG_MASTER 2
 
 #define MATROSKA_METADATA_FLAG_FRAGMENT 1
+#define MATROSKA_METADATA_FLAG_HEADER 2
 
 int matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
                   matroska_metadata_cb_t *metacb, matroska_bitstream_cb_t *cb,

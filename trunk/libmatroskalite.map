@@ -44,6 +44,10 @@ LIBMATROSKALITE_28 {
 } LIBMATROSKALITE_27;
 
 LIBMATROSKALITE_30 {
-    global:
-        matroska_read;
 } LIBMATROSKALITE_28;
+
+LIBMATROSKALITE_31 {
+    global:
+        ebml_parser;
+        matroska_read;
+} LIBMATROSKALITE_30;

@@ -939,6 +939,7 @@ matroska_read(FILE *f, matroska_hdl_t hdl, int flags)
         int src;
         int dst;
     } flagmap[] = {
+        {MATROSKA_READ_FLAG_HEADER, EBML_READ_FLAG_HEADER},
         {MATROSKA_READ_FLAG_MASTER, EBML_READ_FLAG_MASTER}
     };
 
