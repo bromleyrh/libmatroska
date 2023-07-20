@@ -3,7 +3,6 @@ LIBMATROSKALITE_1 {
         ebml_close;
         ebml_file_fns;
         ebml_open;
-        ebml_read;
         edatasz_to_u64;
         eid_to_u64;
         matroska_close;
@@ -49,5 +48,6 @@ LIBMATROSKALITE_30 {
 LIBMATROSKALITE_31 {
     global:
         ebml_parser;
+        ebml_read;
         matroska_read;
 } LIBMATROSKALITE_30;
