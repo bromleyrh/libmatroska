@@ -129,7 +129,7 @@ u64_to_vint(uint64_t x, char *y, size_t *bufsz)
         if (x < bnd)
             break;
         ++len;
-        if (bnd == 1ull << (sizeof(x) - 1) * CHAR_BIT)
+        if (bnd == UINT64_C(1) << (sizeof(x) - 1) * CHAR_BIT)
             break;
         bnd <<= CHAR_BIT;
     }

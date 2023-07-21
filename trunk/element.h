@@ -56,7 +56,7 @@ typedef struct {
     };
 } edata_t;
 
-#define EDATASZ_UNKNOWN (~0ull)
+#define EDATASZ_UNKNOWN (~UINT64_C(0))
 
 int eid_to_u64(const char *x, uint64_t *y, size_t *sz);
 

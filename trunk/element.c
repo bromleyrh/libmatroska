@@ -196,7 +196,7 @@ u64_to_eid(uint64_t x, char *y, size_t *bufsz)
 uint64_t
 vintmax(size_t len)
 {
-    return (1ull << 7 * len) - 2;
+    return (UINT64_C(1) << 7 * len) - 2;
 }
 
 EXPORTED int

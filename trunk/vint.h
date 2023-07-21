@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define VINT_MAX_VAL(sz) ((1ull << (CHAR_BIT * (sz) - (sz))) - 1)
+#define VINT_MAX_VAL(sz) ((UINT64_C(1) << (CHAR_BIT * (sz) - (sz))) - 1)
 
 int vint_to_u64(const char *x, uint64_t *y, size_t *sz);
 
