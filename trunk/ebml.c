@@ -644,6 +644,11 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
                        (uint64_t)EBML_ELEMENT_ID, elen, totlen) < 0))
         return ERR_TAG(EIO);
 
+    res = invoke_user_cb("XyRFO -> EBML", ETYPE_MASTER, NULL, NULL, 0, elen, 1,
+                         hdl);
+    if (res != 0)
+        return res;
+
     /* read remaining EBML element data */
     tmp = si;
     si = di;
