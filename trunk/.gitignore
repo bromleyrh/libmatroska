@@ -48,6 +48,9 @@ version.c
 /element_test
 /vint_test
 
+*.log
+*.trs
+
 .gdbinit
 .lldbinit
 
