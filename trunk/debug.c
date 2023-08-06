@@ -386,6 +386,7 @@ err_info_free(struct err_info_bt *info, int freeall)
 int
 err_print(FILE *f, int *err)
 {
+    char strerrbuf[256];
     int i;
     int ret;
     struct err_info_bt *info;
@@ -428,7 +429,8 @@ err_print(FILE *f, int *err)
             goto end;
     }
 
-    if (fprintf(f, "%s\n", strerror(-*err)) >= 0)
+    if (fprintf(f, "%s\n", strperror_r(-*err, strerrbuf, sizeof(strerrbuf)))
+        >= 0)
         ret = 0;
 
 end:

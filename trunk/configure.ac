@@ -59,6 +59,7 @@ AC_ARG_ENABLE([debugging],
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
 AC_CHECK_FUNCS_ONCE([fls])
+AC_CHECK_FUNCS_ONCE([strerror_l])
 
 PKG_CHECK_MODULES([libjson], [libjson],
                   [libjson_cppflags=$libjson_CFLAGS

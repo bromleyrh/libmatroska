@@ -7,6 +7,8 @@
 
 #include "config.h"
 
+#include <stddef.h>
+
 #ifdef HAVE_FLS
 #include <strings.h>
 #endif
@@ -15,6 +17,9 @@
 int fls(int i);
 
 #endif
+int strerror_rp(int errnum, char *strerrbuf, size_t buflen);
+
+char *strperror_r(int errnum, char *strerrbuf, size_t buflen);
 
 #endif
 
