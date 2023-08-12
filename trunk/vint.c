@@ -108,7 +108,7 @@ vint_to_u64(const char *x, uint64_t *y, size_t *sz)
     i = len;
     while (i > 0) {
         ++x;
-        ret |= (unsigned char)*x << --i * CHAR_BIT;
+        ret |= (uint64_t)(unsigned char)*x << --i * CHAR_BIT;
     }
 
     *y = ret;
