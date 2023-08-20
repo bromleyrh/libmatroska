@@ -459,17 +459,18 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
         } else
             buf = ctxp->data;
 
-        memcpy(buf + ctxp->len, val->data, val->len);
-        ctxp->len += val->len;
-        if (ctxp->len < len) {
-            ctxp->first_fragment = 0;
-            return 0;
-        }
-        ctxp->len = 0;
-        ctxp->first_fragment = 1;
+        valbuf.data = memcpy(buf + ctxp->len, val->data, val->len);
+        valbuf.len = val->len;
 
-        valbuf.data = buf;
-        valbuf.len = len;
+        ctxp->len += val->len;
+
+        if (ctxp->len < len)
+            ctxp->first_fragment = 0;
+        else {
+            ctxp->len = 0;
+            ctxp->first_fragment = 1;
+        }
+
         val = &valbuf;
     }
 
@@ -491,9 +492,6 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
             goto err1;
         goto end;
     }
-
-    if (etype != ETYPE_MASTER && len > LEN_MAX)
-        goto end;
 
     if (etype >= ARRAY_SIZE(fns)) {
         res = -EIO;
