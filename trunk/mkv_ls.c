@@ -22,11 +22,14 @@
 #include <unistd.h>
 #include <wchar.h>
 
+#include <sys/types.h>
+
 struct cb {
     char        *path;
     int         fd;
     FILE        *f;
     json_val_t  jval;
+    json_val_t  elem;
 };
 
 struct ctx {
@@ -84,6 +87,8 @@ static int cvt_binary_to_string(json_val_t *, matroska_metadata_t *, size_t,
                                 const char *);
 
 static matroska_metadata_cb_t metadata_cb;
+
+static matroska_bitstream_cb_t bitstream_cb;
 
 static size_t json_write_cb(const char *, size_t, size_t, void *);
 
@@ -487,6 +492,11 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
             val = &valbuf;
     }
 
+    if (new_val && ctxp->cb.elem != NULL) {
+        json_val_free(ctxp->cb.elem);
+        ctxp->cb.elem = NULL;
+    }
+
     buflen = strlen(id) + 1;
 
     buf = malloc(2 * buflen);
@@ -568,7 +578,11 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
         return res;
     }
 
-    json_val_free(jval);
+    if (new_val
+        && (strcmp("Block", value) == 0 || strcmp("SimpleBlock", value) == 0))
+        ctxp->cb.elem = jval;
+    else
+        json_val_free(jval);
 
 end:
     free(buf);
@@ -583,6 +597,81 @@ err2:
 err1:
     free(buf);
     return res;
+}
+
+static int
+bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
+             off_t off, int16_t ts, int keyframe, void *ctx)
+{
+    int err;
+    json_object_elem_t elem;
+    struct ctx *ctxp = ctx;
+
+    (void)buf;
+    (void)len;
+    (void)totlen;
+    (void)off;
+
+/*    fprintf(stderr, "trackno %" PRIu64 ", ts %" PRIi16 ", keyframe %d, %p\n",
+            trackno, ts, keyframe, ctxp->cb.elem);
+*/
+    if (ctxp->cb.elem == NULL)
+        return 0;
+
+    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    if (elem.value == NULL)
+        return -ENOMEM;
+    json_val_numeric_set(elem.value, trackno);
+
+    elem.key = wcsdup(L"trackno");
+    if (elem.key == NULL)
+        goto err1;
+
+    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    json_val_free(elem.value);
+    if (err)
+        goto err2;
+
+    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    if (elem.value == NULL)
+        return -ENOMEM;
+    json_val_numeric_set(elem.value, ts);
+
+    elem.key = wcsdup(L"ts");
+    if (elem.key == NULL)
+        goto err1;
+
+    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    json_val_free(elem.value);
+    if (err)
+        goto err2;
+
+    elem.value = json_val_new(JSON_TYPE_BOOLEAN);
+    if (elem.value == NULL)
+        return -ENOMEM;
+    json_val_boolean_set(elem.value, keyframe);
+
+    elem.key = wcsdup(L"keyframe");
+    if (elem.key == NULL)
+        goto err1;
+
+    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    json_val_free(elem.value);
+    if (err)
+        goto err2;
+
+    ctxp->cb.elem = NULL;
+    json_val_free(ctxp->cb.elem);
+
+    return 0;
+
+err2:
+    free((void *)elem.key);
+    return err;
+
+err1:
+    json_val_free(elem.value);
+    return -ENOMEM;
 }
 
 static size_t
@@ -632,7 +721,7 @@ cvt_mkv(int infd, struct ctx *ctx)
 
     args.fd = infd;
     args.pathname = NULL;
-    res = matroska_open(&hdl, NULL, &metadata_cb, NULL, &args, ctx);
+    res = matroska_open(&hdl, NULL, &metadata_cb, &bitstream_cb, &args, ctx);
     if (res != 0) {
         errmsg = "Error opening input file";
         goto err3;
@@ -644,6 +733,8 @@ cvt_mkv(int infd, struct ctx *ctx)
 
     res = matroska_read(NULL, hdl,
                         MATROSKA_READ_FLAG_HEADER | MATROSKA_READ_FLAG_MASTER);
+    if (ctx->cb.elem != NULL)
+        json_val_free(ctx->cb.elem);
     free(ctx->data);
     if (res != 0 && res != 1) {
         errmsg = "Error dumping file";
