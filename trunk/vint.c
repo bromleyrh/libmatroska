@@ -12,6 +12,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -64,14 +65,14 @@ _u64_to_vint(uint64_t x, char *y, size_t bufsz)
     i = bufsz;
     m = 1 << (CHAR_BIT - i);
     --i;
-    b = (x & 0xff << i * CHAR_BIT) >> i * CHAR_BIT;
+    b = (x & UINT64_C(0xff) << i * CHAR_BIT) >> i * CHAR_BIT;
     if (b >= m)
         return -ERANGE;
     y[0] = m | b;
     --bufsz;
     while (i > 0) {
         --i;
-        y[bufsz-i] = (x & 0xff << i * CHAR_BIT) >> i * CHAR_BIT;
+        y[bufsz-i] = (x & UINT64_C(0xff) << i * CHAR_BIT) >> i * CHAR_BIT;
     }
 
     return 0;
