@@ -671,6 +671,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             state->lacing_hdr = 2;
 
             offset += hdrlen;
+            /* fallthrough */
         case 2:
             break;
         default:
