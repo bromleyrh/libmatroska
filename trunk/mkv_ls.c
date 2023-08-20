@@ -373,6 +373,16 @@ cvt_binary_to_string(json_val_t *dst, matroska_metadata_t *src, size_t len,
 
     (void)name;
 
+    if (len > LEN_MAX) {
+        json_val_t ret;
+
+        ret = json_val_new(JSON_TYPE_NULL);
+        if (ret == NULL)
+            return -ENOMEM;
+        *dst = ret;
+        return 0;
+    }
+
     slen = 2 * src->len + 1;
 
     str = malloc(slen);
@@ -413,6 +423,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
     char *buf, *value;
     enum etype etype;
     int (*fn)(json_val_t *, matroska_metadata_t *, size_t, const char *);
+    int new_val;
     int res;
     json_object_elem_t elem;
     json_val_t jval;
@@ -447,20 +458,21 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
             return res;
     }
 
+    new_val = ctxp->first_fragment;
+
     if (flags & MATROSKA_METADATA_FLAG_FRAGMENT) {
-        if (len > LEN_MAX)
-            return 0;
+        if (len <= LEN_MAX) {
+            if (new_val) {
+                buf = realloc(ctxp->data, len);
+                if (buf == NULL)
+                    return MINUS_ERRNO;
+                ctxp->data = buf;
+            } else
+                buf = ctxp->data;
 
-        if (ctxp->first_fragment) {
-            buf = realloc(ctxp->data, len);
-            if (buf == NULL)
-                return MINUS_ERRNO;
-            ctxp->data = buf;
-        } else
-            buf = ctxp->data;
-
-        valbuf.data = memcpy(buf + ctxp->len, val->data, val->len);
-        valbuf.len = val->len;
+            valbuf.data = memcpy(buf + ctxp->len, val->data, val->len);
+            valbuf.len = val->len;
+        }
 
         ctxp->len += val->len;
 
@@ -471,7 +483,8 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
             ctxp->first_fragment = 1;
         }
 
-        val = &valbuf;
+        if (len <= LEN_MAX)
+            val = &valbuf;
     }
 
     buflen = strlen(id) + 1;
