@@ -7,8 +7,6 @@ LIBMATROSKALITE_1 {
         eid_to_u64;
         matroska_close;
         matroska_parser;
-        matroska_read_body;
-        matroska_read_header;
         matroska_semantic_processor;
         u64_to_edatasz;
         u64_to_edatasz_l;
@@ -48,6 +46,12 @@ LIBMATROSKALITE_30 {
 LIBMATROSKALITE_31 {
     global:
         ebml_parser;
+} LIBMATROSKALITE_30;
+
+LIBMATROSKALITE_39 {
+    global:
         ebml_read;
         matroska_read;
-} LIBMATROSKALITE_30;
+        matroska_read_body;
+        matroska_read_header;
+} LIBMATROSKALITE_31;

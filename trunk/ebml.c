@@ -214,15 +214,15 @@ read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen,
             if (res != 0)
                 return res;
         }
+        res = invoke_user_cb(value, etype, NULL, buf, sz, tot_elen, ebml, hdl);
+        if (res != 0)
+            return res;
         if (act != NULL) {
             res = (*act)(NULL, ETYPE_BINARY, NULL, buf, sz, tot_elen, hdl->off,
                          hdl->sproc_ctx);
             if (res != 0)
                 return res;
         }
-        res = invoke_user_cb(value, etype, NULL, buf, sz, tot_elen, ebml, hdl);
-        if (res != 0)
-            return res;
     }
 
     return 0;
@@ -506,11 +506,11 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
             return ERR_TAG(EIO);
     }
 
-    res = invoke_value_handler(val.type, act, &val, hdl);
+    res = invoke_user_cb(value, etype, &val, buf, 0, elen, ebml, hdl);
     if (res != 0)
         return res;
 
-    res = invoke_user_cb(value, etype, &val, buf, 0, elen, ebml, hdl);
+    res = invoke_value_handler(val.type, act, &val, hdl);
     if (res != 0)
         return res;
 
@@ -536,10 +536,10 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
 
     if (elen > sz) { /* read remaining EBML element data */
         memmove(buf, si, sz);
-        res = invoke_binary_handler(etype, act, buf, sz, elen, hdl);
+        res = invoke_user_cb(value, etype, NULL, buf, sz, elen, ebml, hdl);
         if (res != 0)
             return res;
-        res = invoke_user_cb(value, etype, NULL, buf, sz, elen, ebml, hdl);
+        res = invoke_binary_handler(etype, act, buf, sz, elen, hdl);
         if (res != 0)
             return res;
 
@@ -564,6 +564,12 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
     if (res != 0)
         return res;
 
+    if (!user_cb_invoked) {
+        res = invoke_user_cb(value, etype, &val, NULL, 0, elen, ebml, hdl);
+        if (res != 0)
+            goto err;
+    }
+
     if (ETYPE_IS_STRING(val.type)) {
         if (f != NULL) {
             res = fprintf(f, "%s", val.ptr);
@@ -581,12 +587,6 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
     res = invoke_binary_handler(val.type, act, NULL, elen, elen, hdl);
     if (res != 0)
         goto err;
-
-    if (!user_cb_invoked) {
-        res = invoke_user_cb(value, etype, &val, NULL, 0, elen, ebml, hdl);
-        if (res != 0)
-            goto err;
-    }
 
     free(val.ptr);
 
