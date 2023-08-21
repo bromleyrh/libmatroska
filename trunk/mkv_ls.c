@@ -425,9 +425,10 @@ static int
 metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
             void *ctx)
 {
-    char *buf, *value;
+    char *buf, *idbuf, *value;
     enum etype etype;
     int (*fn)(json_val_t *, matroska_metadata_t *, size_t, const char *);
+    int incremental;
     int new_val;
     int res;
     json_object_elem_t elem;
@@ -463,14 +464,28 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
             return res;
     }
 
+    buflen = strlen(id) + 1;
+
+    idbuf = malloc(2 * buflen);
+    if (idbuf == NULL)
+        return MINUS_ERRNO;
+    value = idbuf + buflen;
+
+    if (sscanf(id, "%s -> %s", idbuf, value) != 2)
+        goto end;
+
     new_val = ctxp->first_fragment;
+    incremental = strcmp("Block", value) == 0
+                  || strcmp("SimpleBlock", value) == 0;
 
     if (flags & MATROSKA_METADATA_FLAG_FRAGMENT) {
         if (len <= LEN_MAX) {
             if (new_val) {
                 buf = realloc(ctxp->data, len);
-                if (buf == NULL)
-                    return MINUS_ERRNO;
+                if (buf == NULL) {
+                    res = MINUS_ERRNO;
+                    goto err1;
+                }
                 ctxp->data = buf;
             } else
                 buf = ctxp->data;
@@ -481,11 +496,18 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
 
         ctxp->len += val->len;
 
-        if (ctxp->len < len)
+        if (ctxp->len < len) {
             ctxp->first_fragment = 0;
-        else {
+            if (!incremental)
+                goto end;
+        } else {
             ctxp->len = 0;
             ctxp->first_fragment = 1;
+
+            if (!incremental && len <= LEN_MAX) {
+                valbuf.data = buf;
+                valbuf.len = len;
+            }
         }
 
         if (len <= LEN_MAX)
@@ -497,19 +519,9 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
         ctxp->cb.elem = NULL;
     }
 
-    buflen = strlen(id) + 1;
-
-    buf = malloc(2 * buflen);
-    if (buf == NULL)
-        return MINUS_ERRNO;
-    value = buf + buflen;
-
-    if (sscanf(id, "%s -> %s", buf, value) != 2)
-        goto end;
-
     res = parser_look_up(flags & MATROSKA_METADATA_FLAG_HEADER
                          ? EBML_PARSER : MATROSKA_PARSER,
-                         buf, &id, &etype);
+                         idbuf, &id, &etype);
     if (res != 1) {
         if (res != 0)
             goto err1;
@@ -536,7 +548,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
     for (;;) {
         wchar_t *tmp;
 
-        id = ctxp->export ? buf : value;
+        id = ctxp->export ? idbuf : value;
         if (mbsrtowcs(key, &id, buflen, memset(&s, 0, sizeof(s)))
             == (size_t)-1) {
             res = MINUS_ERRNO;
@@ -568,24 +580,21 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
     res = json_val_object_insert_elem(jval, &elem);
     if (res != 0)
         goto err4;
+    key = NULL;
 
     json_val_free(elem.value);
 
     res = json_val_array_insert_elem(ctxp->cb.jval, jval);
-    if (res != 0) {
-        json_val_free(jval);
-        free(buf);
-        return res;
-    }
+    if (res != 0)
+        goto err3;
 
-    if (new_val
-        && (strcmp("Block", value) == 0 || strcmp("SimpleBlock", value) == 0))
+    if (new_val && incremental)
         ctxp->cb.elem = jval;
     else
         json_val_free(jval);
 
 end:
-    free(buf);
+    free(idbuf);
     return 0;
 
 err4:
@@ -595,7 +604,7 @@ err3:
 err2:
     free(key);
 err1:
-    free(buf);
+    free(idbuf);
     return res;
 }
 
