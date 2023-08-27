@@ -784,7 +784,7 @@ err1:
 int
 main(int argc, char **argv)
 {
-    int err;
+    int err, tmp;
     struct ctx ctx = {0};
 
     if (parse_cmdline(argc, argv, &ctx) != 0)
@@ -792,7 +792,9 @@ main(int argc, char **argv)
 
     err = cvt_mkv(STDIN_FILENO, &ctx);
 
-    free_cb(&ctx.cb);
+    tmp = free_cb(&ctx.cb);
+    if (tmp != 0)
+        err = tmp;
 
     return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }
