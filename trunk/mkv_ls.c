@@ -30,6 +30,9 @@ struct cb {
     FILE        *f;
     json_val_t  jval;
     json_val_t  elem;
+    char        *datapath;
+    int         datafd;
+    FILE        *dataf;
 };
 
 struct ctx {
@@ -63,7 +66,7 @@ int parser_look_up(const struct parser *, const char *, const char **,
 
 int matroska_print_err(FILE *, int);
 
-static int parse_elem_spec(const char *, int, struct cb *);
+static int parse_elem_spec(const char *, int, const char *, int, struct cb *);
 
 static int parse_cmdline(int, char **, struct ctx *);
 
@@ -95,17 +98,18 @@ static size_t json_write_cb(const char *, size_t, size_t, void *);
 static int cvt_mkv(int, struct ctx *);
 
 static int
-parse_elem_spec(const char *path, int fd, struct cb *cb)
+parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
+                struct cb *cb)
 {
     int err;
 
-    if (path == NULL) {
+    if (path1 == NULL) {
         cb->path = NULL;
-        cb->fd = fd;
+        cb->fd = fd1;
 
         cb->f = fdopen(cb->fd, "w");
     } else {
-        cb->path = strdup(path);
+        cb->path = strdup(path1);
         if (cb->path == NULL)
             return MINUS_ERRNO;
         cb->fd = -1;
@@ -119,37 +123,73 @@ parse_elem_spec(const char *path, int fd, struct cb *cb)
         return err;
     }
 
+    if (path2 == NULL) {
+        cb->datapath = NULL;
+        cb->datafd = fd2;
+
+        cb->dataf = fdopen(cb->datafd, "w");
+    } else {
+        cb->datapath = strdup(path2);
+        if (cb->datapath == NULL)
+            return MINUS_ERRNO;
+        cb->datafd = -1;
+
+        cb->dataf = fopen(cb->datapath, "w");
+    }
+    if (cb->dataf == NULL) {
+        err = MINUS_ERRNO;
+        fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
+        free(cb->datapath);
+        return err;
+    }
+
     return 0;
 }
 
 static int
 parse_cmdline(int argc, char **argv, struct ctx *ctx)
 {
-    char *sep;
+    char *sep1, *sep2;
     int err;
-    int fd;
+    int fd1, fd2;
 
     if (argc != 2) {
         fprintf(stderr, "%s\n",
                 argc < 2
-                ? "Must specify output file"
+                ? "Must specify output files"
                 : "Unrecognized arguments");
         return -EINVAL;
     }
 
-    sep = argv[1] + strcspn(argv[1], "#:");
-    if (*sep == '\0')
+    sep1 = argv[1] + strcspn(argv[1], "#:");
+    if (*sep1 == '\0')
         return -EINVAL;
-    fd = *sep == '#';
-    *sep++ = '\0';
+    fd1 = *sep1 == '#';
+    *sep1++ = '\0';
 
-    if (fd) {
-        fd = strtoimax(sep, NULL, 10);
-        sep = NULL;
+    sep2 = strchr(sep1, ';');
+    if (sep2 == NULL)
+        return -EINVAL;
+    *sep2++ = '\0';
+    if (*sep2 == '#') {
+        fd2 = 1;
+        ++sep2;
     } else
-        fd = -1;
+        fd2 = 0;
 
-    err = parse_elem_spec(sep, fd, &ctx->cb);
+    if (fd1) {
+        fd1 = strtoimax(sep1, NULL, 10);
+        sep1 = NULL;
+    } else
+        fd1 = -1;
+
+    if (fd2) {
+        fd2 = strtoimax(sep2, NULL, 10);
+        sep2 = NULL;
+    } else
+        fd2 = -1;
+
+    err = parse_elem_spec(sep1, fd1, sep2, fd2, &ctx->cb);
     if (!err)
         ctx->export = strcmp(argv[1], "e") == 0;
 
@@ -160,6 +200,18 @@ static int
 free_cb(struct cb *cb)
 {
     int err = 0;
+
+    if (fsync(fileno(cb->dataf)) == -1
+        && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
+        err = MINUS_ERRNO;
+
+    if (fclose(cb->dataf) == EOF)
+        err = MINUS_ERRNO;
+
+    if (err)
+        fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
+
+    free(cb->datapath);
 
     if (fsync(fileno(cb->f)) == -1
         && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
@@ -616,16 +668,13 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     json_object_elem_t elem;
     struct ctx *ctxp = ctx;
 
-    (void)buf;
-    (void)len;
     (void)totlen;
-    (void)off;
 
 /*    fprintf(stderr, "trackno %" PRIu64 ", ts %" PRIi16 ", keyframe %d, %p\n",
             trackno, ts, keyframe, ctxp->cb.elem);
 */
     if (ctxp->cb.elem == NULL)
-        return 0;
+        goto end;
 
     elem.value = json_val_new(JSON_TYPE_NUMBER);
     if (elem.value == NULL)
@@ -669,9 +718,45 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     if (err)
         goto err2;
 
+    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    if (elem.value == NULL)
+        return -ENOMEM;
+    json_val_numeric_set(elem.value, off);
+
+    elem.key = wcsdup(L"data_offset");
+    if (elem.key == NULL)
+        goto err1;
+
+    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    json_val_free(elem.value);
+    if (err)
+        goto err2;
+
+    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    if (elem.value == NULL)
+        return -ENOMEM;
+    json_val_numeric_set(elem.value, totlen);
+
+    elem.key = wcsdup(L"data_len");
+    if (elem.key == NULL)
+        goto err1;
+
+    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    json_val_free(elem.value);
+    if (err)
+        goto err2;
+
     ctxp->cb.elem = NULL;
     json_val_free(ctxp->cb.elem);
 
+end:
+    off = ftello(ctxp->cb.dataf);
+    if (off == -1)
+        return MINUS_ERRNO;
+    if (fwrite(buf, 1, len, ctxp->cb.dataf) != len) {
+        fprintf(stderr, "Error writing output: %s\n", strerror(errno));
+        return -EIO;
+    }
     return 0;
 
 err2:
@@ -789,6 +874,11 @@ main(int argc, char **argv)
 
     if (parse_cmdline(argc, argv, &ctx) != 0)
         return EXIT_FAILURE;
+
+    fprintf(stderr, "Metadata path %s, FD %d\n"
+                    "Data path %s, FD %d\n",
+            ctx.cb.path == NULL ? "NULL" : ctx.cb.path, ctx.cb.fd,
+            ctx.cb.datapath == NULL ? "NULL" : ctx.cb.datapath, ctx.cb.datafd);
 
     err = cvt_mkv(STDIN_FILENO, &ctx);
 
