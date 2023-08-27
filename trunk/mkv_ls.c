@@ -698,7 +698,7 @@ json_write_cb(const char *buf, size_t off, size_t len, void *ctx)
     towrite = end ? ret : len;
 
     ret = fwrite(buf, 1, towrite, f);
-    if (ret < towrite)
+    if (ret != towrite)
         return 0;
 
     if (end && fputc('\n', f) == EOF)
