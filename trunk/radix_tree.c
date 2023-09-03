@@ -43,7 +43,7 @@ struct walk_info {
 #define NODE_VALID(node) MAGIC_VALID(node, RADIX_TREE_NODE)
 
 #define FOREACH_CHILD(i, node, start) \
-    for ((i) = start; (i) < (int)ARRAY_SIZE((node)->children); (i)++)
+    for ((i) = start; (i) < ARRAY_SIZE((node)->children); (i)++)
 
 static int check_nchildren(struct radix_tree_node *);
 
@@ -83,7 +83,7 @@ static int do_serialize(struct radix_tree_node *, radix_tree_sr_cb_t, void *);
 static int
 check_nchildren(struct radix_tree_node *node)
 {
-    int i, n;
+    size_t i, n;
 
     n = 0;
     FOREACH_CHILD(i, node, 0) {
@@ -91,13 +91,13 @@ check_nchildren(struct radix_tree_node *node)
             ++n;
     }
 
-    return node->nchildren == n ? 0 : -EIO;
+    return (size_t)node->nchildren == n ? 0 : -EIO;
 }
 
 static void
 subtree_free(struct radix_tree_node *node)
 {
-    int i, n;
+    size_t i, n;
 
     if (node->nchildren > 0) {
         n = 0;
@@ -106,7 +106,7 @@ subtree_free(struct radix_tree_node *node)
                 continue;
             ++n;
             subtree_free(node->children[i]);
-            if (n == node->nchildren)
+            if (n == (size_t)node->nchildren)
                 break;
         }
     }
@@ -351,8 +351,8 @@ concat_labels(const char *label1, const char *label2, const char **newlabel)
 static int
 do_delete(struct radix_tree *rt, struct radix_tree_node *node, const char *str)
 {
-    int err;
-    int idx;
+    int ret;
+    size_t idx;
     struct radix_tree_edge edge;
     struct radix_tree_node *parent = NULL;
     unsigned char digit, parentidx = 0;
@@ -372,11 +372,11 @@ do_delete(struct radix_tree *rt, struct radix_tree_node *node, const char *str)
         if (find_edge(node, digit, &edge) == -1)
             return -EADDRNOTAVAIL;
 
-        idx = traverse_edge(&edge, &str);
-        if (idx == -1)
+        ret = traverse_edge(&edge, &str);
+        if (ret == -1)
             break;
 
-        if (edge.label[idx] != '\0')
+        if (edge.label[ret] != '\0')
             return -EADDRNOTAVAIL;
 
         parent = node;
@@ -402,10 +402,10 @@ do_delete(struct radix_tree *rt, struct radix_tree_node *node, const char *str)
         if (child == NULL)
             abort();
 
-        err = concat_labels(node->label, child->label,
+        ret = concat_labels(node->label, child->label,
                             (const char **)&newlabel);
-        if (err)
-            return err;
+        if (ret != 0)
+            return ret;
 
         parent->children[parentidx] = child;
 
@@ -464,7 +464,7 @@ process_children(struct walk_info *info, struct dynamic_array *str,
                  struct dynamic_array *nodestack, int *level)
 {
     int err;
-    int i;
+    size_t i;
     struct radix_tree_node *n = info->node;
     struct walk_info tmp;
 
@@ -473,7 +473,7 @@ process_children(struct walk_info *info, struct dynamic_array *str,
             break;
     }
 
-    if (i < (int)ARRAY_SIZE(n->children)) {
+    if (i < ARRAY_SIZE(n->children)) {
         info->childidx = i + 1;
 
         err = push_label(str, n->children[i]->label, &tmp.lenlabel);
