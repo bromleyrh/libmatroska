@@ -50,7 +50,7 @@ enum radix_tree_node_type {
 struct radix_tree_node {
     uint32_t                    magic:30;
     enum radix_tree_node_type   type:2;
-    const char                  *label;
+    char                        *label;
     struct radix_tree_node      *children[256];
     int                         nchildren;
     char                        val[]; /* used in information nodes */

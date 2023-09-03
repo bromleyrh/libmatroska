@@ -18,7 +18,7 @@
 #include <string.h>
 
 struct radix_tree_edge {
-    const char              *label;
+    char                    *label;
     struct radix_tree_node  *dst;
 };
 
@@ -151,7 +151,7 @@ new_node(struct radix_tree *rt, struct radix_tree_node **node,
 static void
 free_node(struct radix_tree_node *node)
 {
-    free((void *)node->label);
+    free(node->label);
     free(node);
 }
 
@@ -194,7 +194,7 @@ split_edge(struct radix_tree *rt, struct radix_tree_node *src,
            struct radix_tree_edge *edge, int idx, const char *str,
            const void *val)
 {
-    const char *newlabel;
+    char *newlabel;
     int err;
     struct radix_tree_node *branch_node, *info_node;
 
@@ -221,7 +221,7 @@ split_edge(struct radix_tree *rt, struct radix_tree_node *src,
     }
 
     src->children[(unsigned char)edge->label[0]] = branch_node;
-    free((void *)edge->dst->label);
+    free(edge->dst->label);
     edge->dst->label = newlabel;
 
 #ifndef NDEBUG
@@ -386,7 +386,7 @@ do_delete(struct radix_tree *rt, struct radix_tree_node *node, const char *str)
 
     if (node->type == NODE_TYPE_BRANCH && node->nchildren == 2) {
         /* merge node and remaining child */
-        const char *newlabel = NULL;
+        char *newlabel = NULL;
         struct radix_tree_node *child = NULL;
 
         assert(parent != NULL);
@@ -402,13 +402,14 @@ do_delete(struct radix_tree *rt, struct radix_tree_node *node, const char *str)
         if (child == NULL)
             abort();
 
-        err = concat_labels(node->label, child->label, &newlabel);
+        err = concat_labels(node->label, child->label,
+                            (const char **)&newlabel);
         if (err)
             return err;
 
         parent->children[parentidx] = child;
 
-        free((void *)child->label);
+        free(child->label);
         child->label = newlabel;
 
         free_node(node);
