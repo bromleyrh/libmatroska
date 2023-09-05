@@ -803,6 +803,22 @@ cvt_mkv(int infd, struct ctx *ctx)
 
     errmsg = "Error initializing";
 
+    errno = 0;
+    if (isatty(fileno(ctx->cb.dataf)) == 1) {
+        res = -EINVAL;
+        errmsg = NULL;
+        fputs("Standard output refers to a terminal device\n", stderr);
+        goto err1;
+    }
+    switch (errno) {
+    case ENOTTY:
+    case 0:
+        break;
+    default:
+        res = MINUS_ERRNO;
+        goto err1;
+    }
+
     res = json_init();
     if (res != 0)
         goto err1;
@@ -862,7 +878,8 @@ err2:
 err1:
     if (res > 0)
         res = matroska_print_err(stderr, res);
-    fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
+    if (errmsg != NULL)
+        fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
     return res;
 }
 
