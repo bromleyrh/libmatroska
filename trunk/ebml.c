@@ -63,30 +63,32 @@ static int ebml_file_get_fpos(void *, off_t *);
 
 static int read_elem_hdr(struct ebml_hdl *, char **, char *);
 static int read_elem_data(struct ebml_hdl *, char *, uint64_t, uint64_t, size_t,
-                          semantic_action_t *, const char *, enum etype, int);
+                          size_t, semantic_action_t *, const char *, enum etype,
+                          int);
 
 static int parse_eid(uint64_t *, size_t *, char *);
 static int parse_edatasz(uint64_t *, size_t *, char *);
 
-static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t,
+static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t, size_t,
                         semantic_action_t **, enum etype *, const char **, int,
                         uint64_t, FILE *);
 
-static int invoke_value_handler(enum etype, semantic_action_t *, edata_t *,
-                                struct ebml_hdl *);
+static int invoke_value_handler(enum etype, size_t, semantic_action_t *,
+                                edata_t *, struct ebml_hdl *);
 static int invoke_binary_handler(enum etype, semantic_action_t *, const char *,
-                                 size_t, size_t, struct ebml_hdl *);
+                                 size_t, size_t, size_t, struct ebml_hdl *);
 
 static int invoke_user_cb(const char *, enum etype, edata_t *, char *, uint64_t,
                           uint64_t, int, struct ebml_hdl *);
 
 static int handle_fixed_width_value(char **, char **, size_t, enum etype,
-                                    const char *, uint64_t, semantic_action_t *,
-                                    int, FILE *, struct ebml_hdl *);
+                                    const char *, uint64_t, size_t,
+                                    semantic_action_t *, int, FILE *,
+                                    struct ebml_hdl *);
 static int handle_variable_length_value(char *, char **, char **, size_t,
                                         size_t, enum etype, const char *,
-                                        uint64_t, semantic_action_t *, int,
-                                        FILE *, struct ebml_hdl *);
+                                        uint64_t, size_t, semantic_action_t *,
+                                        int, FILE *, struct ebml_hdl *);
 
 static int parse_header(FILE *, struct ebml_hdl *, int);
 
@@ -197,8 +199,9 @@ read_elem_hdr(struct ebml_hdl *hdl, char **buf, char *bufp)
 
 static int
 read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen,
-               uint64_t tot_elen, size_t bufsz, semantic_action_t *act,
-               const char *value, enum etype etype, int ebml)
+               uint64_t tot_elen, size_t hdrlen, size_t bufsz,
+               semantic_action_t *act, const char *value, enum etype etype,
+               int ebml)
 {
     char *di, *si;
     int res;
@@ -218,8 +221,8 @@ read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen,
         if (res != 0)
             return res;
         if (act != NULL) {
-            res = (*act)(NULL, ETYPE_BINARY, NULL, buf, sz, tot_elen, hdl->off,
-                         hdl->sproc_ctx);
+            res = (*act)(NULL, ETYPE_BINARY, NULL, buf, sz, tot_elen, hdrlen,
+                         hdl->off, hdl->sproc_ctx);
             if (res != 0)
                 return res;
         }
@@ -286,8 +289,8 @@ parse_edatasz(uint64_t *elen, size_t *sz, char *bufp)
 
 static int
 look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
-             semantic_action_t **act, enum etype *etype, const char **value,
-             int ebml, uint64_t n, FILE *f)
+             size_t hdrlen, semantic_action_t **act, enum etype *etype,
+             const char **value, int ebml, uint64_t n, FILE *f)
 {
     char idstr[7];
     const char *val = NULL;
@@ -323,7 +326,8 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
         if (res != 1)
             return ERR_TAG(-res);
 
-        res = (*action)(val, ret, NULL, NULL, 0, 0, hdl->off, hdl->sproc_ctx);
+        res = (*action)(val, ret, NULL, NULL, 0, 0, hdrlen, hdl->off,
+                        hdl->sproc_ctx);
         if (res != 0)
             return res;
     }
@@ -336,17 +340,18 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
 }
 
 static int
-invoke_value_handler(enum etype etype, semantic_action_t *act, edata_t *edata,
-                     struct ebml_hdl *hdl)
+invoke_value_handler(enum etype etype, size_t hdrlen, semantic_action_t *act,
+                     edata_t *edata, struct ebml_hdl *hdl)
 {
     return act != NULL
-           ? (*act)(NULL, etype, edata, NULL, 0, 0, hdl->off, hdl->sproc_ctx)
+           ? (*act)(NULL, etype, edata, NULL, 0, 0, hdrlen, hdl->off,
+                    hdl->sproc_ctx)
            : 0;
 }
 
 static int
 invoke_binary_handler(enum etype etype, semantic_action_t *act,
-                      const char *buf, size_t len, size_t totlen,
+                      const char *buf, size_t len, size_t totlen, size_t hdrlen,
                       struct ebml_hdl *hdl)
 {
     int res;
@@ -354,7 +359,7 @@ invoke_binary_handler(enum etype etype, semantic_action_t *act,
     if (etype != ETYPE_BINARY || act == NULL)
         return 0;
 
-    res = (*act)(NULL, ETYPE_BINARY, NULL, buf, len, totlen, hdl->off,
+    res = (*act)(NULL, ETYPE_BINARY, NULL, buf, len, totlen, hdrlen, hdl->off,
                  hdl->sproc_ctx);
     if (res == 1) {
         hdl->interrupt_read = 1;
@@ -441,7 +446,7 @@ end:
 
 static int
 handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
-                         const char *value, uint64_t elen,
+                         const char *value, uint64_t elen, size_t hdrlen,
                          semantic_action_t *act, int ebml, FILE *f,
                          struct ebml_hdl *hdl)
 {
@@ -510,7 +515,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
     if (res != 0)
         return res;
 
-    res = invoke_value_handler(val.type, act, &val, hdl);
+    res = invoke_value_handler(val.type, hdrlen, act, &val, hdl);
     if (res != 0)
         return res;
 
@@ -523,8 +528,9 @@ end:
 static int
 handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
                              size_t sz, enum etype etype, const char *value,
-                             uint64_t elen, semantic_action_t *act, int ebml,
-                             FILE *f, struct ebml_hdl *hdl)
+                             uint64_t elen, size_t hdrlen,
+                             semantic_action_t *act, int ebml, FILE *f,
+                             struct ebml_hdl *hdl)
 {
     char *di, *si;
     edata_t val;
@@ -539,18 +545,19 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         res = invoke_user_cb(value, etype, NULL, buf, sz, elen, ebml, hdl);
         if (res != 0)
             return res;
-        res = invoke_binary_handler(etype, act, buf, sz, elen, hdl);
+        res = invoke_binary_handler(etype, act, buf, sz, elen, hdrlen, hdl);
         if (res != 0)
             return res;
 
-        res = read_elem_data(hdl, buf + sz, elen - sz, elen, bufsz - sz,
+        res = read_elem_data(hdl, buf + sz, elen - sz, elen, hdrlen, bufsz - sz,
                              etype == ETYPE_BINARY ? act : NULL, value, etype,
                              ebml);
         if (res != 0)
             return res;
 
         if (elen > bufsz) {
-            res = invoke_binary_handler(etype, act, NULL, elen, elen, hdl);
+            res = invoke_binary_handler(etype, act, NULL, elen, elen, hdrlen,
+                                        hdl);
             if (res != 0)
                 return res;
             goto end;
@@ -579,12 +586,12 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
             }
         }
     } else if (elen <= sz) {
-        res = invoke_binary_handler(val.type, act, si, elen, elen, hdl);
+        res = invoke_binary_handler(val.type, act, si, elen, elen, hdrlen, hdl);
         if (res != 0)
             return res;
     }
 
-    res = invoke_binary_handler(val.type, act, NULL, elen, elen, hdl);
+    res = invoke_binary_handler(val.type, act, NULL, elen, elen, hdrlen, hdl);
     if (res != 0)
         goto err;
 
@@ -667,14 +674,15 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         const char *val;
         enum etype etype;
         int sz_unknown;
+        size_t hdrlen;
 
         /* parse EBML element ID */
-        res = parse_eid(&eid, &sz, si);
+        res = parse_eid(&eid, &hdrlen, si);
         if (res != 0)
             return res;
-        totlen = sz;
-        si += sz;
-        hdl->off += sz;
+        totlen = hdrlen;
+        si += hdrlen;
+        hdl->off += hdrlen;
 
         /* parse EBML element length */
         res = parse_edatasz(&elen, &sz, si);
@@ -683,11 +691,13 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         sz_unknown = elen == EDATASZ_UNKNOWN;
         if (sz_unknown)
             elen = 0;
+        hdrlen += sz;
         totlen += sz + elen;
         si += sz;
         hdl->off += sz;
 
-        res = look_up_elem(hdl, eid, elen, totlen, NULL, &etype, &val, 1, n, f);
+        res = look_up_elem(hdl, eid, elen, totlen, hdrlen, NULL, &etype, &val,
+                           1, n, f);
         if (res != 0)
             return res;
 
@@ -702,10 +712,11 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
 
             if (ETYPE_IS_FIXED_WIDTH(etype)) {
                 res = handle_fixed_width_value(&si, &di, sz, etype, val, elen,
-                                               NULL, 1, f, hdl);
+                                               hdrlen, NULL, 1, f, hdl);
             } else if (etype != ETYPE_MASTER) {
                 res = handle_variable_length_value(NULL, &si, &di, 0, sz, etype,
-                                                   val, elen, NULL, 1, f, hdl);
+                                                   val, elen, hdrlen, NULL, 1,
+                                                   f, hdl);
             } else if (flags & EBML_READ_FLAG_MASTER) {
                 res = invoke_user_cb(val, ETYPE_MASTER, NULL, NULL, 0, elen, 1,
                                      hdl);
@@ -740,6 +751,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         int sz_unknown;
         off_t off;
         semantic_action_t *act;
+        size_t hdrlen;
         size_t sz;
         uint64_t eid;
         uint64_t elen, totlen;
@@ -771,12 +783,12 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         }
 
         /* parse EBML element ID */
-        res = parse_eid(&eid, &sz, tmp);
+        res = parse_eid(&eid, &hdrlen, tmp);
         if (res != 0)
             return res;
-        totlen = sz;
-        hdl->si = tmp + sz;
-        hdl->off += sz;
+        totlen = hdrlen;
+        hdl->si = tmp + hdrlen;
+        hdl->off += hdrlen;
 
         /* parse EBML element length */
         res = parse_edatasz(&elen, &sz, hdl->si);
@@ -785,6 +797,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         sz_unknown = elen == EDATASZ_UNKNOWN;
         if (sz_unknown)
             elen = 0;
+        hdrlen += sz;
         totlen += sz + elen;
         hdl->si += sz;
         hdl->off += sz;
@@ -793,8 +806,8 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
             && fprintf(f, "body\t\t\t%" PRIu64 "\n", elen) < 0)
             return ERR_TAG(EIO);
 
-        res = look_up_elem(hdl, eid, elen, totlen, &act, &etype, &val, 0,
-                           hdl->n, f);
+        res = look_up_elem(hdl, eid, elen, totlen, hdrlen, &act, &etype, &val,
+                           0, hdl->n, f);
         if (res != 0)
             return res;
         if (etype == ETYPE_NONE)
@@ -822,11 +835,13 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         } else {
             if (ETYPE_IS_FIXED_WIDTH(etype)) {
                 res = handle_fixed_width_value(&hdl->si, &hdl->di, sz, etype,
-                                               val, elen, act, 0, f, hdl);
+                                               val, elen, hdrlen, act, 0, f,
+                                               hdl);
             } else {
                 res = handle_variable_length_value(hdl->buf, &hdl->si, &hdl->di,
                                                    sizeof(hdl->buf), sz, etype,
-                                                   val, elen, act, 0, f, hdl);
+                                                   val, elen, hdrlen, act, 0, f,
+                                                   hdl);
             }
             if (res != 0)
                 return res;

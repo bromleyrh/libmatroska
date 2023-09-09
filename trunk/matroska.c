@@ -79,6 +79,7 @@ struct matroska_state {
     off_t                   lacing_hdr_off;
     size_t                  lacing_nframes;
     size_t                  data_len;
+    size_t                  ebml_hdr_len;
     uint64_t                trackno;
     struct avl_tree         *track_data;
     int                     interrupt_read;
@@ -145,11 +146,11 @@ static int parse_ebml_lacing_header(const void *, size_t, size_t, size_t *,
 static int get_track_data(struct matroska_state *, uint64_t,
                           struct track_data **);
 
-static int return_track_data(const char *, size_t, size_t, off_t,
+static int return_track_data(const char *, size_t, size_t, size_t, off_t,
                              struct track_data *, struct matroska_state *);
 
 static int block_handler(const char *, enum etype, const void *, size_t, size_t,
-                         off_t, int, void *);
+                         size_t, off_t, int, void *);
 
 #ifdef DEBUG_OUTPUT
 static int
@@ -244,7 +245,8 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->next_frame_off = 0;
 
     err = return_track_data(bufp, state->lacing_hdr_len - hlen, totlen - hlen,
-                            state->lacing_hdr_off + hlen, tdata, state);
+                            state->ebml_hdr_len, state->lacing_hdr_off + hlen,
+                            tdata, state);
     if (err)
         return err;
 
@@ -323,7 +325,8 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->next_frame_off = 0;
 
     err = return_track_data(bufp, state->lacing_hdr_len - hlen, totlen - hlen,
-                            state->lacing_hdr_off + hlen, tdata, state);
+                            state->ebml_hdr_len, state->lacing_hdr_off + hlen,
+                            tdata, state);
     if (err)
         return err;
 
@@ -357,8 +360,9 @@ get_track_data(struct matroska_state *state, uint64_t trackno,
 }
 
 static int
-return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
-                  struct track_data *tdata, struct matroska_state *state)
+return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
+                  off_t off, struct track_data *tdata,
+                  struct matroska_state *state)
 {
     const char *dp, *sp;
     int res;
@@ -377,8 +381,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
             if (state->cb != NULL
                 && tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
-                                   tdata->num_stripped_bytes, totlen, off,
-                                   tdata->ts, tdata->keyframe, state->ctx);
+                                   tdata->num_stripped_bytes, totlen, hdrlen,
+                                   off, tdata->ts, tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
             }
@@ -390,8 +394,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
 
         if (seglen > 0) {
             if (state->cb != NULL) {
-                res = (*state->cb)(state->trackno, sp, seglen, totlen, off,
-                                   tdata->ts, tdata->keyframe, state->ctx);
+                res = (*state->cb)(state->trackno, sp, seglen, totlen, hdrlen,
+                                   off, tdata->ts, tdata->keyframe, state->ctx);
                 if (res != 0) {
                     if (res != 1)
                         return res;
@@ -423,12 +427,12 @@ return_track_data(const char *buf, size_t len, size_t totlen, off_t off,
 
 static int
 block_handler(const char *val, enum etype etype, const void *buf, size_t len,
-              size_t totlen, off_t off, int simple, void *ctx)
+              size_t totlen, size_t hdrlen, off_t off, int simple, void *ctx)
 {
     int ret = 0;
     int offset;
     lldiv_t q;
-    size_t datalen, hdrlen, sz;
+    size_t datalen, sz;
     struct matroska_state *state;
     struct track_data *tdata;
 
@@ -490,7 +494,8 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 
         if (state->cb != NULL) {
             ret = return_track_data((const char *)buf, len,
-                                    totlen - state->hdr_len, off, tdata, state);
+                                    totlen - state->hdr_len,
+                                    state->ebml_hdr_len, off, tdata, state);
             if (ret != 0)
                 return ret;
         }
@@ -506,6 +511,8 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         state->hdr_sz += BLOCK_HDR_FIXED_LEN;
 
         state->data_len = state->hdr_sz;
+
+        state->ebml_hdr_len = hdrlen;
 
         state->block_hdr = 2;
     }
@@ -691,7 +698,8 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
     state->data_len += datalen;
 
     return return_track_data((const char *)buf + sz, datalen - offset,
-                             totlen - offset, off + sz, tdata, state);
+                             totlen - offset, state->ebml_hdr_len, off + sz,
+                             tdata, state);
 }
 
 #undef BLOCK_HDR_FIXED_LEN
@@ -701,7 +709,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 int
 matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
                              const void *buf, size_t len, size_t totlen,
-                             off_t off, void *ctx)
+                             size_t hdrlen, off_t off, void *ctx)
 {
     int err;
     struct matroska_state *state = ctx;
@@ -710,6 +718,7 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
     (void)buf;
     (void)len;
     (void)totlen;
+    (void)hdrlen;
     (void)off;
 
     if (state->track_data == NULL) {
@@ -758,27 +767,28 @@ err:
 int
 matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                              const void *buf, size_t len, size_t totlen,
-                             off_t off, void *ctx)
+                             size_t hdrlen, off_t off, void *ctx)
 {
     (void)edata;
 
-    return block_handler(val, etype, buf, len, totlen, off, 1, ctx);
+    return block_handler(val, etype, buf, len, totlen, hdrlen, off, 1, ctx);
 }
 
 int
 matroska_block_handler(const char *val, enum etype etype, edata_t *edata,
-                       const void *buf, size_t len, size_t totlen, off_t off,
-                       void *ctx)
+                       const void *buf, size_t len, size_t totlen,
+                       size_t hdrlen, off_t off, void *ctx)
 {
     (void)edata;
 
-    return block_handler(val, etype, buf, len, totlen, off, 0, ctx);
+    return block_handler(val, etype, buf, len, totlen, hdrlen, off, 0, ctx);
 }
 
 int
 matroska_contentcompalgo_handler(const char *val, enum etype etype,
                                  edata_t *edata, const void *buf, size_t len,
-                                 size_t totlen, off_t off, void *ctx)
+                                 size_t totlen, size_t hdrlen, off_t off,
+                                 void *ctx)
 {
     int err;
     struct matroska_state *state;
@@ -786,6 +796,7 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
     (void)buf;
     (void)len;
     (void)totlen;
+    (void)hdrlen;
     (void)off;
 
     if (etype != ETYPE_UINTEGER)
@@ -815,8 +826,8 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
 int
 matroska_contentcompsettings_handler(const char *val, enum etype etype,
                                      edata_t *edata, const void *buf,
-                                     size_t len, size_t totlen, off_t off,
-                                     void *ctx)
+                                     size_t len, size_t totlen, size_t hdrlen,
+                                     off_t off, void *ctx)
 {
     int err;
     struct matroska_state *state;
@@ -824,6 +835,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 
     (void)edata;
     (void)totlen;
+    (void)hdrlen;
     (void)off;
 
     if (etype != ETYPE_BINARY)
