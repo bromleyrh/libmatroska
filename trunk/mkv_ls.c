@@ -668,8 +668,6 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     json_object_elem_t elem;
     struct ctx *ctxp = ctx;
 
-    (void)hdrlen;
-
 /*    fprintf(stderr, "trackno %" PRIu64 ", ts %" PRIi16 ", keyframe %d, %p\n",
             trackno, ts, keyframe, ctxp->cb.elem);
 */
@@ -724,6 +722,20 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     json_val_numeric_set(elem.value, off);
 
     elem.key = wcsdup(L"data_offset");
+    if (elem.key == NULL)
+        goto err1;
+
+    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    json_val_free(elem.value);
+    if (err)
+        goto err2;
+
+    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    if (elem.value == NULL)
+        return -ENOMEM;
+    json_val_numeric_set(elem.value, hdrlen);
+
+    elem.key = wcsdup(L"hdr_len");
     if (elem.key == NULL)
         goto err1;
 
