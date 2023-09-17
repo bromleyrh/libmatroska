@@ -512,7 +512,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 
         state->data_len = state->hdr_sz;
 
-        state->ebml_hdr_len = hdrlen;
+        state->ebml_hdr_len = hdrlen + state->hdr_sz;
 
         state->block_hdr = 2;
     }
@@ -698,8 +698,8 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
     state->data_len += datalen;
 
     return return_track_data((const char *)buf + sz, datalen - offset,
-                             totlen - offset, state->ebml_hdr_len, off + sz,
-                             tdata, state);
+                             totlen - offset, state->ebml_hdr_len + offset,
+                             off + sz, tdata, state);
 }
 
 #undef BLOCK_HDR_FIXED_LEN
