@@ -122,7 +122,7 @@ static const char *const compalg_typemap[] = {
 #ifdef DEBUG_OUTPUT
 #define debug_puts(s) fputs(s, stderr)
 #define debug_printf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
-#define PRINT_HANDLER_INFO(val) print_handler(stderr, __FUNCTION__, val)
+#define PRINT_HANDLER_INFO(val) print_handler(stderr, __func__, val)
 #else
 #define debug_puts(s) ((void)0)
 #define debug_printf(fmt, ...) ((void)0)
