@@ -273,14 +273,15 @@ free_ecb(struct avl_tree *ecb)
 }
 
 static int
-metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
-            void *ctx)
+metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
+            int flags, void *ctx)
 {
     int res;
     struct ctx *ctxp = ctx;
     struct elem_cb e;
 
     (void)id;
+    (void)hdrlen;
     (void)flags;
 
     if (ctxp->datalen == 0)

@@ -5,6 +5,7 @@
 #define _FILE_OFFSET_BITS 64
 
 #include "common.h"
+#include "debug.h"
 #include "matroska.h"
 #include "parser.h"
 
@@ -474,8 +475,8 @@ end:
 }
 
 static int
-metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
-            void *ctx)
+metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
+            int flags, void *ctx)
 {
     char *buf, *idbuf, *value;
     enum etype etype;
@@ -502,6 +503,8 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, int flags,
         [ETYPE_MASTER]      = &cvt_master_to_number,
         [ETYPE_BINARY]      = &cvt_binary_to_string
     };
+
+    (void)hdrlen;
 
     if (ctxp->header && !(flags & MATROSKA_METADATA_FLAG_HEADER)) {
         ctxp->header = 0;

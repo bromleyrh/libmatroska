@@ -27,8 +27,8 @@ struct ebml_file_args {
     const char  *pathname;
 };
 
-typedef int ebml_metadata_cb_t(const char *, matroska_metadata_t *, size_t, int,
-                               void *);
+typedef int ebml_metadata_cb_t(const char *, matroska_metadata_t *, size_t,
+                               size_t, int, void *);
 
 extern const ebml_io_fns_t ebml_file_fns;
 #define EBML_FILE_FNS (&ebml_file_fns)
