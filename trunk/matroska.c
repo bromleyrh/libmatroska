@@ -480,7 +480,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         if (state->lacing_hdr == 1) {
             ret = (state->lacing_type == BLOCK_FLAG_LACING_XIPH
                    ? parse_xiph_lacing_header
-                   : parse_ebml_lacing_header)((const char *)buf, len,
+                   : parse_ebml_lacing_header)(buf, len,
                                                totlen - state->hdr_len - 1,
                                                &hdrlen, &offset, tdata, state);
             if (ret != 1)
@@ -493,8 +493,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         }
 
         if (state->cb != NULL) {
-            ret = return_track_data((const char *)buf, len,
-                                    totlen - state->hdr_len,
+            ret = return_track_data(buf, len, totlen - state->hdr_len,
                                     state->ebml_hdr_len, off, tdata, state);
             if (ret != 0)
                 return ret;
