@@ -504,8 +504,6 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         [ETYPE_BINARY]      = &cvt_binary_to_string
     };
 
-    (void)hdrlen;
-
     if (ctxp->header && !(flags & MATROSKA_METADATA_FLAG_HEADER)) {
         ctxp->header = 0;
 
@@ -638,6 +636,53 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     key = NULL;
 
     json_val_free(elem.value);
+
+    if (!incremental) {
+        elem.value = json_val_new(JSON_TYPE_NUMBER);
+        if (elem.value == NULL) {
+            res = -ENOMEM;
+            goto err3;
+        }
+        json_val_numeric_set(elem.value, hdrlen);
+
+        key = wcsdup(L"hdr_len");
+        if (key == NULL) {
+            res = MINUS_ERRNO;
+            goto err4;
+        }
+
+        elem.key = key;
+
+        res = json_val_object_insert_elem(jval, &elem);
+        if (res != 0)
+            goto err4;
+
+        json_val_free(elem.value);
+
+        if (etype != ETYPE_MASTER) {
+            elem.value = json_val_new(JSON_TYPE_NUMBER);
+            if (elem.value == NULL) {
+                res = -ENOMEM;
+                goto err3;
+            }
+            json_val_numeric_set(elem.value, len);
+
+            key = wcsdup(L"data_len");
+            if (key == NULL) {
+                res = MINUS_ERRNO;
+                goto err4;
+            }
+
+            elem.key = key;
+
+            res = json_val_object_insert_elem(jval, &elem);
+            if (res != 0)
+                goto err4;
+            key = NULL;
+
+            json_val_free(elem.value);
+        }
+    }
 
     res = json_val_array_insert_elem(ctxp->cb.jval, jval);
     if (res != 0)
