@@ -119,7 +119,6 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
     }
     if (cb->f == NULL) {
         err = MINUS_ERRNO;
-        fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
         goto err1;
     }
 
@@ -140,7 +139,6 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
     }
     if (cb->dataf == NULL) {
         err = MINUS_ERRNO;
-        fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
         goto err3;
     }
 
@@ -152,6 +150,7 @@ err2:
     fclose(cb->f);
 err1:
     free(cb->path);
+    fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
     return err;
 }
 
