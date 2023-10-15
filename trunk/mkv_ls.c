@@ -120,8 +120,7 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
     if (cb->f == NULL) {
         err = MINUS_ERRNO;
         fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
-        free(cb->path);
-        return err;
+        goto err1;
     }
 
     if (path2 == NULL) {
@@ -131,8 +130,10 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->dataf = fdopen(cb->datafd, "w");
     } else {
         cb->datapath = strdup(path2);
-        if (cb->datapath == NULL)
-            return MINUS_ERRNO;
+        if (cb->datapath == NULL) {
+            err = MINUS_ERRNO;
+            goto err2;
+        }
         cb->datafd = -1;
 
         cb->dataf = fopen(cb->datapath, "w");
@@ -140,11 +141,18 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
     if (cb->dataf == NULL) {
         err = MINUS_ERRNO;
         fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
-        free(cb->datapath);
-        return err;
+        goto err3;
     }
 
     return 0;
+
+err3:
+    free(cb->datapath);
+err2:
+    fclose(cb->f);
+err1:
+    free(cb->path);
+    return err;
 }
 
 static int
