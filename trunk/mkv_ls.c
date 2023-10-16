@@ -722,6 +722,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     int err;
     json_object_elem_t elem;
     struct ctx *ctxp = ctx;
+    wchar_t *key;
 
 /*    fprintf(stderr, "trackno %" PRIu64 ", ts %" PRIi16 ", keyframe %d, %p\n",
             trackno, ts, keyframe, ctxp->cb.elem);
@@ -734,9 +735,10 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
         return -ENOMEM;
     json_val_numeric_set(elem.value, trackno);
 
-    elem.key = wcsdup(L"trackno");
-    if (elem.key == NULL)
+    key = wcsdup(L"trackno");
+    if (key == NULL)
         goto err1;
+    elem.key = key;
 
     err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
     json_val_free(elem.value);
@@ -748,9 +750,10 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
         return -ENOMEM;
     json_val_numeric_set(elem.value, ts);
 
-    elem.key = wcsdup(L"ts");
-    if (elem.key == NULL)
+    key = wcsdup(L"ts");
+    if (key == NULL)
         goto err1;
+    elem.key = key;
 
     err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
     json_val_free(elem.value);
@@ -762,9 +765,10 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
         return -ENOMEM;
     json_val_boolean_set(elem.value, keyframe);
 
-    elem.key = wcsdup(L"keyframe");
-    if (elem.key == NULL)
+    key = wcsdup(L"keyframe");
+    if (key == NULL)
         goto err1;
+    elem.key = key;
 
     err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
     json_val_free(elem.value);
@@ -776,9 +780,10 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
         return -ENOMEM;
     json_val_numeric_set(elem.value, off);
 
-    elem.key = wcsdup(L"data_offset");
-    if (elem.key == NULL)
+    key = wcsdup(L"data_offset");
+    if (key == NULL)
         goto err1;
+    elem.key = key;
 
     err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
     json_val_free(elem.value);
@@ -790,9 +795,10 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
         return -ENOMEM;
     json_val_numeric_set(elem.value, hdrlen);
 
-    elem.key = wcsdup(L"hdr_len");
-    if (elem.key == NULL)
+    key = wcsdup(L"hdr_len");
+    if (key == NULL)
         goto err1;
+    elem.key = key;
 
     err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
     json_val_free(elem.value);
@@ -804,9 +810,10 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
         return -ENOMEM;
     json_val_numeric_set(elem.value, totlen);
 
-    elem.key = wcsdup(L"data_len");
-    if (elem.key == NULL)
+    key = wcsdup(L"data_len");
+    if (key == NULL)
         goto err1;
+    elem.key = key;
 
     err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
     json_val_free(elem.value);
@@ -827,7 +834,7 @@ end:
     return 0;
 
 err2:
-    free((void *)elem.key);
+    free(key);
     return err;
 
 err1:
