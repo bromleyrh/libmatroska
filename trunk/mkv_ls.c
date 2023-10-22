@@ -9,6 +9,8 @@
 #include "matroska.h"
 #include "parser.h"
 
+#include <checksums.h>
+
 #include <json.h>
 
 #include <errno.h>
@@ -34,6 +36,9 @@ struct cb {
     char        *datapath;
     int         datafd;
     FILE        *dataf;
+    char        *tracepath;
+    int         tracefd;
+    FILE        *tracef;
 };
 
 struct ctx {
@@ -67,7 +72,8 @@ int parser_look_up(const struct parser *, const char *, const char **,
 
 int matroska_print_err(FILE *, int);
 
-static int parse_elem_spec(const char *, int, const char *, int, struct cb *);
+static int parse_elem_spec(const char *, int, const char *, int, const char *,
+                           int, struct cb *);
 
 static int parse_cmdline(int, char **, struct ctx *);
 
@@ -100,34 +106,29 @@ static int cvt_mkv(int, struct ctx *);
 
 static int
 parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
-                struct cb *cb)
+                const char *path3, int fd3, struct cb *cb)
 {
     int err;
 
-    if (path1 == NULL) {
-        cb->path = NULL;
-        cb->fd = fd1;
-
-        cb->f = fdopen(cb->fd, "w");
-    } else {
+    if (path1 != NULL) {
         cb->path = strdup(path1);
         if (cb->path == NULL)
             return MINUS_ERRNO;
         cb->fd = -1;
 
         cb->f = fopen(cb->path, "w");
+    } else {
+        cb->path = NULL;
+        cb->fd = fd1;
+
+        cb->f = fdopen(cb->fd, "w");
     }
     if (cb->f == NULL) {
         err = MINUS_ERRNO;
         goto err1;
     }
 
-    if (path2 == NULL) {
-        cb->datapath = NULL;
-        cb->datafd = fd2;
-
-        cb->dataf = fdopen(cb->datafd, "w");
-    } else {
+    if (path2 != NULL) {
         cb->datapath = strdup(path2);
         if (cb->datapath == NULL) {
             err = MINUS_ERRNO;
@@ -136,14 +137,49 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->datafd = -1;
 
         cb->dataf = fopen(cb->datapath, "w");
+    } else {
+        cb->datapath = NULL;
+        cb->datafd = fd2;
+
+        cb->dataf = fdopen(cb->datafd, "w");
     }
     if (cb->dataf == NULL) {
         err = MINUS_ERRNO;
         goto err3;
     }
 
+    if (path3 != NULL) {
+        cb->tracepath = strdup(path3);
+        if (cb->tracepath == NULL) {
+            err = MINUS_ERRNO;
+            goto err4;
+        }
+        cb->tracefd = -1;
+
+        cb->tracef = fopen(cb->tracepath, "w");
+    } else if (fd3 != -1) {
+        cb->tracepath = NULL;
+        cb->tracefd = fd3;
+
+        cb->tracef = fdopen(cb->tracefd, "w");
+    } else {
+        cb->tracepath = NULL;
+        cb->tracefd = -1;
+        cb->tracef = NULL;
+        goto end;
+    }
+    if (cb->tracef == NULL) {
+        err = MINUS_ERRNO;
+        goto err5;
+    }
+
+end:
     return 0;
 
+err5:
+    free(cb->tracepath);
+err4:
+    fclose(cb->dataf);
 err3:
     free(cb->datapath);
 err2:
@@ -157,9 +193,9 @@ err1:
 static int
 parse_cmdline(int argc, char **argv, struct ctx *ctx)
 {
-    char *sep1, *sep2;
+    char *sep1, *sep2, *sep3;
     int err;
-    int fd1, fd2;
+    int fd1, fd2, fd3;
 
     if (argc != 2) {
         fprintf(stderr, "%s\n",
@@ -185,6 +221,18 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
     } else
         fd2 = 0;
 
+    sep3 = strchr(sep2, ';');
+    if (sep3 == NULL)
+        fd3 = 0;
+    else {
+        *sep3++ = '\0';
+        if (*sep3 == '#') {
+            fd3 = 1;
+            ++sep3;
+        } else
+            fd3 = 0;
+    }
+
     if (fd1) {
         fd1 = strtoimax(sep1, NULL, 10);
         sep1 = NULL;
@@ -197,7 +245,13 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
     } else
         fd2 = -1;
 
-    err = parse_elem_spec(sep1, fd1, sep2, fd2, &ctx->cb);
+    if (fd3) {
+        fd3 = strtoimax(sep3, NULL, 10);
+        sep3 = NULL;
+    } else
+        fd3 = -1;
+
+    err = parse_elem_spec(sep1, fd1, sep2, fd2, sep3, fd3, &ctx->cb);
     if (!err)
         ctx->export = strcmp(argv[1], "e") == 0;
 
@@ -208,6 +262,20 @@ static int
 free_cb(struct cb *cb)
 {
     int err = 0;
+
+    if (cb->tracef != NULL) {
+        if (fsync(fileno(cb->tracef)) == -1
+            && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
+            err = MINUS_ERRNO;
+
+        if (fclose(cb->tracef) == EOF)
+            err = MINUS_ERRNO;
+
+        if (err)
+            fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
+
+        free(cb->tracepath);
+    }
 
     if (fsync(fileno(cb->dataf)) == -1
         && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
@@ -824,14 +892,40 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     json_val_free(ctxp->cb.elem);
 
 end:
+
     off = ftello(ctxp->cb.dataf);
     if (off == -1)
         return MINUS_ERRNO;
-    if (fwrite(buf, 1, len, ctxp->cb.dataf) != len) {
-        fprintf(stderr, "Error writing output: %s\n", strerror(errno));
-        return -EIO;
+    if (fwrite(buf, 1, len, ctxp->cb.dataf) != len)
+        goto err3;
+
+    if (ctxp->cb.tracef != NULL) {
+        struct adler32_ctx *cctx;
+        uint32_t sum;
+
+        cctx = adler32_init();
+        if (cctx == NULL)
+            return -ENOMEM;
+        err = adler32_update(cctx, buf, len);
+        if (err) {
+            adler32_end(cctx, NULL);
+            return err;
+        }
+        err = adler32_end(cctx, &sum);
+        if (err)
+            return err;
+
+        if (fprintf(ctxp->cb.tracef, "%10" PRIi64 "\t%7zu\t0x%08" PRIx32 "\n",
+                    off, totlen, sum)
+            < 0)
+            goto err3;
     }
+
     return 0;
+
+err3:
+    fprintf(stderr, "Error writing output: %s\n", strerror(errno));
+    return -EIO;
 
 err2:
     free(key);
@@ -967,9 +1061,12 @@ main(int argc, char **argv)
         return EXIT_FAILURE;
 
     fprintf(stderr, "Metadata path %s, FD %d\n"
-                    "Data path %s, FD %d\n",
+                    "Data path %s, FD %d\n"
+                    "Trace path %s, FD %d\n",
             ctx.cb.path == NULL ? "NULL" : ctx.cb.path, ctx.cb.fd,
-            ctx.cb.datapath == NULL ? "NULL" : ctx.cb.datapath, ctx.cb.datafd);
+            ctx.cb.datapath == NULL ? "NULL" : ctx.cb.datapath, ctx.cb.datafd,
+            ctx.cb.tracepath == NULL ? "NULL" : ctx.cb.tracepath,
+            ctx.cb.tracefd);
 
     err = cvt_mkv(STDIN_FILENO, &ctx);
 
