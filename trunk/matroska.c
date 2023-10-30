@@ -217,7 +217,7 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
     for (i = 0; i < state->lacing_nframes - 1; i++) {
         framesz = 0;
         for (;;) {
-            unsigned char val = (unsigned char)*bufp;
+            unsigned char val = *bufp;
 
             framesz += val;
             ++bufp;
