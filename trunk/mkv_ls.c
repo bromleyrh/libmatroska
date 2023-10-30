@@ -46,6 +46,9 @@ struct ctx {
     char        *data;
     size_t      len;
     off_t       off;
+    char        *tracebuf;
+    size_t      tracebuflen;
+    size_t      tracebufsz;
     unsigned    header:1;
     unsigned    first_fragment:1;
     int         export;
@@ -902,14 +905,32 @@ end:
     if (fwrite(buf, 1, len, ctxp->cb.dataf) != len)
         goto err3;
 
-    if (ctxp->cb.tracef != NULL) {
+    if (ctxp->cb.tracef == NULL)
+        return 0;
+
+    if (ctxp->tracebufsz < totlen) {
+        char *tmp;
+
+        tmp = realloc(ctxp->tracebuf, totlen);
+        if (tmp == NULL)
+            return MINUS_ERRNO;
+        ctxp->tracebuf = tmp;
+        ctxp->tracebufsz = totlen;
+    }
+
+    memcpy(ctxp->tracebuf + ctxp->tracebuflen, buf, len);
+
+    ctxp->tracebuflen += len;
+    assert(ctxp->tracebuflen <= totlen);
+
+    if (ctxp->tracebuflen == totlen) {
         struct adler32_ctx *cctx;
         uint32_t sum;
 
         cctx = adler32_init();
         if (cctx == NULL)
             return -ENOMEM;
-        err = adler32_update(cctx, buf, len);
+        err = adler32_update(cctx, ctxp->tracebuf, ctxp->tracebuflen);
         if (err) {
             adler32_end(cctx, NULL);
             return err;
@@ -918,10 +939,13 @@ end:
         if (err)
             return err;
 
-        if (fprintf(ctxp->cb.tracef, "%10" PRIi64 "\t%7zu\t0x%08" PRIx32 "\n",
-                    off, totlen, sum)
+        if (fprintf(ctxp->cb.tracef,
+                    "%10" PRIi64 "\t%7zu\t0x%08" PRIx32 "\n",
+                    off + len - ctxp->tracebuflen, ctxp->tracebuflen, sum)
             < 0)
             goto err3;
+
+        ctxp->tracebuflen = 0;
     }
 
     return 0;
@@ -1009,6 +1033,9 @@ cvt_mkv(int infd, struct ctx *ctx)
     }
 
     ctx->off = 0;
+
+    ctx->tracebuf = NULL;
+    ctx->tracebuflen = ctx->tracebufsz = 0;
 
     ctx->header = 1;
     ctx->first_fragment = 1;
