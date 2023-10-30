@@ -45,6 +45,7 @@ struct ctx {
     struct cb   cb;
     char        *data;
     size_t      len;
+    off_t       off;
     unsigned    header:1;
     unsigned    first_fragment:1;
     int         export;
@@ -846,7 +847,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     elem.value = json_val_new(JSON_TYPE_NUMBER);
     if (elem.value == NULL)
         return -ENOMEM;
-    json_val_numeric_set(elem.value, off);
+    json_val_numeric_set(elem.value, ctxp->off);
 
     key = wcsdup(L"data_offset");
     if (key == NULL)
@@ -887,6 +888,8 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     json_val_free(elem.value);
     if (err)
         goto err2;
+
+    ctxp->off += totlen;
 
     ctxp->cb.elem = NULL;
     json_val_free(ctxp->cb.elem);
@@ -1004,6 +1007,8 @@ cvt_mkv(int infd, struct ctx *ctx)
         errmsg = "Error opening input file";
         goto err3;
     }
+
+    ctx->off = 0;
 
     ctx->header = 1;
     ctx->first_fragment = 1;
