@@ -80,6 +80,7 @@ struct matroska_state {
     size_t                  lacing_nframes;
     size_t                  data_len;
     size_t                  ebml_hdr_len;
+    size_t                  num_frames;
     uint64_t                trackno;
     struct avl_tree         *track_data;
     int                     interrupt_read;
@@ -374,6 +375,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
 
     frame_off = tdata->next_frame_off;
 
+    totlen += state->num_frames * tdata->num_stripped_bytes;
+
     for (sp = buf;; sp = dp) {
         dp = sp + MIN(len, frame_off);
 
@@ -620,6 +623,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         debug_printf("%zu laced frames of size %zu byte%s\n", tdata->num_frames,
                      PL(tdata->frame_sz[0]));
 
+        state->num_frames = tdata->num_frames;
         tdata->num_frames = 1;
 
         offset = 1;
@@ -691,7 +695,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
     default:
         tdata->frame_sz[0] = totlen;
         tdata->frame_idx = 0;
-        tdata->num_frames = 1;
+        tdata->num_frames = state->num_frames = 1;
         offset = 0;
         break;
     }
