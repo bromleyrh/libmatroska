@@ -481,8 +481,8 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             ret = (state->lacing_type == BLOCK_FLAG_LACING_XIPH
                    ? parse_xiph_lacing_header
                    : parse_ebml_lacing_header)(buf, len,
-                                               totlen - state->hdr_len - 1,
-                                               &hdrlen, &offset, tdata, state);
+                                               totlen - state->hdr_len, &hdrlen,
+                                               &offset, tdata, state);
             if (ret != 1)
                 return ret;
 
@@ -623,6 +623,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         tdata->num_frames = 1;
 
         offset = 1;
+        ++state->hdr_len;
         ++sz;
 
         break;
@@ -654,6 +655,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             }
 
             offset = 1;
+            ++state->hdr_len;
             ++sz;
 
             state->lacing_hdr_off = off + sz;
@@ -677,6 +679,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             state->lacing_hdr = 2;
 
             offset += hdrlen;
+            state->hdr_len += hdrlen;
             /* fallthrough */
         case 2:
             break;
