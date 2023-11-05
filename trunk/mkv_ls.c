@@ -789,12 +789,15 @@ err1:
 
 static int
 bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
-             size_t hdrlen, off_t off, int16_t ts, int keyframe, void *ctx)
+             size_t hdrlen, size_t num_logical_bytes, off_t off, int16_t ts,
+             int keyframe, void *ctx)
 {
     int err;
     json_object_elem_t elem;
     struct ctx *ctxp = ctx;
     wchar_t *key;
+
+    (void)num_logical_bytes;
 
 /*    fprintf(stderr, "trackno %" PRIu64 ", ts %" PRIi16 ", keyframe %d, %p\n",
             trackno, ts, keyframe, ctxp->cb.elem);

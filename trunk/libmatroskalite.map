@@ -49,9 +49,12 @@ LIBMATROSKALITE_31 {
 } LIBMATROSKALITE_30;
 
 LIBMATROSKALITE_39 {
+} LIBMATROSKALITE_31;
+
+LIBMATROSKALITE_53 {
     global:
         ebml_read;
         matroska_read;
         matroska_read_body;
         matroska_read_header;
-} LIBMATROSKALITE_31;
+} LIBMATROSKALITE_39;

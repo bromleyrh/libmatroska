@@ -368,6 +368,7 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
     const char *dp, *sp;
     int res;
     size_t frame_off;
+    size_t num_logical_bytes;
     size_t seglen;
 
     if (len == 0)
@@ -375,7 +376,11 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
 
     frame_off = tdata->next_frame_off;
 
-    totlen += state->num_frames * tdata->num_stripped_bytes;
+    if (tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
+        num_logical_bytes = state->num_frames * tdata->num_stripped_bytes;
+        totlen += num_logical_bytes;
+    } else
+        num_logical_bytes = 0;
 
     for (sp = buf;; sp = dp) {
         dp = sp + MIN(len, frame_off);
@@ -385,7 +390,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
                 && tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
                                    tdata->num_stripped_bytes, totlen, hdrlen,
-                                   off, tdata->ts, tdata->keyframe, state->ctx);
+                                   num_logical_bytes, off, tdata->ts,
+                                   tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
             }
@@ -398,7 +404,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
         if (seglen > 0) {
             if (state->cb != NULL) {
                 res = (*state->cb)(state->trackno, sp, seglen, totlen, hdrlen,
-                                   off, tdata->ts, tdata->keyframe, state->ctx);
+                                   num_logical_bytes, off, tdata->ts,
+                                   tdata->keyframe, state->ctx);
                 if (res != 0) {
                     if (res != 1)
                         return res;

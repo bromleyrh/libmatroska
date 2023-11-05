@@ -182,7 +182,8 @@ free_tcb(struct avl_tree *tcb)
 
 static int
 bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
-             size_t hdrlen, off_t off, int16_t ts, int keyframe, void *ctx)
+             size_t hdrlen, size_t num_logical_bytes, off_t off, int16_t ts,
+             int keyframe, void *ctx)
 {
     int res;
     struct ctx *ctxp = ctx;
@@ -190,6 +191,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
 
     (void)totlen;
     (void)hdrlen;
+    (void)num_logical_bytes;
     (void)off;
     (void)ts;
     (void)keyframe;
