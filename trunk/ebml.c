@@ -178,7 +178,18 @@ read_elem_hdr(struct ebml_hdl *hdl, char **buf, char *bufp)
 {
     char *di, *si;
     int res;
+    off_t off;
     ssize_t nbytes;
+
+    if ((*hdl->fns->get_fpos)(hdl->ctx, &off) == 0) {
+        off -= bufp - *buf;
+        if (hdl->off != off) {
+            fprintf(stderr, "Synchronization error: file offset %" PRIi64
+                            " byte%s (%+" PRIi64 " byte%s)\n",
+                    PL(hdl->off), PL(hdl->off - off));
+            abort();
+        }
+    }
 
     si = bufp;
     di = *buf + EID_MAX_LEN + EDATASZ_MAX_LEN;
