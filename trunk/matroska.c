@@ -246,8 +246,8 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->next_frame_off = 0;
 
     err = return_track_data(bufp, state->lacing_hdr_len - hlen, totlen - hlen,
-                            state->ebml_hdr_len, state->lacing_hdr_off + hlen,
-                            tdata, state);
+                            state->ebml_hdr_len + hlen,
+                            state->lacing_hdr_off + hlen, tdata, state);
     if (err)
         return err;
 
@@ -326,8 +326,8 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->next_frame_off = 0;
 
     err = return_track_data(bufp, state->lacing_hdr_len - hlen, totlen - hlen,
-                            state->ebml_hdr_len, state->lacing_hdr_off + hlen,
-                            tdata, state);
+                            state->ebml_hdr_len + hlen,
+                            state->lacing_hdr_off + hlen, tdata, state);
     if (err)
         return err;
 
@@ -493,6 +493,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             len -= offset;
 
             state->hdr_len += hdrlen;
+            state->ebml_hdr_len += hdrlen;
 
             state->lacing_hdr = 2;
         }
@@ -630,6 +631,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 
         offset = 1;
         ++state->hdr_len;
+        ++state->ebml_hdr_len;
         ++sz;
 
         break;
@@ -662,6 +664,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 
             offset = 1;
             ++state->hdr_len;
+            ++state->ebml_hdr_len;
             ++sz;
 
             state->lacing_hdr_off = off + sz;
@@ -686,6 +689,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 
             offset += hdrlen;
             state->hdr_len += hdrlen;
+            state->ebml_hdr_len += hdrlen;
             /* fallthrough */
         case 2:
             break;
@@ -706,7 +710,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
     state->data_len += datalen;
 
     return return_track_data((const char *)buf + sz, datalen - offset,
-                             totlen - offset, state->ebml_hdr_len + offset,
+                             totlen - offset, state->ebml_hdr_len,
                              off + sz, tdata, state);
 }
 
