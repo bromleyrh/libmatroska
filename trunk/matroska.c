@@ -492,6 +492,8 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             buf = (const char *)buf + offset;
             len -= offset;
 
+            state->hdr_len += hdrlen;
+
             state->lacing_hdr = 2;
         }
 
