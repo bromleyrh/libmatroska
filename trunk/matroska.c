@@ -76,9 +76,9 @@ struct matroska_state {
     char                    *lacing_hdr_buf;
     size_t                  lacing_hdr_len;
     size_t                  lacing_hdr_sz;
-    off_t                   lacing_hdr_off;
     size_t                  lacing_nframes;
     size_t                  data_len;
+    off_t                   data_off;
     size_t                  ebml_hdr_len;
     size_t                  num_frames;
     uint64_t                trackno;
@@ -246,8 +246,8 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->next_frame_off = 0;
 
     err = return_track_data(bufp, state->lacing_hdr_len - hlen, totlen - hlen,
-                            state->ebml_hdr_len + hlen,
-                            state->lacing_hdr_off + hlen, tdata, state);
+                            state->ebml_hdr_len + hlen, state->data_off + hlen,
+                            tdata, state);
     if (err)
         return err;
 
@@ -326,8 +326,8 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->next_frame_off = 0;
 
     err = return_track_data(bufp, state->lacing_hdr_len - hlen, totlen - hlen,
-                            state->ebml_hdr_len + hlen,
-                            state->lacing_hdr_off + hlen, tdata, state);
+                            state->ebml_hdr_len + hlen, state->data_off + hlen,
+                            tdata, state);
     if (err)
         return err;
 
@@ -492,6 +492,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             buf = (const char *)buf + offset;
             len -= offset;
 
+            state->data_off += hdrlen;
             state->hdr_len += hdrlen;
             state->ebml_hdr_len += hdrlen;
 
@@ -500,7 +501,8 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 
         if (state->cb != NULL) {
             ret = return_track_data(buf, len, totlen - state->hdr_len,
-                                    state->ebml_hdr_len, off, tdata, state);
+                                    state->ebml_hdr_len, state->data_off, tdata,
+                                    state);
             if (ret != 0)
                 return ret;
         }
@@ -515,9 +517,10 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         state->hdr_len = 0;
         state->hdr_sz += BLOCK_HDR_FIXED_LEN;
 
-        state->data_len = state->hdr_sz;
-
         state->ebml_hdr_len = hdrlen + state->hdr_sz;
+
+        state->data_len = state->hdr_sz;
+        state->data_off = off + state->ebml_hdr_len;
 
         state->block_hdr = 2;
     }
@@ -630,6 +633,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         tdata->num_frames = 1;
 
         offset = 1;
+        ++state->data_off;
         ++state->hdr_len;
         ++state->ebml_hdr_len;
         ++sz;
@@ -663,11 +667,10 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             }
 
             offset = 1;
+            ++state->data_off;
             ++state->hdr_len;
             ++state->ebml_hdr_len;
             ++sz;
-
-            state->lacing_hdr_off = off + sz;
 
             state->lacing_hdr = 1;
             /* fallthrough */
@@ -688,6 +691,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             state->lacing_hdr = 2;
 
             offset += hdrlen;
+            state->data_off += hdrlen;
             state->hdr_len += hdrlen;
             state->ebml_hdr_len += hdrlen;
             /* fallthrough */
@@ -711,7 +715,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
 
     return return_track_data((const char *)buf + sz, datalen - offset,
                              totlen - offset, state->ebml_hdr_len,
-                             off + sz, tdata, state);
+                             state->data_off, tdata, state);
 }
 
 #undef BLOCK_HDR_FIXED_LEN
