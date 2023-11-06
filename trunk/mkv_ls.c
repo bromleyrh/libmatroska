@@ -45,7 +45,10 @@ struct ctx {
     struct cb   cb;
     char        *data;
     size_t      len;
+    off_t       baseoff;
     off_t       off;
+    size_t      totmdlen;
+    size_t      totlogbytes;
     char        *tracebuf;
     size_t      tracebuflen;
     size_t      tracebufsz;
@@ -560,7 +563,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     char *buf, *idbuf, *value;
     enum etype etype;
     int (*fn)(json_val_t *, matroska_metadata_t *, size_t, const char *);
-    int incremental;
+    int block;
     int new_val;
     int res;
     json_object_elem_t elem;
@@ -604,11 +607,10 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     value = idbuf + buflen;
 
     if (sscanf(id, "%s -> %s", idbuf, value) != 2)
-        goto end;
+        goto end1;
 
     new_val = ctxp->first_fragment;
-    incremental = strcmp("Block", value) == 0
-                  || strcmp("SimpleBlock", value) == 0;
+    block = strcmp("Block", value) == 0 || strcmp("SimpleBlock", value) == 0;
 
     if (flags & MATROSKA_METADATA_FLAG_FRAGMENT) {
         if (len <= LEN_MAX) {
@@ -630,13 +632,13 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         if (ctxp->len < len) {
             ctxp->first_fragment = 0;
-            if (!incremental)
-                goto end;
+            if (!block)
+                goto end2;
         } else {
             ctxp->len = 0;
             ctxp->first_fragment = 1;
 
-            if (!incremental && len <= LEN_MAX) {
+            if (!block && len <= LEN_MAX) {
                 valbuf.data = buf;
                 valbuf.len = len;
             }
@@ -657,7 +659,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     if (res != 1) {
         if (res != 0)
             goto err1;
-        goto end;
+        goto end2;
     }
 
     if (etype >= ARRAY_SIZE(fns)) {
@@ -716,7 +718,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
     json_val_free(elem.value);
 
-    if (!incremental) {
+    if (!block) {
         elem.value = json_val_new(JSON_TYPE_NUMBER);
         if (elem.value == NULL) {
             res = -ENOMEM;
@@ -767,12 +769,18 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     if (res != 0)
         goto err3;
 
-    if (new_val && incremental)
+    if (new_val && block)
         ctxp->cb.elem = jval;
     else
         json_val_free(jval);
 
-end:
+end2:
+    if (new_val && !block) {
+        ctxp->totmdlen += hdrlen;
+        if (etype != ETYPE_MASTER)
+            ctxp->totmdlen += len;
+    }
+end1:
     free(idbuf);
     return 0;
 
@@ -796,8 +804,6 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     json_object_elem_t elem;
     struct ctx *ctxp = ctx;
     wchar_t *key;
-
-    (void)num_logical_bytes;
 
 /*    fprintf(stderr, "trackno %" PRIu64 ", ts %" PRIi16 ", keyframe %d, %p\n",
             trackno, ts, keyframe, ctxp->cb.elem);
@@ -880,6 +886,27 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
     if (err)
         goto err2;
 
+    ctxp->totmdlen += hdrlen;
+
+    off -= ctxp->totmdlen;
+    off += ctxp->totlogbytes;
+    if (ctxp->baseoff == -1) {
+        if (off != 0) {
+            fprintf(stderr, "Synchronization error: nonzero base offset (%"
+                            PRIi64 " byte%s)\n",
+                    PL(off));
+            return -EIO;
+        }
+        ctxp->baseoff = 0;
+    }
+
+    if (off != ctxp->off) {
+        fprintf(stderr, "Synchronization error: offset %" PRIi64 " byte%s "
+                        "(%+" PRIi64 " byte%s)\n",
+                PL(off), PL(off - ctxp->off));
+        return -EIO;
+    }
+
     elem.value = json_val_new(JSON_TYPE_NUMBER);
     if (elem.value == NULL)
         return -ENOMEM;
@@ -896,6 +923,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
         goto err2;
 
     ctxp->off += totlen;
+    ctxp->totlogbytes += num_logical_bytes;
 
     ctxp->cb.elem = NULL;
     json_val_free(ctxp->cb.elem);
@@ -1035,7 +1063,10 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err3;
     }
 
+    ctx->baseoff = -1;
     ctx->off = 0;
+    ctx->totmdlen = 0;
+    ctx->totlogbytes = 0;
 
     ctx->tracebuf = NULL;
     ctx->tracebuflen = ctx->tracebufsz = 0;
