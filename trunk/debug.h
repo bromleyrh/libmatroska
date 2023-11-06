@@ -42,8 +42,11 @@ struct err_info_bt {
         ++signature; \
     } while (0)
 
-#define TRACE_SIGNATURE(enabled, sig, handler) \
+#define _TRACE_SIGNATURE(enabled, sig, handler) \
     _TRACE_SIGNATURE_##enabled(__LINE__, sig, trace_handler_##handler)
+
+#define TRACE_SIGNATURE(enabled, sig, handler) \
+    _TRACE_SIGNATURE(enabled, sig, handler)
 
 #define trace_handler_0() raise(SIGTRAP)
 
