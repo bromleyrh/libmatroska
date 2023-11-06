@@ -527,7 +527,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
         state->ebml_hdr_len = hdrlen + state->hdr_sz;
 
         state->data_len = state->hdr_sz;
-        state->data_off = off + state->ebml_hdr_len;
+        state->data_off = off + state->hdr_sz;
 
         state->block_hdr = 2;
     }
