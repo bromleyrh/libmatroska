@@ -655,7 +655,7 @@ block_handler(const char *val, enum etype etype, const void *buf, size_t len,
             state->lacing_nframes = *((unsigned char *)buf + sz) + 1;
 
             state->lacing_hdr_sz = state->lacing_type == BLOCK_FLAG_LACING_XIPH
-                                   ? totlen
+                                   ? totlen - 1
                                    : state->lacing_nframes
                                      * ETYPE_MAX_FIXED_WIDTH;
             state->lacing_hdr_buf = malloc(state->lacing_hdr_sz);
