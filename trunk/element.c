@@ -218,10 +218,26 @@ edatasz_to_u64(const char *x, uint64_t *y, size_t *sz)
 EXPORTED int
 u64_to_edatasz(uint64_t x, char *y, size_t *bufsz)
 {
+    int err;
+    size_t tmpsz;
+    uint64_t tmp;
+
     if (x == EDATASZ_UNKNOWN)
         x = vintmax(1) + 1;
 
-    return u64_to_vint(x, y, bufsz);
+    err = u64_to_vint(x, y, bufsz);
+    if (err)
+        return err;
+
+    err = edatasz_to_u64(y, &tmp, &tmpsz);
+    if (!err && tmp == EDATASZ_UNKNOWN) {
+        ++tmpsz;
+        err = u64_to_edatasz_l(x, y, tmpsz);
+        if (!err)
+            *bufsz = tmpsz;
+    }
+
+    return err;
 }
 
 EXPORTED int
