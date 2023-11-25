@@ -383,20 +383,25 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
         num_logical_bytes = 0;
 
     for (sp = buf;; sp = dp) {
+        int new_frame;
+
         dp = sp + MIN(len, frame_off);
 
-        if ((size_t)(sp - buf) == tdata->next_frame_off) {
+        new_frame = (size_t)(sp - buf) == tdata->next_frame_off;
+
+        if (new_frame) {
             if (state->cb != NULL
                 && tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
                                    tdata->num_stripped_bytes, totlen, hdrlen,
-                                   num_logical_bytes, off, tdata->ts,
+                                   num_logical_bytes, off, tdata->ts, 1,
                                    tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
             }
             assert((size_t)tdata->frame_idx < tdata->num_frames);
             tdata->next_frame_off += tdata->frame_sz[tdata->frame_idx];
+            new_frame = 0;
         }
 
         seglen = dp - sp;
@@ -404,7 +409,7 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
         if (seglen > 0) {
             if (state->cb != NULL) {
                 res = (*state->cb)(state->trackno, sp, seglen, totlen, hdrlen,
-                                   num_logical_bytes, off, tdata->ts,
+                                   num_logical_bytes, off, tdata->ts, new_frame,
                                    tdata->keyframe, state->ctx);
                 if (res != 0) {
                     if (res != 1)
