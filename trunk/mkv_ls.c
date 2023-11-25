@@ -802,19 +802,33 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 {
     int err;
     json_object_elem_t elem;
+    json_val_t jval;
     struct ctx *ctxp = ctx;
     wchar_t *key;
 
-    (void)new_frame;
-    (void)framelen;
+    (void)totlen;
 
     jval = ctxp->cb.elem;
 
 /*    fprintf(stderr, "trackno %" PRIu64 ", ts %" PRIi16 ", keyframe %d, %p\n",
-            trackno, ts, keyframe, ctxp->cb.elem);
+            trackno, ts, keyframe, jval);
 */
-    if (ctxp->cb.elem == NULL)
-        goto end;
+    if (jval == NULL) {
+        if (!new_frame)
+            goto end;
+
+        fprintf(stderr, "New frame in same block at %" PRIi64 " byte%s\n",
+                PL(ctxp->off));
+
+        jval = json_val_new(JSON_TYPE_OBJECT);
+        if (jval == NULL)
+            return -ENOMEM;
+
+        err = json_val_array_insert_elem(ctxp->cb.jval, jval);
+        if (err)
+            return err;
+    } else
+        new_frame = 0;
 
     elem.value = json_val_new(JSON_TYPE_NUMBER);
     if (elem.value == NULL)
@@ -826,7 +840,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    err = json_val_object_insert_elem(jval, &elem);
     json_val_free(elem.value);
     if (err)
         goto err2;
@@ -841,7 +855,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    err = json_val_object_insert_elem(jval, &elem);
     json_val_free(elem.value);
     if (err)
         goto err2;
@@ -856,7 +870,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    err = json_val_object_insert_elem(jval, &elem);
     json_val_free(elem.value);
     if (err)
         goto err2;
@@ -871,7 +885,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    err = json_val_object_insert_elem(jval, &elem);
     json_val_free(elem.value);
     if (err)
         goto err2;
@@ -886,52 +900,55 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    err = json_val_object_insert_elem(jval, &elem);
     json_val_free(elem.value);
     if (err)
         goto err2;
 
-    ctxp->totmdlen += hdrlen;
+    if (!new_frame) {
+        ctxp->totmdlen += hdrlen;
 
-    off -= ctxp->totmdlen;
-    off += ctxp->totlogbytes;
-    if (ctxp->baseoff == -1) {
-        if (off != 0) {
-            fprintf(stderr, "Synchronization error: nonzero base offset (%"
-                            PRIi64 " byte%s)\n",
-                    PL(off));
+        off -= ctxp->totmdlen;
+        off += ctxp->totlogbytes;
+        if (ctxp->baseoff == -1) {
+            if (off != 0) {
+                fprintf(stderr, "Synchronization error: nonzero base offset (%"
+                                PRIi64 " byte%s)\n",
+                        PL(off));
+                return -EIO;
+            }
+            ctxp->baseoff = 0;
+        }
+
+        if (off != ctxp->off) {
+            fprintf(stderr, "Synchronization error: offset %" PRIi64 " byte%s "
+                            "(%+" PRIi64 " byte%s)\n",
+                    PL(off), PL(off - ctxp->off));
             return -EIO;
         }
-        ctxp->baseoff = 0;
-    }
-
-    if (off != ctxp->off) {
-        fprintf(stderr, "Synchronization error: offset %" PRIi64 " byte%s "
-                        "(%+" PRIi64 " byte%s)\n",
-                PL(off), PL(off - ctxp->off));
-        return -EIO;
     }
 
     elem.value = json_val_new(JSON_TYPE_NUMBER);
     if (elem.value == NULL)
         return -ENOMEM;
-    json_val_numeric_set(elem.value, totlen);
+    json_val_numeric_set(elem.value, framelen);
 
     key = wcsdup(L"data_len");
     if (key == NULL)
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(ctxp->cb.elem, &elem);
+    err = json_val_object_insert_elem(jval, &elem);
     json_val_free(elem.value);
     if (err)
         goto err2;
 
-    ctxp->off += totlen;
-    ctxp->totlogbytes += num_logical_bytes;
+    ctxp->off += framelen;
+    if (!new_frame)
+        ctxp->totlogbytes += num_logical_bytes;
 
     ctxp->cb.elem = NULL;
-    json_val_free(ctxp->cb.elem);
+    json_val_free(jval);
 
 end:
 
@@ -944,22 +961,22 @@ end:
     if (ctxp->cb.tracef == NULL)
         return 0;
 
-    if (ctxp->tracebufsz < totlen) {
+    if (ctxp->tracebufsz < framelen) {
         char *tmp;
 
-        tmp = realloc(ctxp->tracebuf, totlen);
+        tmp = realloc(ctxp->tracebuf, framelen);
         if (tmp == NULL)
             return MINUS_ERRNO;
         ctxp->tracebuf = tmp;
-        ctxp->tracebufsz = totlen;
+        ctxp->tracebufsz = framelen;
     }
 
     memcpy(ctxp->tracebuf + ctxp->tracebuflen, buf, len);
 
     ctxp->tracebuflen += len;
-    assert(ctxp->tracebuflen <= totlen);
+    assert(ctxp->tracebuflen <= framelen);
 
-    if (ctxp->tracebuflen == totlen) {
+    if (ctxp->tracebuflen == framelen) {
         struct adler32_ctx *cctx;
         uint32_t sum;
 
