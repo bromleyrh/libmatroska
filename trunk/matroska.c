@@ -384,23 +384,26 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
 
     for (sp = buf;; sp = dp) {
         int new_frame;
+        size_t framelen;
 
         dp = sp + MIN(len, frame_off);
 
         new_frame = (size_t)(sp - buf) == tdata->next_frame_off;
+        framelen = tdata->frame_sz[tdata->frame_idx];
 
         if (new_frame) {
             if (state->cb != NULL
                 && tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
                 res = (*state->cb)(state->trackno, tdata->stripped_bytes,
-                                   tdata->num_stripped_bytes, totlen, hdrlen,
-                                   num_logical_bytes, off, tdata->ts, 1,
+                                   tdata->num_stripped_bytes,
+                                   tdata->num_stripped_bytes + framelen, totlen,
+                                   hdrlen, num_logical_bytes, off, tdata->ts, 1,
                                    tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
             }
             assert((size_t)tdata->frame_idx < tdata->num_frames);
-            tdata->next_frame_off += tdata->frame_sz[tdata->frame_idx];
+            tdata->next_frame_off += framelen;
             new_frame = 0;
         }
 
@@ -408,9 +411,10 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
 
         if (seglen > 0) {
             if (state->cb != NULL) {
-                res = (*state->cb)(state->trackno, sp, seglen, totlen, hdrlen,
-                                   num_logical_bytes, off, tdata->ts, new_frame,
-                                   tdata->keyframe, state->ctx);
+                res = (*state->cb)(state->trackno, sp, seglen,
+                                   tdata->num_stripped_bytes + framelen, totlen,
+                                   hdrlen, num_logical_bytes, off, tdata->ts,
+                                   new_frame, tdata->keyframe, state->ctx);
                 if (res != 0) {
                     if (res != 1)
                         return res;

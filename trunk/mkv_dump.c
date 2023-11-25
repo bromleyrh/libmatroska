@@ -319,14 +319,15 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 }
 
 static int
-bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t totlen,
-             size_t hdrlen, size_t num_logical_bytes, off_t off, int16_t ts,
-             int new_frame, int keyframe, void *ctx)
+bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
+             size_t totlen, size_t hdrlen, size_t num_logical_bytes, off_t off,
+             int16_t ts, int new_frame, int keyframe, void *ctx)
 {
     int res;
     struct ctx *ctxp = ctx;
     struct track_cb e;
 
+    (void)framelen;
     (void)totlen;
     (void)hdrlen;
     (void)num_logical_bytes;
