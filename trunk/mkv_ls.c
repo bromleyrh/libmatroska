@@ -45,6 +45,7 @@ struct ctx {
     struct cb   cb;
     char        *data;
     size_t      len;
+    size_t      remlen;
     off_t       baseoff;
     off_t       off;
     size_t      totmdlen;
@@ -830,6 +831,14 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     } else
         new_frame = 0;
 
+    if (ctxp->remlen != 0) {
+        fputs("Synchronization error: total length of frames in block output "
+              "too small\n",
+              stderr);
+        return -EIO;
+    }
+    ctxp->remlen = framelen;
+
     elem.value = json_val_new(JSON_TYPE_NUMBER);
     if (elem.value == NULL)
         return -ENOMEM;
@@ -958,6 +967,14 @@ end:
     if (fwrite(buf, 1, len, ctxp->cb.dataf) != len)
         goto err3;
 
+    if (len > ctxp->remlen) {
+        fputs("Synchronization error: total length of frames in block output "
+              "too large\n",
+              stderr);
+        return -EIO;
+    }
+    ctxp->remlen -= len;
+
     if (ctxp->cb.tracef == NULL)
         return 0;
 
@@ -1085,6 +1102,7 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err3;
     }
 
+    ctx->remlen = 0;
     ctx->baseoff = -1;
     ctx->off = 0;
     ctx->totmdlen = 0;
@@ -1110,6 +1128,14 @@ cvt_mkv(int infd, struct ctx *ctx)
     res = matroska_close(hdl);
     if (res != 0) {
         errmsg = "Error closing input file";
+        goto err3;
+    }
+
+    if (ctx->remlen != 0) {
+        fputs("Synchronization error: total length of frames in block output "
+              "too small\n",
+              stderr);
+        res = -EIO;
         goto err3;
     }
 
