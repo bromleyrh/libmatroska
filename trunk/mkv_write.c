@@ -91,8 +91,8 @@ typedef int cvt_jval_to_metadata_fn_t(matroska_metadata_t *, size_t *,
                                       json_val_t, json_val_t, const char *,
                                       struct ctx *);
 
-int parser_look_up(const struct parser *, const char *, const char **,
-                   enum etype *);
+int parser_look_up(const struct parser *, const char *,
+                   const struct elem_data **, const struct elem_data **);
 
 int matroska_print_err(FILE *, int);
 
@@ -923,6 +923,7 @@ write_mkv(int infd, struct ctx *ctx)
     for (i = 0; i < m; i++) {
         char *name;
         const char *value;
+        const struct elem_data *data;
         cvt_jval_to_metadata_fn_t *fn;
         enum etype etype;
         int continued;
@@ -1001,7 +1002,7 @@ write_mkv(int infd, struct ctx *ctx)
             etype = lastetype;
         } else {
             res = parser_look_up(header ? EBML_PARSER : MATROSKA_PARSER, buf,
-                                 &value, &etype);
+                                 &data, NULL);
             if (res != 1) {
                 if (res == 0)
                     res = -EILSEQ;
@@ -1011,8 +1012,8 @@ write_mkv(int infd, struct ctx *ctx)
             free(buf);
             buf = NULL;
 
-            lastvalue = value;
-            lastetype = etype;
+            lastvalue = value = data->val;
+            lastetype = etype = data->etype;
         }
 
         if (etype >= ARRAY_SIZE(fns)) {
@@ -1177,7 +1178,7 @@ separate_data(int infd, struct ctx *ctx)
     for (i = 0; i < m; i++) {
         char *name;
         const char *value;
-        enum etype etype;
+        const struct elem_data *data;
         size_t buflen;
 
         e = json_val_array_get_elem(jval, i);
@@ -1229,14 +1230,15 @@ separate_data(int infd, struct ctx *ctx)
             json_val_free(elem.value);
         }
 
-        res = parser_look_up(header ? EBML_PARSER : MATROSKA_PARSER, buf,
-                             &value, &etype);
+        res = parser_look_up(header ? EBML_PARSER : MATROSKA_PARSER, buf, &data,
+                             NULL);
         free(buf);
         if (res != 1) {
             if (res == 0)
                 res = -EILSEQ;
             goto err5;
         }
+        value = data->val;
 
         buflen = strlen(value) + 1;
 

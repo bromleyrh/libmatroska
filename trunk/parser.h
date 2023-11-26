@@ -23,6 +23,12 @@ typedef int semantic_action_t(const char *, enum etype, edata_t *, void **,
                               size_t *, void **, size_t *, size_t, size_t,
                               off_t, void *, int);
 
+struct elem_data {
+    const char          *val;
+    semantic_action_t   *act;
+    enum etype          etype;
+};
+
 extern const struct parser ebml_parser;
 #define EBML_PARSER (&ebml_parser)
 
@@ -35,7 +41,8 @@ extern const struct semantic_processor matroska_semantic_processor;
 const char *parser_desc(const struct parser *parser);
 
 int parser_look_up(const struct parser *parser, const char *str,
-                   const char **val, enum etype *etype);
+                   const struct elem_data **data,
+                   const struct elem_data **ebml_parent);
 
 int semantic_processor_look_up(const struct semantic_processor *sproc,
                                const char *str, semantic_action_t **act);

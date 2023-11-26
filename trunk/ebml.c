@@ -412,9 +412,8 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
              const char **value, int ebml, uint64_t n, FILE *f)
 {
     char idstr[7];
-    const char *val = NULL;
+    const struct elem_data *datap, *parentp;
     const struct parser *parsers[2];
-    enum etype ret = ETYPE_NONE;
     int found;
     int res;
     semantic_action_t *action = NULL;
@@ -435,12 +434,13 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
     found = 0;
 
     for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-        res = parser_look_up(parsers[i], idstr, &val, &ret);
+        res = parser_look_up(parsers[i], idstr, &datap, &parentp);
         if (res < 0)
             return ERR_TAG(-res);
         if (res == 1) {
             if (f != NULL
-                && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), val) < 0)
+                && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), datap->val)
+                   < 0)
                 return ERR_TAG(EIO);
             found = 1;
         }
@@ -453,16 +453,16 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
         if (res != 1)
             return ERR_TAG(-res);
 
-        res = (*action)(val, ret, NULL, NULL, 0, NULL, 0, 0, hdrlen, hdl->off,
-                        hdl->sproc_ctx, 0);
+        res = (*action)(datap->val, datap->etype, NULL, NULL, 0, NULL, 0, 0,
+                        hdrlen, hdl->off, hdl->sproc_ctx, 0);
         if (res != 0)
             return res;
     }
 
     if (act != NULL)
         *act = action;
-    *etype = ret;
-    *value = val;
+    *etype = datap->etype;
+    *value = datap->val;
     return 0;
 }
 
@@ -1098,7 +1098,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
            int flags)
 {
     char tmbuf[64];
-    const char *value;
+    const struct elem_data *data;
     edata_t d;
     enum etype etype;
     int res;
@@ -1112,9 +1112,10 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
 
     res = parser_look_up(flags & EBML_WRITE_FLAG_HEADER
                          ? hdl->parser_ebml : hdl->parser_doc,
-                         id, &value, &etype);
+                         id, &data, NULL);
     if (res != 1)
         return ERR_TAG(res == 0 ? EINVAL : -res);
+    etype = data->etype;
 
     fprintf(stderr, "%s: ", id);
     switch (etype) {

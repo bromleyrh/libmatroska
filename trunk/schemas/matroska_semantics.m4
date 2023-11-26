@@ -10,15 +10,15 @@ ppush(`EBMLSemantics')
 
 <EBMLSemanticsSchema>
 
-    pushe(`ElementHandler', `0xD7',
+    pushe(`ElementHandler1', `0xD7',
           `type="master" handler="matroska_tracknumber_handler"')
-    nexte(`ElementHandler', `0xA3',
+    nexte(`ElementHandler2', `0xA3',
           `type="master" handler="matroska_simpleblock_handler"')
-    nexte(`ElementHandler', `0xA1',
+    nexte(`ElementHandler3', `0xA1',
           `type="master" handler="matroska_block_handler"')
-    nexte(`ElementHandler', `0x4254',
+    nexte(`ElementHandler4', `0x4254',
           `type="uinteger" handler="matroska_contentcompalgo_handler"')
-    nexte(`ElementHandler', `0x4255',
+    nexte(`ElementHandler5', `0x4255',
           `type="binary" handler="matroska_contentcompsettings_handler"')
     ppop()
 

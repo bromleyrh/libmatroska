@@ -75,8 +75,8 @@ struct ctx {
 
 #define TIME_GRAN 1000000000
 
-int parser_look_up(const struct parser *, const char *, const char **,
-                   enum etype *);
+int parser_look_up(const struct parser *, const char *,
+                   const struct elem_data **, const struct elem_data **);
 
 int matroska_print_err(FILE *, int);
 
@@ -562,7 +562,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             int flags, void *ctx)
 {
     char *buf, *idbuf, *value;
-    enum etype etype = ETYPE_NONE;
+    const struct elem_data *data = NULL;
     int (*fn)(json_val_t *, matroska_metadata_t *, size_t, const char *);
     int block;
     int new_val;
@@ -656,18 +656,18 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
     res = parser_look_up(flags & MATROSKA_METADATA_FLAG_HEADER
                          ? EBML_PARSER : MATROSKA_PARSER,
-                         idbuf, &id, &etype);
+                         idbuf, &data, NULL);
     if (res != 1) {
         if (res != 0)
             goto err1;
         goto end2;
     }
 
-    if (etype >= ARRAY_SIZE(fns)) {
+    if (data->etype >= ARRAY_SIZE(fns)) {
         res = -EIO;
         goto err1;
     }
-    fn = fns[etype];
+    fn = fns[data->etype];
     if (fn == NULL) {
         res = -EIO;
         goto err1;
@@ -741,7 +741,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         json_val_free(elem.value);
 
-        if (etype != ETYPE_MASTER) {
+        if (data->etype != ETYPE_MASTER) {
             elem.value = json_val_new(JSON_TYPE_NUMBER);
             if (elem.value == NULL) {
                 res = -ENOMEM;
@@ -778,7 +778,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 end2:
     if (new_val && !block) {
         ctxp->totmdlen += hdrlen;
-        if (etype != ETYPE_MASTER)
+        if (data == NULL || data->etype != ETYPE_MASTER)
             ctxp->totmdlen += len;
     }
 end1:
