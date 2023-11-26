@@ -214,7 +214,7 @@ get_node_id(const struct radix_tree_node *node)
         init = 1;
     }
 
-    return xtea_encrypt((uint64_t)(uintptr_t)node, key);
+    return xtea_encrypt((uintptr_t)node, key);
 }
 
 static int
