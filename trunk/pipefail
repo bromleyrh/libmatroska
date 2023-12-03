@@ -1,0 +1,127 @@
+#!/bin/sh
+
+template=pipefail_$(basename $0)_XXXXXX
+
+_mktmp()
+{
+	awk -v pid=$$ '
+function mktmp(template, i, j, len) {
+ if (template !~ /.*X+/)
+  return ""
+ len = length(template)
+ sub(/X+$/, "", template)
+ len -= length(template)
+ for (i = 0; i < len; i++) {
+  j = int(rand() * n + 1)
+  template = template randtbl[j]
+ }
+ return template
+}
+
+function printtmp(template) {
+ template = mktmp(template)
+ if (template == "")
+  exit 1
+ print template
+}
+
+BEGIN {
+ randchars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+ n = split(randchars, randtbl, "")
+ srand(pid)
+ if (ARGC > 1) {
+  for (i = 1; i <= ARGC; i++)
+   printtmp(ARGV[i])
+  exit 0
+ }
+}
+
+{ printtmp($0) }'
+}
+
+mktmp()
+{
+	for arg; do
+		printf "%s\n" "$arg"
+	done | _mktmp
+}
+
+wait_for_errs()
+(
+	ret=0
+
+	i=0
+	while [ $i -lt $1 ]; do
+		if ! read -r line <"$2_$i" || [ "$line" != "0" ]; then
+			ret=1
+		fi
+		i=$((i+1))
+	done
+
+	exit $ret
+)
+
+add_cmd()
+{
+	mkfifo "${_pipe}_$_n"
+	cmds="${cmds:+"$cmds | "}"
+	cmds="${cmds}{ $1; ret="'$?'"; exec <&-; echo "'$ret'" >"${_pipe}_$_n"; }"
+	_n=$((_n+1))
+}
+
+execute_cmds()
+(
+	set +e
+	eval "$1"
+)
+
+exit_handler()
+{
+	i=0
+	while [ $i -lt $_n ]; do
+		rm -f "${_pipe}_$i"
+		i=$((i+1))
+	done
+}
+
+int_handler()
+{
+	trap - INT TERM
+	kill -- -$$
+}
+
+pipefail()
+{
+	: ${TMPDIR:=/tmp}
+	_pipe=${TMPDIR%/}/$(mktmp "$template")
+
+	cmds=
+	_n=0
+	if [ -z "${1:-}" ]; then
+		while read -r line; do
+			add_cmd "$line"
+		done
+	else
+		while [ -n "${1:-}" ]; do
+			add_cmd "$1"
+			shift
+		done
+	fi
+
+	trap exit_handler EXIT
+	trap int_handler INT TERM
+
+	wait_for_errs $_n "$_pipe" &
+	pid=$!
+	execute_cmds "$cmds"
+
+	wait $pid
+	ret=$?
+
+	exit_handler
+	trap - EXIT INT TERM
+
+	return $ret
+}
+
+# vi: set noexpandtab sw=4 ts=4:

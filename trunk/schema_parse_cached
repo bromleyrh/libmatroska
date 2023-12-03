@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. ./pipefail || exit
+
 cache=schemas/include
 
 noupdate=0
@@ -15,8 +17,11 @@ test "${5:-}" = "-n" && noupdate=1
 tmp_file=${header_file%.h}_tmp.h
 cached_file=$cache/$header_file
 
-if m4 "$m4_file" \
-	| ./schema_parse "$ebml_schema" "$ebml_doc_type" >|"$tmp_file"; then
+if pipefail >|"$tmp_file" <<-EOF
+	m4 "$m4_file"
+	./schema_parse "$ebml_schema" "$ebml_doc_type"
+EOF
+then
 	if [ $noupdate -eq 0 ]; then
 		cmp -s "$cached_file" "$tmp_file" || cp -f "$tmp_file" "$cached_file"
 	fi
