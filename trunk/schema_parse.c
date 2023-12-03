@@ -386,8 +386,16 @@ output_parser_data(xmlDocPtr doc, const char *doctype)
               doctype, doctype, get_node_id(rt->root));
 
     err = radix_tree_serialize(rt, &sr_fn, NULL);
-    if (!err)
-        return printf("#undef TRIE_NODE_PREFIX\n\n") < 0 ? -EIO : 0;
+    if (err)
+        goto end;
+
+    if (printf("#undef TRIE_NODE_PREFIX\n\n") < 0)
+        return -EIO;
+
+    if (fflush(stdout) == EOF
+        || (fsync(STDOUT_FILENO) == -1
+            && errno != EBADF && errno != EINVAL && errno != ENOTSUP))
+        err = -errno;
 
 end:
     do_radix_tree_free(rt);
