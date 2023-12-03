@@ -389,8 +389,10 @@ output_parser_data(xmlDocPtr doc, const char *doctype)
     if (err)
         goto end;
 
-    if (printf("#undef TRIE_NODE_PREFIX\n\n") < 0)
-        return -EIO;
+    if (printf("#undef TRIE_NODE_PREFIX\n\n") < 0) {
+        err = -EIO;
+        goto end;
+    }
 
     if (fflush(stdout) == EOF
         || (fsync(STDOUT_FILENO) == -1
