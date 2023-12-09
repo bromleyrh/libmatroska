@@ -454,9 +454,7 @@ main(int argc, char **argv)
         goto err5;
 
     ret = xmlSchemaValidateDoc(vctx, doc);
-    if (ret == 0)
-        status = EXIT_SUCCESS;
-    else {
+    if (ret != 0) {
         status = EXIT_FAILURE;
         fprintf(stderr, "%s\n",
                 ret == -1
