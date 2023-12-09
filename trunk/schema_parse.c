@@ -497,8 +497,8 @@ err3:
     xmlFreeDoc(doc);
 err2:
     xmlFreeDoc(schemadoc);
-    xmlCleanupParser();
 err1:
+    xmlCleanupParser();
     fprintf(stderr, "Error parsing %s\n", schemaf);
     return EXIT_FAILURE;
 }
