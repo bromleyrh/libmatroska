@@ -86,8 +86,14 @@ exit_handler()
 
 int_handler()
 {
-	trap - INT TERM
 	kill -- -$(ps -o pgid $$ | tail -n 1)
+	trap - INT
+	trap term_handler TERM
+}
+
+term_handler()
+{
+	trap - TERM
 }
 
 pipefail()
