@@ -409,7 +409,7 @@ main(int argc, char **argv)
 {
     const char *doctype;
     const char *schemaf;
-    int ret, status;
+    int status, tmp;
     unsigned seed;
     xmlDocPtr doc, schemadoc;
     xmlSchemaParserCtxtPtr ctx;
@@ -425,59 +425,70 @@ main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     schemaf = argv[1];
-    doctype = argv[2];
-    seed = argc == 4 ? atoi(argv[3]) : time(NULL) + getpid();
+    tmp = 2;
+    if (strcmp("-", schemaf) == 0)
+        schemaf = NULL;
+    else if (argc > 2 && strcmp("-s", schemaf) == 0) {
+        schemaf = argv[2];
+        tmp = 3;
+    }
+    doctype = argv[tmp++];
+    seed = argc > tmp ? atoi(argv[tmp]) : time(NULL) + getpid();
 
     LIBXML_TEST_VERSION
 
     srand(seed);
 
-    schemadoc = xmlParseFile(schemaf);
-    if (schemadoc == NULL)
-        goto err1;
     doc = xmlParseFile("-");
     if (doc == NULL)
-        goto err2;
+        goto err1;
 
-    ctx = xmlSchemaNewDocParserCtxt(schemadoc);
-    if (ctx == NULL)
-        goto err3;
+    status = EXIT_FAILURE;
 
-    schema = xmlSchemaParse(ctx);
-    if (schema == NULL)
-        goto err4;
+    if (schemaf != NULL) {
+        schemadoc = xmlParseFile(schemaf);
+        if (schemadoc == NULL)
+            goto err2;
 
-/*    xmlSchemaDump(stdout, schema);
-*/
-    vctx = xmlSchemaNewValidCtxt(schema);
-    if (vctx == NULL)
-        goto err5;
+        ctx = xmlSchemaNewDocParserCtxt(schemadoc);
+        if (ctx == NULL)
+            goto err3;
 
-    ret = xmlSchemaValidateDoc(vctx, doc);
-    if (ret != 0) {
-        status = EXIT_FAILURE;
-        fprintf(stderr, "%s\n",
-                ret == -1
-                ? "Error validating XML document" : "XML document invalid");
+        schema = xmlSchemaParse(ctx);
+        if (schema == NULL)
+            goto err4;
+
+    /*    xmlSchemaDump(stdout, schema);
+    */
+        vctx = xmlSchemaNewValidCtxt(schema);
+        if (vctx == NULL)
+            goto err5;
+
+        tmp = xmlSchemaValidateDoc(vctx, doc);
+        if (tmp != 0) {
+            fprintf(stderr, "%s\n",
+                    tmp == -1
+                    ? "Error validating XML document" : "XML document invalid");
+        }
+
+        xmlSchemaFreeValidCtxt(vctx);
+        xmlSchemaFree(schema);
+        xmlSchemaFreeParserCtxt(ctx);
+
+        xmlFreeDoc(schemadoc);
+
+        if (tmp != 0)
+            goto end;
     }
 
-    xmlSchemaFreeValidCtxt(vctx);
+    if (setvbuf(stdout, NULL, _IOLBF, 0) == EOF)
+        fputs("Out of memory\n", stderr);
+    else if (output_parser_data(doc, doctype) != 0)
+        fputs("Parsing error\n", stderr);
+    else
+        status = EXIT_SUCCESS;
 
-    xmlSchemaFree(schema);
-
-    xmlSchemaFreeParserCtxt(ctx);
-
-    xmlFreeDoc(schemadoc);
-
-    if (ret == 0) {
-        status = EXIT_FAILURE;
-        if (setvbuf(stdout, NULL, _IOLBF, 0) == EOF)
-            fputs("Out of memory\n", stderr);
-        else if (output_parser_data(doc, doctype) != 0)
-            fputs("Parsing error\n", stderr);
-        else
-            status = EXIT_SUCCESS;
-    }
+end:
 
     xmlFreeDoc(doc);
     xmlCleanupParser();
@@ -492,9 +503,9 @@ err5:
 err4:
     xmlSchemaFreeParserCtxt(ctx);
 err3:
-    xmlFreeDoc(doc);
-err2:
     xmlFreeDoc(schemadoc);
+err2:
+    xmlFreeDoc(doc);
 err1:
     xmlCleanupParser();
     fprintf(stderr, "Error parsing %s\n", schemaf);
