@@ -45,6 +45,21 @@ AC_CHECK_PROGS([pkgcfg], [pkg-config pkgconf])
 
 AX_LD_VERSION_SCRIPT
 
+ebml_schema="-"
+ebml_semantics_schema="-"
+#ebml_schema="schemas/ebml_schema.xml"
+#ebml_semantics_schema="schemas/ebml_semantics_schema.xml"
+
+test "$ebml_schema" != "-" && ebml_schema_dep=$ebml_schema
+test "$ebml_semantics_schema" != "-" \
+    && ebml_semantics_schema_dep=$ebml_semantics_schema
+
+AC_SUBST([ebml_schema])
+AC_SUBST([ebml_schema_dep])
+
+AC_SUBST([ebml_semantics_schema])
+AC_SUBST([ebml_semantics_schema_dep])
+
 AC_ARG_ENABLE([debugging],
               [  --enable-debugging      enable debugging],
               [case "$enableval" in
