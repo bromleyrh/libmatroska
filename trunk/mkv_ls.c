@@ -562,7 +562,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             int flags, void *ctx)
 {
     char *buf, *idbuf, *value;
-    enum etype etype;
+    enum etype etype = ETYPE_NONE;
     int (*fn)(json_val_t *, matroska_metadata_t *, size_t, const char *);
     int block;
     int new_val;
