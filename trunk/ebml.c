@@ -30,11 +30,26 @@
 #include <sys/param.h>
 #include <sys/types.h>
 
+struct elem_stack_ent {
+    const struct elem_data  *data;
+    size_t                  hdrlen;
+    size_t                  elen;
+    size_t                  totlen;
+    unsigned                segment;
+};
+
+struct elem_stack {
+    struct elem_stack_ent   **stk;
+    size_t                  len;
+    size_t                  sz;
+};
+
 struct ebml_hdl {
     const ebml_io_fns_t             *fns;
     const struct parser             *parser_ebml;
     const struct parser             *parser_doc;
     const struct semantic_processor *sproc;
+    struct elem_stack               stk;
     ebml_metadata_cb_t              *cb;
     char                            buf[4096];
     char                            *di;
@@ -58,6 +73,11 @@ struct ebml_file_ctx {
 #define EDATASZ_MAX_LEN 8
 
 #define EBML_ELEMENT_ID 0xa45dfa3
+
+#define SEGMENT_ELEMENT_ID 0x18538067
+
+#define VOID_ELEMENT_ID 0xec
+#define CRC32_ELEMENT_ID 0xbf
 
 #define TM_YEAR(year) ((year) - 1900)
 
@@ -93,8 +113,12 @@ static int output_edatasz(char *, size_t *, const matroska_metadata_t *,
                           enum etype);
 
 static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t, size_t,
-                        semantic_action_t **, enum etype *, const char **, int,
-                        uint64_t, FILE *);
+                        semantic_action_t **, enum etype *, const char **,
+                        const struct elem_data **, const struct elem_data **,
+                        int, uint64_t, FILE *);
+
+static int push_master(struct elem_stack *, const struct elem_data *, unsigned);
+static void return_from_master(struct elem_stack *, const struct elem_data *);
 
 static int invoke_value_handler(enum etype, size_t, semantic_action_t *,
                                 edata_t *, struct ebml_hdl *);
@@ -409,7 +433,8 @@ parse_edatasz(uint64_t *elen, size_t *sz, char *bufp)
 static int
 look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
              size_t hdrlen, semantic_action_t **act, enum etype *etype,
-             const char **value, int ebml, uint64_t n, FILE *f)
+             const char **value, const struct elem_data **parent,
+             const struct elem_data **data, int ebml, uint64_t n, FILE *f)
 {
     char idstr[7];
     const struct elem_data *datap, *parentp;
@@ -463,7 +488,91 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
         *act = action;
     *etype = datap->etype;
     *value = datap->val;
+    *parent = parentp;
+    *data = datap;
     return 0;
+}
+
+static int
+push_master(struct elem_stack *stk, const struct elem_data *data,
+            unsigned segment)
+{
+    int err;
+    struct elem_stack_ent *ent;
+
+    if (omalloc(&ent) == NULL)
+        return ERR_TAG(errno);
+
+    if (stk->len == stk->sz) {
+        struct elem_stack_ent **tmp;
+        size_t newsz;
+
+        newsz = stk->sz == 0 ? 16 : 2 * stk->sz;
+        if (oreallocarray(stk->stk, &tmp, newsz) == NULL) {
+            err = errno;
+            free(ent);
+            return err;
+        }
+        stk->stk = tmp;
+        stk->sz = newsz;
+    }
+
+    ent->data = data;
+    ent->hdrlen = ent->totlen = 0;
+    ent->segment = segment;
+
+    stk->stk[stk->len++] = ent;
+
+    return 0;
+}
+
+static void
+return_from_master(struct elem_stack *stk, const struct elem_data *next_parent)
+{
+    size_t idx, len;
+    size_t tmp;
+    struct elem_stack_ent *ent;
+
+    len = stk->len;
+
+    if (len == 0)
+        return;
+    idx = len - 1;
+
+    ent = stk->stk[idx];
+
+    if (next_parent == ent->data)
+        return;
+
+    for (;;) {
+        tmp = ent->totlen - ent->hdrlen;
+        if (tmp != ent->elen) {
+            fprintf(stderr, "Synchronization error: master element size %zu"
+                            " byte%s (%+" PRIi64 " byte%s)\n",
+                    PL(tmp), PL((int64_t)tmp - (int64_t)ent->elen));
+            abort();
+        }
+        fprintf(stderr, "Master element %s has size %zu byte%s\n",
+                ent->data->val, PL(tmp));
+
+        if (idx == 0)
+            break;
+        --idx;
+
+        tmp = ent->totlen;
+        ent = stk->stk[idx];
+        ent->totlen += tmp;
+        if (next_parent == ent->data) {
+            ++idx;
+            break;
+        }
+    }
+
+    stk->len = idx;
+    len -= idx;
+
+    fprintf(stderr, "Returned up %zu level%s to %s\n",
+            PL(len), idx == 0 ? "root" : next_parent->val);
 }
 
 static int
@@ -815,6 +924,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
     di = si + elen;
     for (; si < di; si += elen) {
         const char *val;
+        const struct elem_data *data, *parent;
         enum etype etype;
         int sz_unknown;
 
@@ -839,7 +949,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         hdl->off += sz;
 
         res = look_up_elem(hdl, eid, elen, totlen, hdrlen, NULL, &etype, &val,
-                           1, n, f);
+                           &parent, &data, 1, n, f);
         if (res != 0)
             return res;
 
@@ -893,11 +1003,15 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
 
     for (;;) {
         const char *val;
+        const struct elem_data *data, *parent;
         enum etype etype;
+        int anon;
         int sz_unknown;
         semantic_action_t *act;
         size_t hdrlen;
         size_t sz;
+        struct elem_stack *stk;
+        struct elem_stack_ent *ent;
         uint64_t eid;
         uint64_t elen, totlen;
 
@@ -912,6 +1026,8 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
             [ETYPE_MASTER]      = "m",
             [ETYPE_BINARY]      = "b"
         };
+
+        sz = hdl->di - hdl->si;
 
         /* read EBML element ID and length */
         tmp = hdl->si;
@@ -952,7 +1068,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
             return ERR_TAG(EIO);
 
         res = look_up_elem(hdl, eid, elen, totlen, hdrlen, &act, &etype, &val,
-                           0, hdl->n, f);
+                           &parent, &data, 0, hdl->n, f);
         if (res != 0)
             return res;
         if (etype == ETYPE_NONE)
@@ -964,9 +1080,20 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         if (f != NULL && fprintf(f, "\t%s\t", typestrmap[etype]) < 0)
             return ERR_TAG(EIO);
 
+        anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
+
+        if (!anon)
+            return_from_master(&hdl->stk, parent);
+
         sz = hdl->di - hdl->si;
 
         if (etype == ETYPE_MASTER) {
+            if (!anon) {
+                res = push_master(&hdl->stk, data, eid == SEGMENT_ELEMENT_ID);
+                if (res != 0)
+                    return res;
+            }
+
             memmove(hdl->buf, hdl->si, sz);
             hdl->si = hdl->buf;
             hdl->di = hdl->si + sz;
@@ -1001,6 +1128,22 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         if (f != NULL && fputc('\n', f) == EOF)
             return ERR_TAG(EIO);
 
+        stk = &hdl->stk;
+
+        if (!anon) {
+            ent = stk->stk[stk->len-1];
+            if (etype == ETYPE_MASTER) {
+                totlen -= elen;
+                ent->hdrlen = totlen;
+                ent->elen = elen;
+            }
+            ent->totlen += totlen;
+        } else if (stk->len > 0) {
+            ent = stk->stk[0];
+            if (ent->segment)
+                ent->totlen += totlen;
+        }
+
         ++hdl->n;
 
         if (hdl->interrupt_read) {
@@ -1012,6 +1155,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
     return 0;
 
 eof:
+    return_from_master(&hdl->stk, NULL);
     if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
         && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
         return ERR_TAG(EIO);
@@ -1057,6 +1201,14 @@ EXPORTED int
 ebml_close(ebml_hdl_t hdl)
 {
     int err = 0, tmp;
+    size_t i;
+    struct elem_stack *stk;
+
+    stk = &hdl->stk;
+
+    for (i = 0; i < stk->len; i++)
+        free(stk->stk[i]);
+    free(stk->stk);
 
     if (!hdl->ro)
         err = (*hdl->fns->sync)(hdl->ctx);
