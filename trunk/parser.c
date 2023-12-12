@@ -112,6 +112,7 @@ do_trie_search(const struct trie_node *node, const char *str,
                const struct elem_data **ebml_parent,
                semantic_action_t **act)
 {
+    const struct elem_data *ret;
     struct trie_edge edge;
 
     for (;;) {
@@ -131,12 +132,21 @@ do_trie_search(const struct trie_node *node, const char *str,
         node = edge.dst;
     }
 
+    ret = edge.dst->data;
+    if (ret->ref != NULL)
+        ret = *ret->ref;
+
     if (data != NULL)
-        *data = edge.dst->data;
-    if (ebml_parent != NULL)
-        *ebml_parent = edge.dst->ebml_parent;
+        *data = ret;
     if (act != NULL)
-        *act = edge.dst->data->act;
+        *act = ret->act;
+
+    if (ebml_parent != NULL) {
+        ret = edge.dst->ebml_parent;
+        if (ret != NULL && ret->ref != NULL)
+            ret = *ret->ref;
+        *ebml_parent = ret;
+    }
 
     return 1;
 }

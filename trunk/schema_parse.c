@@ -45,6 +45,7 @@ struct id_node {
     char            *handler;
     enum etype      type;
     struct id_node  *parent_idnode;
+    const char      *ref;
 };
 
 enum ns_obj_type {
@@ -61,6 +62,7 @@ struct ns_key {
 };
 
 #define EBML_ELEMENT_ID 0xa45dfa3
+#define EBML_ELEMENT_ID_WITH_MARKER 0x1a45dfa3
 
 static int ns_key_cmp(const void *, const void *, void *);
 
@@ -205,6 +207,7 @@ static int
 ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
 {
     int err;
+    struct id_node *idnode;
     struct ns_key *k;
 
     k = malloc(sizeof(*k));
@@ -224,27 +227,28 @@ ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
         return err;
     }
 
-    if (idstr != NULL) {
-        struct id_node *idnode;
+    if (idstr == NULL)
+        return 0;
 
-        idnode = k->idnode;
+    idnode = k->idnode;
 
-        if (idnode->handler != NULL
-            && printf("int %s(const char *, enum etype, edata_t *, void **, "
-                      "size_t *, void **, size_t *, size_t, size_t, off_t, "
-                      "void *, int);\n\n",
-                      idnode->handler)
-               < 0)
-            return -EIO;
+    if (idnode->handler != NULL
+        && printf("int %s(const char *, enum etype, edata_t *, void **, "
+                  "size_t *, void **, size_t *, size_t, size_t, off_t, void *,"
+                  "int);\n\n",
+                  idnode->handler)
+           < 0)
+        return -EIO;
 
-        if (printf("DEF_EBML_DATA(%016" PRIx64 ", \"%s -> %s\", %s%s, %d);\n\n",
-                   get_node_id(idnode), idstr, idnode->name,
-                   idnode->handler == NULL ? "" : "&",
-                   idnode->handler == NULL ? "NULL" : idnode->handler,
-                   idnode->type)
-            < 0)
-            return -EIO;
-    }
+    if (printf("DEF_EBML_DATA(%016" PRIx64 ", \"%s -> %s\", %s%s, %d, "
+               "%s%s);\n\n",
+               get_node_id(idnode), idstr, idnode->name,
+               idnode->handler == NULL ? "" : "&",
+               idnode->handler == NULL ? "NULL" : idnode->handler,
+               idnode->type, idnode->ref == NULL ? "" : "&",
+               idnode->ref == NULL ? "NULL" : idnode->ref)
+        < 0)
+        return -EIO;
 
     return 0;
 }
@@ -456,6 +460,7 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
     k->name = retkey.name;
     k->type = idnode->type == ETYPE_MASTER ? TYPE_DIR : TYPE_ENT;
     k->idnode = idnode;
+    idnode->ref = NULL;
 
     res = ns_insert(ns, k, idstr);
     if (res != 0)
@@ -467,6 +472,13 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
     res = radix_tree_insert(rt, idstr, &idnode);
     if (res != 0)
         goto err4;
+
+    if (id == EBML_ELEMENT_ID_WITH_MARKER
+        && printf("const struct elem_data *ebml_data = EBML_DATA(%016" PRIx64
+                  ");\n\n",
+                  get_node_id(idnode))
+           < 0)
+        return -EIO;
 
     fprintf(stderr, "ID %s\n", idstr);
 
@@ -601,14 +613,25 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
     } else {
         struct id_node *idnode = *(struct id_node **)val;
 
-        if (printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
-                   "\t%s(%016" PRIx64 ")\n",
-                   get_node_id(idnode), node->label,
-                   idnode->parent_idnode == NULL
-                   ? "EBML_PARENT_NIL" : "EBML_PARENT",
-                   idnode->parent_idnode == NULL
-                   ? 0 : get_node_id(idnode->parent_idnode))
-            < 0)
+        if (idnode->ref == NULL) {
+            if (printf("DEF_TRIE_NODE_INFORMATION(%016" PRIx64 ", \"%s\",\n"
+                       "\t%s(%016" PRIx64 ")\n",
+                       get_node_id(idnode), node->label,
+                       idnode->parent_idnode == NULL
+                       ? "EBML_DATA_NIL" : "EBML_DATA",
+                       idnode->parent_idnode == NULL
+                       ? 0 : get_node_id(idnode->parent_idnode))
+                < 0)
+                goto err;
+        } else if (printf("DEF_TRIE_NODE_INFORMATION_REF(%016" PRIx64 ", "
+                          "\"%s\",\n"
+                          "\t\"%s\", %s(%016" PRIx64 ")\n",
+                          get_node_id(idnode), node->label, idnode->ref,
+                          idnode->parent_idnode == NULL
+                          ? "EBML_DATA_NIL" : "EBML_DATA",
+                          idnode->parent_idnode == NULL
+                          ? 0 : get_node_id(idnode->parent_idnode))
+                   < 0)
             goto err;
     }
 
@@ -739,6 +762,8 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype)
 
         do_printf(&env, "#define TRIE_NODE_PREFIX %s\n\n", doctype);
 
+        do_printf(&env, "extern const struct elem_data *ebml_data;\n\n");
+
         if (strcmp("ebml", doctype) != 0) {
             idnode = malloc(sizeof(*idnode));
             if (idnode == NULL) {
@@ -763,6 +788,7 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype)
             idnode->handler = NULL;
             idnode->type = ETYPE_MASTER;
             idnode->parent_idnode = NULL;
+            idnode->ref = "ebml_data";
             k.idnode = idnode;
 
             err = ns_insert(ns, &k, idstr);
