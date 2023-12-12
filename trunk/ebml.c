@@ -308,6 +308,7 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
     const char *val = NULL;
     const struct parser *parsers[2];
     enum etype ret = ETYPE_NONE;
+    int found;
     int res;
     semantic_action_t *action = NULL;
     size_t i;
@@ -324,14 +325,21 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
     parsers[!ebml] = hdl->parser_ebml;
     parsers[ebml] = hdl->parser_doc;
 
+    found = 0;
+
     for (i = 0; i < ARRAY_SIZE(parsers); i++) {
         res = parser_look_up(parsers[i], idstr, &val, &ret);
         if (res < 0)
             return ERR_TAG(-res);
-        if (f != NULL && res == 1
-            && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), val) < 0)
-            return ERR_TAG(EIO);
+        if (res == 1) {
+            if (f != NULL
+                && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), val) < 0)
+                return ERR_TAG(EIO);
+            found = 1;
+        }
     }
+    if (!found)
+        return ERR_TAG(EILSEQ);
 
     res = semantic_processor_look_up(hdl->sproc, idstr, &action);
     if (res != 0) {
