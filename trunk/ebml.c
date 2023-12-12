@@ -73,6 +73,7 @@ struct ebml_file_ctx {
 #define EDATASZ_MAX_LEN 8
 
 #define EBML_ELEMENT_ID 0xa45dfa3
+#define EBML_ELEMENT_ID_WITH_MARKER 0x1a45dfa3
 
 #define SEGMENT_ELEMENT_ID 0x18538067
 
@@ -861,10 +862,15 @@ static int
 parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
 {
     char buf[4096], *di, *si, *tmp;
+    const char *val;
+    const struct elem_data *data, *parent;
+    enum etype etype;
     int res;
     size_t hdrlen;
     size_t sz;
     ssize_t nbytes;
+    struct elem_stack *stk;
+    struct elem_stack_ent *ent;
     uint64_t eid, elen;
     uint64_t n;
     uint64_t totlen;
@@ -896,17 +902,26 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
     si += sz;
     hdl->off += sz;
 
-    if (f != NULL
-        && (fprintf(f, "header\t\t\t%" PRIu64 "\n", elen) < 0
-            || fprintf(f,
-                       "1\t\t%" PRIx64 "\t%" PRIu64 "\t%" PRIu64 "\tEBML\t\n",
-                       (uint64_t)EBML_ELEMENT_ID, elen, totlen) < 0))
-        return ERR_TAG(EIO);
-
-    res = invoke_user_cb("XyRFO -> EBML", ETYPE_MASTER, NULL, NULL, 0, elen,
-                         hdrlen, 1, hdl);
+    res = look_up_elem(hdl, EBML_ELEMENT_ID_WITH_MARKER, elen, totlen, hdrlen,
+                       NULL, &etype, &val, &parent, &data, 1, 1, f);
     if (res != 0)
         return res;
+
+    res = push_master(&hdl->stk, data, 0);
+    if (res != 0)
+        return res;
+
+    res = invoke_user_cb(data->val, ETYPE_MASTER, NULL, NULL, 0, elen, hdrlen,
+                         1, hdl);
+    if (res != 0)
+        return res;
+
+    stk = &hdl->stk;
+
+    ent = stk->stk[0];
+    totlen -= elen;
+    ent->hdrlen = ent->totlen = totlen;
+    ent->elen = elen;
 
     /* read remaining EBML element data */
     tmp = si;
@@ -923,9 +938,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
     si = tmp;
     di = si + elen;
     for (; si < di; si += elen) {
-        const char *val;
-        const struct elem_data *data, *parent;
-        enum etype etype;
+        int anon;
         int sz_unknown;
 
         /* parse EBML element ID */
@@ -956,6 +969,11 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         if (sz_unknown && etype != ETYPE_MASTER)
             return ERR_TAG(EILSEQ);
 
+        anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
+
+        if (!anon)
+            return_from_master(&hdl->stk, parent);
+
         if (flags & EBML_READ_FLAG_HEADER) {
             if (f != NULL && fputc('\t', f) == EOF)
                 return ERR_TAG(EIO);
@@ -969,9 +987,17 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
                 res = handle_variable_length_value(NULL, &si, &di, 0, sz, etype,
                                                    val, elen, hdrlen, NULL, 1,
                                                    f, hdl);
-            } else if (flags & EBML_READ_FLAG_MASTER) {
-                res = invoke_user_cb(val, ETYPE_MASTER, NULL, NULL, 0, elen,
-                                     hdrlen, 1, hdl);
+            } else {
+                if (!anon) {
+                    res = push_master(&hdl->stk, data,
+                                      eid == SEGMENT_ELEMENT_ID);
+                    if (res != 0)
+                        return res;
+                }
+                if (flags & EBML_READ_FLAG_MASTER) {
+                    res = invoke_user_cb(val, ETYPE_MASTER, NULL, NULL, 0, elen,
+                                         hdrlen, 1, hdl);
+                }
             }
             if (res != 0)
                 return res;
@@ -983,8 +1009,26 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         if (etype != ETYPE_MASTER)
             hdl->off += elen;
 
+        if (stk->len > 0) {
+            if (!anon) {
+                ent = stk->stk[stk->len-1];
+                if (etype == ETYPE_MASTER) {
+                    totlen -= elen;
+                    ent->hdrlen = totlen;
+                    ent->elen = elen;
+                }
+                ent->totlen += totlen;
+            } else {
+                ent = stk->stk[0];
+                if (ent->segment)
+                    ent->totlen += totlen;
+            }
+        }
+
         ++n;
     }
+
+    return_from_master(&hdl->stk, NULL);
 
     return 0;
 }
@@ -1130,18 +1174,20 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
 
         stk = &hdl->stk;
 
-        if (!anon) {
-            ent = stk->stk[stk->len-1];
-            if (etype == ETYPE_MASTER) {
-                totlen -= elen;
-                ent->hdrlen = totlen;
-                ent->elen = elen;
-            }
-            ent->totlen += totlen;
-        } else if (stk->len > 0) {
-            ent = stk->stk[0];
-            if (ent->segment)
+        if (stk->len > 0) {
+            if (!anon) {
+                ent = stk->stk[stk->len-1];
+                if (etype == ETYPE_MASTER) {
+                    totlen -= elen;
+                    ent->hdrlen = totlen;
+                    ent->elen = elen;
+                }
                 ent->totlen += totlen;
+            } else {
+                ent = stk->stk[0];
+                if (ent->segment)
+                    ent->totlen += totlen;
+            }
         }
 
         ++hdl->n;
