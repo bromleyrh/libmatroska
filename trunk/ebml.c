@@ -111,7 +111,7 @@ static int parse_edatasz(uint64_t *, size_t *, char *);
 
 static int output_eid(char *, size_t *, uint64_t);
 static int output_edatasz(char *, size_t *, const matroska_metadata_t *,
-                          enum etype);
+                          enum etype, uint64_t *);
 
 static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t, size_t,
                         semantic_action_t **, enum etype *, const char **,
@@ -119,7 +119,8 @@ static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t, size_t,
                         int, uint64_t, FILE *);
 
 static int push_master(struct elem_stack *, const struct elem_data *, unsigned);
-static void return_from_master(struct elem_stack *, const struct elem_data *);
+static int return_from_master(struct elem_stack *, const struct elem_data *,
+                              int, struct ebml_hdl *);
 
 static int invoke_value_handler(enum etype, size_t, semantic_action_t *,
                                 edata_t *, struct ebml_hdl *);
@@ -372,10 +373,10 @@ output_eid(char *bufp, size_t *sz, uint64_t eid)
 
 static int
 output_edatasz(char *bufp, size_t *sz, const matroska_metadata_t *val,
-               enum etype etype)
+               enum etype etype, uint64_t *elen)
 {
     int err;
-    uint64_t elen;
+    uint64_t ret;
 
     if (ETYPE_IS_FIXED_WIDTH(etype)) {
         char buf[16];
@@ -405,11 +406,15 @@ output_edatasz(char *bufp, size_t *sz, const matroska_metadata_t *val,
         err = edata_pack(&d, buf, etype, &len);
         if (err)
             return err;
-        elen = len;
+        ret = len;
     } else
-        elen = val->len;
+        ret = val->len;
 
-    return u64_to_edatasz(elen, bufp, sz);
+    err = u64_to_edatasz(ret, bufp, sz);
+    if (!err)
+        *elen = ret;
+
+    return err;
 }
 
 static int
@@ -527,8 +532,9 @@ push_master(struct elem_stack *stk, const struct elem_data *data,
     return 0;
 }
 
-static void
-return_from_master(struct elem_stack *stk, const struct elem_data *next_parent)
+static int
+return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
+                   int user_cb, struct ebml_hdl *hdl)
 {
     size_t idx, len;
     size_t tmp;
@@ -537,17 +543,17 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent)
     len = stk->len;
 
     if (len == 0)
-        return;
+        return 0;
     idx = len - 1;
 
     ent = stk->stk[idx];
 
     if (next_parent == ent->data)
-        return;
+        return 0;
 
     for (;;) {
         tmp = ent->totlen - ent->hdrlen;
-        if (tmp != ent->elen) {
+        if (ent->elen != (size_t)-1 && tmp != ent->elen) {
             fprintf(stderr, "Synchronization error: master element size %zu"
                             " byte%s (%+" PRIi64 " byte%s)\n",
                     PL(tmp), PL((int64_t)tmp - (int64_t)ent->elen));
@@ -574,6 +580,11 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent)
 
     fprintf(stderr, "Returned up %zu level%s to %s\n",
             PL(len), idx == 0 ? "root" : next_parent->val);
+
+    return user_cb
+           ? invoke_user_cb(last->data->val, ETYPE_MASTER, NULL, NULL, 0, sz,
+                            last->hdrlen, 0, hdl)
+           : 0;
 }
 
 static int
@@ -972,7 +983,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
         if (!anon)
-            return_from_master(&hdl->stk, parent);
+            return_from_master(&hdl->stk, parent, 0, hdl);
 
         if (flags & EBML_READ_FLAG_HEADER) {
             if (f != NULL && fputc('\t', f) == EOF)
@@ -1028,7 +1039,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         ++n;
     }
 
-    return_from_master(&hdl->stk, NULL);
+    return_from_master(&hdl->stk, NULL, 0, hdl);
 
     return 0;
 }
@@ -1127,7 +1138,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
         if (!anon)
-            return_from_master(&hdl->stk, parent);
+            return_from_master(&hdl->stk, parent, 0, hdl);
 
         sz = hdl->di - hdl->si;
 
@@ -1201,7 +1212,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
     return 0;
 
 eof:
-    return_from_master(&hdl->stk, NULL);
+    return_from_master(&hdl->stk, NULL, 0, hdl);
     if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
         && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
         return ERR_TAG(EIO);
@@ -1296,21 +1307,24 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
            int flags)
 {
     char tmbuf[64];
-    const struct elem_data *data;
+    const struct elem_data *data, *parent;
     edata_t d;
     enum etype etype;
+    int anon;
     int res;
     long int tmp;
     semantic_action_t *act;
     size_t buflen;
     size_t binhdrlen, hdrlen;
+    struct elem_stack *stk;
+    struct elem_stack_ent *ent;
     struct tm tm;
     time_t date;
-    uint64_t eid;
+    uint64_t eid, elen;
 
     res = parser_look_up(flags & EBML_WRITE_FLAG_HEADER
                          ? hdl->parser_ebml : hdl->parser_doc,
-                         id, &data, NULL);
+                         id, &data, &parent);
     if (res != 1)
         return ERR_TAG(res == 0 ? EINVAL : -res);
     etype = data->etype;
@@ -1382,7 +1396,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
     }
 
     buflen = sizeof(hdl->buf) - hdrlen;
-    res = output_edatasz(hdl->si, &buflen, val, etype);
+    res = output_edatasz(hdl->si, &buflen, val, etype, &elen);
     if (res != 0)
         return res;
     hdrlen += buflen;
@@ -1392,8 +1406,24 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
     if (res != 0)
         return res;
 
-    if (etype == ETYPE_MASTER)
-        return 0;
+    stk = &hdl->stk;
+
+    anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
+
+    if (!anon) {
+        res = return_from_master(stk, parent, 1, hdl);
+        if (res != 0)
+            return res;
+    }
+
+    if (etype == ETYPE_MASTER) {
+        if (!anon) {
+            res = push_master(stk, data, eid == SEGMENT_ELEMENT_ID);
+            if (res != 0)
+                return res;
+        }
+        goto end;
+    }
 
     d.type = etype;
     if (ETYPE_IS_FIXED_WIDTH(etype) || ETYPE_IS_STRING(etype)) {
@@ -1445,6 +1475,24 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
     }
     if (res != 0)
         return res;
+
+end:
+
+    if (stk->len > 0) {
+        if (!anon) {
+            ent = stk->stk[stk->len-1];
+            if (etype == ETYPE_MASTER) {
+                ent->hdrlen = buflen = hdrlen;
+                ent->elen = (size_t)-1;
+            } else
+                ent->totlen += hdrlen;
+            ent->totlen += buflen;
+        } else {
+            ent = stk->stk[0];
+            if (ent->segment)
+                ent->totlen += buflen;
+        }
+    }
 
     return 0;
 }

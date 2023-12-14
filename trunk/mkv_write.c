@@ -119,6 +119,8 @@ static cvt_jval_to_metadata_fn_t cvt_string_to_date;
 static cvt_jval_to_metadata_fn_t cvt_number_to_master;
 static cvt_jval_to_metadata_fn_t cvt_string_to_binary;
 
+static matroska_metadata_output_cb_t metadata_cb;
+
 static matroska_bitstream_input_cb_t bitstream_cb;
 
 static int process_block_data(json_val_t, struct ctx *);
@@ -676,6 +678,20 @@ err:
 }
 
 static int
+metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
+            int flags, void *ctx)
+{
+    (void)val;
+    (void)hdrlen;
+    (void)flags;
+    (void)ctx;
+
+    fprintf(stderr, "%s: length %zu byte%s\n", id, PL(len));
+
+    return 0;
+}
+
+static int
 bitstream_cb(uint64_t *trackno, void *buf, ssize_t *nbytes, int16_t *ts,
              int *keyframe, void *ctx)
 {
@@ -840,6 +856,7 @@ write_mkv(int infd, struct ctx *ctx)
     json_object_elem_t elem, obje;
     json_val_t e, jval;
     matroska_bitstream_cb_t cb;
+    matroska_metadata_cb_t metacb;
     matroska_hdl_t hdl;
     struct json_read_cb_ctx rctx;
     struct matroska_file_args args;
@@ -902,10 +919,11 @@ write_mkv(int infd, struct ctx *ctx)
         goto err4;
     }
 
+    metacb.output_cb = &metadata_cb;
     cb.input_cb = &bitstream_cb;
     args.fd = STDOUT_FILENO;
     args.pathname = NULL;
-    res = matroska_open(&hdl, NULL, NULL, &cb, 0, &args, ctx);
+    res = matroska_open(&hdl, NULL, &metacb, &cb, 0, &args, ctx);
     if (res != 0)
         goto err4;
 
