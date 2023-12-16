@@ -36,6 +36,10 @@ struct elem_stack_ent {
     size_t                  elen;
     size_t                  totlen;
     unsigned                segment;
+    ebml_master_cb_t        *master_cb;
+    ebml_master_free_cb_t   *master_free_cb;
+    void                    *mdata;
+    void                    *mctx;
 };
 
 struct elem_stack {
@@ -118,9 +122,10 @@ static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t, size_t,
                         const struct elem_data **, const struct elem_data **,
                         int, uint64_t, FILE *);
 
-static int push_master(struct elem_stack *, const struct elem_data *, unsigned);
-static int return_from_master(struct elem_stack *, const struct elem_data *,
-                              int, struct ebml_hdl *);
+static int push_master(struct elem_stack *, const struct elem_data *, unsigned,
+                       ebml_master_cb_t *, ebml_master_free_cb_t *, void *,
+                       void *);
+static int return_from_master(struct elem_stack *, const struct elem_data *);
 
 static int invoke_value_handler(enum etype, size_t, semantic_action_t *,
                                 edata_t *, struct ebml_hdl *);
@@ -501,7 +506,8 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
 
 static int
 push_master(struct elem_stack *stk, const struct elem_data *data,
-            unsigned segment)
+            unsigned segment, ebml_master_cb_t *master_cb,
+            ebml_master_free_cb_t *master_free_cb, void *mdata, void *mctx)
 {
     int err;
     struct elem_stack_ent *ent;
@@ -526,6 +532,10 @@ push_master(struct elem_stack *stk, const struct elem_data *data,
     ent->data = data;
     ent->hdrlen = ent->totlen = 0;
     ent->segment = segment;
+    ent->master_cb = master_cb;
+    ent->master_free_cb = master_free_cb;
+    ent->mdata = mdata;
+    ent->mctx = mctx;
 
     stk->stk[stk->len++] = ent;
 
@@ -533,9 +543,9 @@ push_master(struct elem_stack *stk, const struct elem_data *data,
 }
 
 static int
-return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
-                   int user_cb, struct ebml_hdl *hdl)
+return_from_master(struct elem_stack *stk, const struct elem_data *next_parent)
 {
+    int ret;
     size_t idx, len;
     size_t tmp;
     struct elem_stack_ent *ent;
@@ -562,6 +572,13 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
         fprintf(stderr, "Master element %s has size %zu byte%s\n",
                 ent->data->val, PL(tmp));
 
+        if (ent->master_cb != NULL) {
+            ret = (*ent->master_cb)(ent->data->val, ent->hdrlen, ent->totlen,
+                                    ent->mdata, ent->mctx);
+            if (ret != 0)
+                return ret;
+        }
+
         if (idx == 0)
             break;
         --idx;
@@ -575,16 +592,21 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
         }
     }
 
+    for (tmp = len - 1;; tmp--) {
+        ent = stk->stk[tmp];
+        if (ent->master_free_cb != NULL)
+            (*ent->master_free_cb)(ent->mdata, ent->mctx);
+        if (tmp == idx)
+            break;
+    }
+
     stk->len = idx;
     len -= idx;
 
     fprintf(stderr, "Returned up %zu level%s to %s\n",
             PL(len), idx == 0 ? "root" : next_parent->val);
 
-    return user_cb
-           ? invoke_user_cb(last->data->val, ETYPE_MASTER, NULL, NULL, 0, sz,
-                            last->hdrlen, 0, hdl)
-           : 0;
+    return 0;
 }
 
 static int
@@ -918,7 +940,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
     if (res != 0)
         return res;
 
-    res = push_master(&hdl->stk, data, 0);
+    res = push_master(&hdl->stk, data, 0, NULL, NULL, NULL, NULL);
     if (res != 0)
         return res;
 
@@ -983,7 +1005,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
         if (!anon)
-            return_from_master(&hdl->stk, parent, 0, hdl);
+            return_from_master(&hdl->stk, parent);
 
         if (flags & EBML_READ_FLAG_HEADER) {
             if (f != NULL && fputc('\t', f) == EOF)
@@ -1001,7 +1023,8 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
             } else {
                 if (!anon) {
                     res = push_master(&hdl->stk, data,
-                                      eid == SEGMENT_ELEMENT_ID);
+                                      eid == SEGMENT_ELEMENT_ID, NULL, NULL,
+                                      NULL, NULL);
                     if (res != 0)
                         return res;
                 }
@@ -1039,7 +1062,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         ++n;
     }
 
-    return_from_master(&hdl->stk, NULL, 0, hdl);
+    return_from_master(&hdl->stk, NULL);
 
     return 0;
 }
@@ -1138,13 +1161,14 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
         if (!anon)
-            return_from_master(&hdl->stk, parent, 0, hdl);
+            return_from_master(&hdl->stk, parent);
 
         sz = hdl->di - hdl->si;
 
         if (etype == ETYPE_MASTER) {
             if (!anon) {
-                res = push_master(&hdl->stk, data, eid == SEGMENT_ELEMENT_ID);
+                res = push_master(&hdl->stk, data, eid == SEGMENT_ELEMENT_ID,
+                                  NULL, NULL, NULL, NULL);
                 if (res != 0)
                     return res;
             }
@@ -1212,7 +1236,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
     return 0;
 
 eof:
-    return_from_master(&hdl->stk, NULL, 0, hdl);
+    return_from_master(&hdl->stk, NULL);
     if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
         && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
         return ERR_TAG(EIO);
@@ -1263,8 +1287,13 @@ ebml_close(ebml_hdl_t hdl)
 
     stk = &hdl->stk;
 
-    for (i = 0; i < stk->len; i++)
-        free(stk->stk[i]);
+    for (i = 0; i < stk->len; i++) {
+        struct elem_stack_ent *ent = stk->stk[i];
+
+        if (ent->master_free_cb != NULL)
+            (*ent->master_free_cb)(ent->mdata, ent->mctx);
+        free(ent);
+    }
     free(stk->stk);
 
     if (!hdl->ro)
@@ -1304,7 +1333,8 @@ ebml_read_body(FILE *f, ebml_hdl_t hdl, int flags)
 
 EXPORTED int
 ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
-           int flags)
+           ebml_master_cb_t *master_cb, ebml_master_free_cb_t *master_free_cb,
+           void *mdata, void *mctx, int flags)
 {
     char tmbuf[64];
     const struct elem_data *data, *parent;
@@ -1411,14 +1441,15 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
     anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
     if (!anon) {
-        res = return_from_master(stk, parent, 1, hdl);
+        res = return_from_master(stk, parent);
         if (res != 0)
             return res;
     }
 
     if (etype == ETYPE_MASTER) {
         if (!anon) {
-            res = push_master(stk, data, eid == SEGMENT_ELEMENT_ID);
+            res = push_master(stk, data, eid == SEGMENT_ELEMENT_ID, master_cb,
+                              master_free_cb, mdata, mctx);
             if (res != 0)
                 return res;
         }

@@ -51,12 +51,17 @@ struct ctx {
     struct cb   cb;
     int         import;
     char        *basenm;
+    size_t      len;
     off_t       lastoff;
     size_t      tothdrsz;
     size_t      lastsz;
     uint64_t    trackno;
     int16_t     ts;
     int         keyframe;
+};
+
+struct master_elem_data {
+    size_t len;
 };
 
 #define TM_YEAR(year) ((year) - 1900)
@@ -119,7 +124,8 @@ static cvt_jval_to_metadata_fn_t cvt_string_to_date;
 static cvt_jval_to_metadata_fn_t cvt_number_to_master;
 static cvt_jval_to_metadata_fn_t cvt_string_to_binary;
 
-static matroska_metadata_output_cb_t metadata_cb;
+static int master_cb(const char *, size_t, size_t, void *, void *);
+static void master_free_cb(void *, void *);
 
 static matroska_bitstream_input_cb_t bitstream_cb;
 
@@ -678,17 +684,28 @@ err:
 }
 
 static int
-metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
-            int flags, void *ctx)
+master_cb(const char *value, size_t hdrlen, size_t len, void *mdata, void *ctx)
 {
-    (void)val;
-    (void)hdrlen;
-    (void)flags;
+    const struct master_elem_data *md = mdata;
+
     (void)ctx;
 
-    fprintf(stderr, "%s: length %zu byte%s\n", id, PL(len));
+    len -= hdrlen;
+
+    if (len != md->len) {
+        fprintf(stderr, "%s: length %zu byte%s (%+" PRIi64 " byte%s)\n",
+                value, PL(len), PL((int64_t)len - (int64_t)md->len));
+    }
 
     return 0;
+}
+
+static void
+master_free_cb(void *mdata, void *ctx)
+{
+    (void)ctx;
+
+    free(mdata);
 }
 
 static int
@@ -856,9 +873,9 @@ write_mkv(int infd, struct ctx *ctx)
     json_object_elem_t elem, obje;
     json_val_t e, jval;
     matroska_bitstream_cb_t cb;
-    matroska_metadata_cb_t metacb;
     matroska_hdl_t hdl;
     struct json_read_cb_ctx rctx;
+    struct master_elem_data *mdata;
     struct matroska_file_args args;
 
     if (!ctx->import) {
@@ -919,11 +936,10 @@ write_mkv(int infd, struct ctx *ctx)
         goto err4;
     }
 
-    metacb.output_cb = &metadata_cb;
     cb.input_cb = &bitstream_cb;
     args.fd = STDOUT_FILENO;
     args.pathname = NULL;
-    res = matroska_open(&hdl, NULL, &metacb, &cb, 0, &args, ctx);
+    res = matroska_open(&hdl, NULL, NULL, &cb, 0, &args, ctx);
     if (res != 0)
         goto err4;
 
@@ -1061,14 +1077,23 @@ write_mkv(int infd, struct ctx *ctx)
         res = (*fn)(&val, &len, e, elem.value, name, ctx);
         if (res < 0)
             goto err7;
+        if (etype == ETYPE_MASTER) {
+            mdata = malloc(sizeof(*mdata));
+            if (mdata == NULL) {
+                res = MINUS_ERRNO;
+                goto err7;
+            }
+            mdata->len = len;
+        } else
+            mdata = NULL;
 
         if (strcmp("SimpleBlock", name) != 0 && strcmp("Block", name) != 0) {
             res = json_val_object_get_elem_by_key(e, L"hdr_len", &obje);
             if (res != 0)
-                goto err7;
+                goto err8;
             if (json_val_get_type(obje.value) != JSON_TYPE_NUMBER) {
                 res = -EILSEQ;
-                goto err8;
+                goto err9;
             }
             json_val_free(obje.value);
 
@@ -1077,19 +1102,20 @@ write_mkv(int infd, struct ctx *ctx)
                 if (res == 0) {
                     if (json_val_get_type(obje.value) != JSON_TYPE_NUMBER) {
                         res = -EILSEQ;
-                        goto err8;
+                        goto err9;
                     }
                     json_val_free(obje.value);
                 } else if (res != -EINVAL)
-                    goto err7;
+                    goto err8;
             }
         }
 
         if (res == 0) {
-            res = matroska_write(hdl, buf, &val, len,
+            res = matroska_write(hdl, buf, &val, len, &master_cb,
+                                 &master_free_cb, mdata, NULL,
                                  header ? MATROSKA_WRITE_FLAG_HEADER : 0);
             if (res != 0)
-                goto err7;
+                goto err8;
         }
 
         free(buf);
@@ -1113,8 +1139,10 @@ write_mkv(int infd, struct ctx *ctx)
 
     return 0;
 
-err8:
+err9:
     json_val_free(obje.value);
+err8:
+    free(mdata);
 err7:
     json_val_free(elem.value);
     free(buf);

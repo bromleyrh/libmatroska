@@ -32,6 +32,9 @@ struct ebml_file_args {
 typedef int ebml_metadata_cb_t(const char *, matroska_metadata_t *, size_t,
                                size_t, int, void *);
 
+typedef int ebml_master_cb_t(const char *, size_t, size_t, void *, void *);
+typedef void ebml_master_free_cb_t(void *, void *);
+
 extern const ebml_io_fns_t ebml_file_fns;
 #define EBML_FILE_FNS (&ebml_file_fns)
 
@@ -54,7 +57,9 @@ int ebml_read_header(FILE *f, ebml_hdl_t hdl, int flags);
 int ebml_read_body(FILE *f, ebml_hdl_t hdl, int flags);
 
 int ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
-               size_t len, int flags);
+               size_t len, ebml_master_cb_t *master_cb,
+               ebml_master_free_cb_t *master_free_cb, void *mdata, void *mctx,
+               int flags);
 
 void *ebml_ctx(ebml_hdl_t hdl);
 
