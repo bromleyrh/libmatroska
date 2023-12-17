@@ -13,6 +13,8 @@
 #include <strings.h>
 #endif
 
+#define power_of_2(x) ((~((x) - 1) & (x)) == (x))
+
 #ifndef HAVE_FLS
 int fls(int i);
 

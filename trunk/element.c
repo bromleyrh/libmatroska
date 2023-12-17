@@ -5,6 +5,7 @@
 #include "common.h"
 #include "debug.h"
 #include "element.h"
+#include "util.h"
 #include "vint.h"
 
 #include <errno.h>
@@ -60,8 +61,14 @@ unpack_integer(const char *x, edata_t *y, size_t sz)
     size_t i;
 
     --sz;
-    for (i = 0; i <= sz; i++)
-        y->bytes[i] = x[~i & sz];
+    if (power_of_2(sz + 1)) {
+        for (i = 0; i <= sz; i++)
+            y->bytes[i] = x[~i & sz];
+    } else {
+        for (i = 0; i <= sz; i++)
+            y->bytes[i] = x[sz - i];
+    }
+
     for (; i < sizeof(y->integer); i++)
         y->bytes[i] = 0;
 
@@ -74,8 +81,14 @@ unpack_uinteger(const char *x, edata_t *y, size_t sz)
     size_t i;
 
     --sz;
-    for (i = 0; i <= sz; i++)
-        y->bytes[i] = x[~i & sz];
+    if (power_of_2(sz + 1)) {
+        for (i = 0; i <= sz; i++)
+            y->bytes[i] = x[~i & sz];
+    } else {
+        for (i = 0; i <= sz; i++)
+            y->bytes[i] = x[sz - i];
+    }
+
     for (; i < sizeof(y->uinteger); i++)
         y->bytes[i] = 0;
 
