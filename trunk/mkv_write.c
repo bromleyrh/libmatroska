@@ -64,6 +64,11 @@ struct master_elem_data {
     size_t len;
 };
 
+struct cluster_state {
+    struct master_elem_data *cluster_mdata;
+    int                     new_cluster;
+};
+
 #define TM_YEAR(year) ((year) - 1900)
 
 #define REFERENCE_TIME \
@@ -687,8 +692,7 @@ static int
 master_cb(const char *value, size_t hdrlen, size_t len, void *mdata, void *ctx)
 {
     const struct master_elem_data *md = mdata;
-
-    (void)ctx;
+    struct cluster_state *cstate = ctx;
 
     len -= hdrlen;
 
@@ -696,6 +700,9 @@ master_cb(const char *value, size_t hdrlen, size_t len, void *mdata, void *ctx)
         fprintf(stderr, "%s: length %zu byte%s (%+" PRIi64 " byte%s)\n",
                 value, PL(len), PL((int64_t)len - (int64_t)md->len));
     }
+
+    if (strcmp("pNvET -> Cluster", value) == 0 && !cstate->new_cluster)
+        cstate->cluster_mdata = NULL;
 
     return 0;
 }
@@ -874,6 +881,7 @@ write_mkv(int infd, struct ctx *ctx)
     json_val_t e, jval;
     matroska_bitstream_cb_t cb;
     matroska_hdl_t hdl;
+    struct cluster_state cstate;
     struct json_read_cb_ctx rctx;
     struct master_elem_data *mdata;
     struct matroska_file_args args;
@@ -952,6 +960,8 @@ write_mkv(int infd, struct ctx *ctx)
 
     buf = NULL;
 
+    cstate.cluster_mdata = NULL;
+
     m = json_val_array_get_num_elem(jval);
 
     for (i = 0; i < m; i++) {
@@ -960,9 +970,9 @@ write_mkv(int infd, struct ctx *ctx)
         const struct elem_data *data;
         cvt_jval_to_metadata_fn_t *fn;
         enum etype etype;
-        int continued;
+        int block, cluster, continued;
         matroska_metadata_t val;
-        size_t buflen;
+        size_t buflen, hdrlen;
         size_t len;
 
         static cvt_jval_to_metadata_fn_t *const fns[] = {
@@ -1077,17 +1087,30 @@ write_mkv(int infd, struct ctx *ctx)
         res = (*fn)(&val, &len, e, elem.value, name, ctx);
         if (res < 0)
             goto err7;
+
+        cluster = strcmp("Cluster", name) == 0;
+        block = cluster
+                ? 0
+                : strcmp("SimpleBlock", name) == 0
+                  || strcmp("Block", name) == 0;
+
+        cstate.new_cluster = 0;
         if (etype == ETYPE_MASTER) {
             mdata = malloc(sizeof(*mdata));
             if (mdata == NULL) {
                 res = MINUS_ERRNO;
                 goto err7;
             }
-            mdata->len = len;
+            if (cluster) {
+                mdata->len = 0;
+                cstate.cluster_mdata = mdata;
+                cstate.new_cluster = 1;
+            } else
+                mdata->len = len;
         } else
             mdata = NULL;
 
-        if (strcmp("SimpleBlock", name) != 0 && strcmp("Block", name) != 0) {
+        if (!block) {
             res = json_val_object_get_elem_by_key(e, L"hdr_len", &obje);
             if (res != 0)
                 goto err8;
@@ -1111,11 +1134,14 @@ write_mkv(int infd, struct ctx *ctx)
         }
 
         if (res == 0) {
-            res = matroska_write(hdl, buf, &val, len, &master_cb,
-                                 &master_free_cb, mdata, NULL,
+            res = matroska_write(hdl, buf, &val, &len, &hdrlen, &master_cb,
+                                 &master_free_cb, mdata, &cstate,
                                  header ? MATROSKA_WRITE_FLAG_HEADER : 0);
             if (res != 0)
                 goto err8;
+
+            if (!cluster && cstate.cluster_mdata != NULL)
+                cstate.cluster_mdata->len += hdrlen + len;
         }
 
         free(buf);

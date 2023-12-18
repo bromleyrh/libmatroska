@@ -1177,7 +1177,7 @@ matroska_read_body(FILE *f, matroska_hdl_t hdl)
 
 int
 matroska_write(matroska_hdl_t hdl, const char *id, matroska_metadata_t *val,
-               size_t len,
+               size_t *len, size_t *hdrlen,
                int (*master_cb)(const char *, size_t, size_t, void *, void *),
                void (*master_free_cb)(void *, void *), void *mdata, void *mctx,
                int flags)
@@ -1200,8 +1200,8 @@ matroska_write(matroska_hdl_t hdl, const char *id, matroska_metadata_t *val,
             fl |= ent->dst;
     }
 
-    return ebml_write(hdl->hdl, id, val, len, master_cb, master_free_cb, mdata,
-                      mctx, fl);
+    return ebml_write(hdl->hdl, id, val, len, hdrlen, master_cb, master_free_cb,
+                      mdata, mctx, fl);
 }
 
 int

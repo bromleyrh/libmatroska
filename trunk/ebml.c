@@ -1332,9 +1332,10 @@ ebml_read_body(FILE *f, ebml_hdl_t hdl, int flags)
 }
 
 EXPORTED int
-ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
-           ebml_master_cb_t *master_cb, ebml_master_free_cb_t *master_free_cb,
-           void *mdata, void *mctx, int flags)
+ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
+           size_t *len, size_t *hdrlen, ebml_master_cb_t *master_cb,
+           ebml_master_free_cb_t *master_free_cb, void *mdata, void *mctx,
+           int flags)
 {
     char tmbuf[64];
     const struct elem_data *data, *parent;
@@ -1345,7 +1346,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
     long int tmp;
     semantic_action_t *act;
     size_t buflen;
-    size_t binhdrlen, hdrlen;
+    size_t binhlen, hlen;
     struct elem_stack *stk;
     struct elem_stack_ent *ent;
     struct tm tm;
@@ -1387,7 +1388,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
         fprintf(stderr, "%s", tmbuf);
         break;
     case ETYPE_MASTER:
-        fprintf(stderr, "%zu byte%s", PL(len));
+        fprintf(stderr, "%zu byte%s", PL(*len));
         /* fallthrough */
     default:
         break;
@@ -1402,12 +1403,12 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
 
     fprintf(stderr, "Inserting EID 0x%" PRIX64 "\n", eid);
 
-    hdrlen = sizeof(hdl->buf);
-    res = output_eid(hdl->buf, &hdrlen, eid);
+    hlen = sizeof(hdl->buf);
+    res = output_eid(hdl->buf, &hlen, eid);
     if (res != 0)
         return res;
-    hdl->si = hdl->buf + hdrlen;
-    hdl->off = hdrlen;
+    hdl->si = hdl->buf + hlen;
+    hdl->off = hlen;
 
     act = NULL;
     res = semantic_processor_look_up(hdl->sproc, id, &act);
@@ -1417,19 +1418,19 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
     /* output EBML element length */
 
     if (etype == ETYPE_BINARY) {
-        binhdrlen = 0;
-        res = invoke_binary_handler(etype, act, NULL, &binhdrlen, NULL,
-                                    &binhdrlen, buflen, hdrlen, 1, hdl);
+        binhlen = 0;
+        res = invoke_binary_handler(etype, act, NULL, &binhlen, NULL, &binhlen,
+                                    buflen, hlen, 1, hdl);
         if (res != 0)
             return res;
-        val->len += binhdrlen;
+        val->len += binhlen;
     }
 
-    buflen = sizeof(hdl->buf) - hdrlen;
+    buflen = sizeof(hdl->buf) - hlen;
     res = output_edatasz(hdl->si, &buflen, val, etype, &elen);
     if (res != 0)
         return res;
-    hdrlen += buflen;
+    hlen += buflen;
     hdl->off += buflen;
 
     res = (*hdl->fns->write)(hdl->ctx, hdl->buf, hdl->off);
@@ -1487,7 +1488,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
         if (res != 0)
             return res;
 
-        res = invoke_value_handler(etype, hdrlen, act, &d, hdl);
+        res = invoke_value_handler(etype, hlen, act, &d, hdl);
         if (res != 0)
             return res;
 
@@ -1496,9 +1497,9 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val, size_t len,
         void *bufp;
 
         bufp = val->data;
-        buflen = val->len - binhdrlen;
+        buflen = val->len - binhlen;
         res = invoke_binary_handler(etype, act, &bufp, &buflen, &hdl->valbuf,
-                                    &hdl->vallen, buflen, hdrlen, 1, hdl);
+                                    &hdl->vallen, buflen, hlen, 1, hdl);
         if (res != 0)
             return res;
 
@@ -1513,10 +1514,10 @@ end:
         if (!anon) {
             ent = stk->stk[stk->len-1];
             if (etype == ETYPE_MASTER) {
-                ent->hdrlen = buflen = hdrlen;
+                ent->hdrlen = buflen = hlen;
                 ent->elen = (size_t)-1;
             } else
-                ent->totlen += hdrlen;
+                ent->totlen += hlen;
             ent->totlen += buflen;
         } else {
             ent = stk->stk[0];
@@ -1525,6 +1526,10 @@ end:
         }
     }
 
+    if (len != NULL)
+        *len = buflen;
+    if (hdrlen != NULL)
+        *hdrlen = hlen;
     return 0;
 }
 

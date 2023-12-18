@@ -57,7 +57,7 @@ int ebml_read_header(FILE *f, ebml_hdl_t hdl, int flags);
 int ebml_read_body(FILE *f, ebml_hdl_t hdl, int flags);
 
 int ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
-               size_t len, ebml_master_cb_t *master_cb,
+               size_t *len, size_t *hdrlen, ebml_master_cb_t *master_cb,
                ebml_master_free_cb_t *master_free_cb, void *mdata, void *mctx,
                int flags);
 
