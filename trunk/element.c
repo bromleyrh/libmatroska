@@ -58,6 +58,7 @@ static unpack_fn_t *const date_fns[] = {
 static int
 unpack_integer(const char *x, edata_t *y, size_t sz)
 {
+    char byte;
     size_t i;
 
     --sz;
@@ -69,8 +70,10 @@ unpack_integer(const char *x, edata_t *y, size_t sz)
             y->bytes[i] = x[sz - i];
     }
 
+    byte = (y->bytes[sz] & 1 << 7) >> 7 ? 0xff : 0;
+
     for (; i < sizeof(y->integer); i++)
-        y->bytes[i] = 0;
+        y->bytes[i] = byte;
 
     return 0;
 }
