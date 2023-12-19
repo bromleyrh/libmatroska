@@ -30,12 +30,28 @@
 #include <sys/param.h>
 #include <sys/types.h>
 
+struct buf {
+    char    *eid;
+    size_t  eidsz;
+    char    *elen;
+    size_t  elensz;
+    char    *data;
+    size_t  datasz;
+};
+
+struct buf_list {
+    struct buf  **ents;
+    size_t      len;
+    size_t      sz;
+};
+
 struct elem_stack_ent {
     const struct elem_data  *data;
     size_t                  hdrlen;
     size_t                  elen;
     size_t                  totlen;
     unsigned                segment;
+    struct buf              *buf;
     ebml_master_cb_t        *master_cb;
     ebml_master_free_cb_t   *master_free_cb;
     void                    *mdata;
@@ -61,6 +77,7 @@ struct ebml_hdl {
     off_t                           off;
     void                            *valbuf;
     size_t                          vallen;
+    struct buf_list                 buf_list;
     uint64_t                        n;
     void                            *ctx;
     int                             ro;
@@ -122,10 +139,21 @@ static int look_up_elem(struct ebml_hdl *, uint64_t, uint64_t, uint64_t, size_t,
                         const struct elem_data **, const struct elem_data **,
                         int, uint64_t, FILE *);
 
-static int push_master(struct elem_stack *, const struct elem_data *, unsigned,
-                       ebml_master_cb_t *, ebml_master_free_cb_t *, void *,
-                       void *);
-static int return_from_master(struct elem_stack *, const struct elem_data *);
+static int buf_new(struct buf **, char *, size_t, char *, size_t, size_t);
+static void buf_destroy(struct buf *);
+
+static int buf_list_init(struct buf_list *);
+static void buf_list_destroy(struct buf_list *);
+static int buf_list_insert(struct buf_list *, char *, size_t, char *, size_t,
+                           size_t);
+static struct buf *buf_list_tail(struct buf_list *);
+static int buf_list_flush(struct buf_list *, struct ebml_hdl *);
+
+static int push_master(struct elem_stack *, const struct elem_data *,
+                       unsigned, struct buf *, ebml_master_cb_t *,
+                       ebml_master_free_cb_t *, void *, void *);
+static int return_from_master(struct elem_stack *, const struct elem_data *,
+                              struct buf_list *, struct ebml_hdl *);
 
 static int invoke_value_handler(enum etype, size_t, semantic_action_t *,
                                 edata_t *, struct ebml_hdl *);
@@ -505,8 +533,163 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
 }
 
 static int
+buf_new(struct buf **buf, char *eid, size_t eidsz, char *elen, size_t elensz,
+        size_t datasz)
+{
+    int err;
+    struct buf *ret;
+
+    if (omalloc(&ret) == NULL)
+        return ERR_TAG(errno);
+
+    ret->eid = malloc(eidsz);
+    if (ret->eid == NULL) {
+        err = ERR_TAG(errno);
+        goto err1;
+    }
+
+    ret->elen = malloc(elensz);
+    if (ret->elen == NULL) {
+        err = ERR_TAG(errno);
+        goto err2;
+    }
+
+    if (datasz != 0) {
+        ret->data = malloc(datasz);
+        if (ret->data == NULL) {
+            err = ERR_TAG(errno);
+            goto err3;
+        }
+    } else
+        ret->data = NULL;
+    ret->datasz = datasz;
+
+    memcpy(ret->eid, eid, eidsz);
+    ret->eidsz = eidsz;
+
+    memcpy(ret->elen, elen, elensz);
+    ret->elensz = elensz;
+
+    *buf = ret;
+    return 0;
+
+err3:
+    free(ret->elen);
+err2:
+    free(ret->eid);
+err1:
+    free(ret);
+    return err;
+}
+
+static void
+buf_destroy(struct buf *buf)
+{
+    free(buf->eid);
+    free(buf->elen);
+    free(buf->data);
+
+    free(buf);
+}
+
+static int
+buf_list_init(struct buf_list *list)
+{
+    list->len = 0;
+    list->sz = 16;
+    return oallocarray(&list->ents, list->sz) == NULL ? ERR_TAG(errno) : 0;
+}
+
+static void
+buf_list_destroy(struct buf_list *list)
+{
+    size_t i;
+
+    for (i = 0; i < list->len; i++)
+        buf_destroy(list->ents[i]);
+
+    free(list->ents);
+}
+
+static int
+buf_list_insert(struct buf_list *list, char *eid, size_t eidsz, char *elen,
+                size_t elensz, size_t datasz)
+{
+    int err;
+
+    if (list->sz == list->len) {
+        struct buf **tmp;
+        size_t newsz;
+
+        newsz = 2 * list->sz;
+        if (oreallocarray(list->ents, &tmp, newsz) == NULL)
+            return ERR_TAG(errno);
+        list->ents = tmp;
+        list->sz = newsz;
+    }
+
+    err = buf_new(&list->ents[list->len], eid, eidsz, elen, elensz, datasz);
+    if (!err)
+        ++list->len;
+
+    return err;
+}
+
+static struct buf *
+buf_list_tail(struct buf_list *list)
+{
+    return list->len == 0 ? NULL : list->ents[list->len-1];
+}
+
+#define E(nm) {offsetof(struct buf, nm), offsetof(struct buf, nm##sz)}
+
+static int
+buf_list_flush(struct buf_list *list, struct ebml_hdl *hdl)
+{
+    int res;
+    size_t i, j;
+
+    static const struct ent {
+        size_t dataoff;
+        size_t szoff;
+    } bufs[] = {
+        E(eid),
+        E(elen),
+        E(data)
+    };
+
+    for (i = 0; i < list->len; i++) {
+        struct buf *buf = list->ents[i];
+
+        for (j = 0; j < ARRAY_SIZE(bufs); j++) {
+            char *data;
+            const struct ent *ent = &bufs[j];
+            size_t sz;
+
+            sz = *(size_t *)((char *)buf + ent->szoff);
+            if (sz == 0)
+                continue;
+
+            data = *(char **)((char *)buf + ent->dataoff);
+
+            res = (*hdl->fns->write)(hdl->ctx, data, sz);
+            if (res != 0)
+                return res;
+        }
+
+        buf_destroy(buf);
+    }
+
+    list->len = 0;
+
+    return 0;
+}
+
+#undef E
+
+static int
 push_master(struct elem_stack *stk, const struct elem_data *data,
-            unsigned segment, ebml_master_cb_t *master_cb,
+            unsigned segment, struct buf *buf, ebml_master_cb_t *master_cb,
             ebml_master_free_cb_t *master_free_cb, void *mdata, void *mctx)
 {
     int err;
@@ -532,6 +715,7 @@ push_master(struct elem_stack *stk, const struct elem_data *data,
     ent->data = data;
     ent->hdrlen = ent->totlen = 0;
     ent->segment = segment;
+    ent->buf = buf;
     ent->master_cb = master_cb;
     ent->master_free_cb = master_free_cb;
     ent->mdata = mdata;
@@ -543,7 +727,8 @@ push_master(struct elem_stack *stk, const struct elem_data *data,
 }
 
 static int
-return_from_master(struct elem_stack *stk, const struct elem_data *next_parent)
+return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
+                   struct buf_list *buf_list, struct ebml_hdl *hdl)
 {
     int ret;
     size_t idx, len;
@@ -606,7 +791,8 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent)
     fprintf(stderr, "Returned up %zu level%s to %s\n",
             PL(len), idx == 0 ? "root" : next_parent->val);
 
-    return 0;
+    return buf_list != NULL && (idx == 0 || stk->stk[idx-1]->segment)
+           ? buf_list_flush(buf_list, hdl) : 0;
 }
 
 static int
@@ -940,7 +1126,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
     if (res != 0)
         return res;
 
-    res = push_master(&hdl->stk, data, 0, NULL, NULL, NULL, NULL);
+    res = push_master(&hdl->stk, data, 0, NULL, NULL, NULL, NULL, NULL);
     if (res != 0)
         return res;
 
@@ -1005,7 +1191,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
         if (!anon)
-            return_from_master(&hdl->stk, parent);
+            return_from_master(&hdl->stk, parent, NULL, NULL);
 
         if (flags & EBML_READ_FLAG_HEADER) {
             if (f != NULL && fputc('\t', f) == EOF)
@@ -1024,7 +1210,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
                 if (!anon) {
                     res = push_master(&hdl->stk, data,
                                       eid == SEGMENT_ELEMENT_ID, NULL, NULL,
-                                      NULL, NULL);
+                                      NULL, NULL, NULL);
                     if (res != 0)
                         return res;
                 }
@@ -1062,7 +1248,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         ++n;
     }
 
-    return_from_master(&hdl->stk, NULL);
+    return_from_master(&hdl->stk, NULL, NULL, NULL);
 
     return 0;
 }
@@ -1161,14 +1347,14 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
         if (!anon)
-            return_from_master(&hdl->stk, parent);
+            return_from_master(&hdl->stk, parent, NULL, NULL);
 
         sz = hdl->di - hdl->si;
 
         if (etype == ETYPE_MASTER) {
             if (!anon) {
                 res = push_master(&hdl->stk, data, eid == SEGMENT_ELEMENT_ID,
-                                  NULL, NULL, NULL, NULL);
+                                  NULL, NULL, NULL, NULL, NULL);
                 if (res != 0)
                     return res;
             }
@@ -1236,7 +1422,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
     return 0;
 
 eof:
-    return_from_master(&hdl->stk, NULL);
+    return_from_master(&hdl->stk, NULL, NULL, NULL);
     if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
         && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
         return ERR_TAG(EIO);
@@ -1255,11 +1441,17 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     if (ocalloc(&ret, 1) == NULL)
         return ERR_TAG(errno);
 
-    err = (*fns->open)(&ret->ctx, ro, args);
-    if (err) {
-        free(ret);
-        return err;
+    if (!ro) {
+        err = buf_list_init(&ret->buf_list);
+        if (err) {
+            err = ERR_TAG(-err);
+            goto err1;
+        }
     }
+
+    err = (*fns->open)(&ret->ctx, ro, args);
+    if (err)
+        goto err2;
     ret->ro = ro;
 
     ret->fns = fns;
@@ -1276,6 +1468,13 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
 
     *hdl = ret;
     return 0;
+
+err2:
+    if (!ro)
+        buf_list_destroy(&ret->buf_list);
+err1:
+    free(ret);
+    return err;
 }
 
 EXPORTED int
@@ -1296,8 +1495,13 @@ ebml_close(ebml_hdl_t hdl)
     }
     free(stk->stk);
 
-    if (!hdl->ro)
-        err = (*hdl->fns->sync)(hdl->ctx);
+    if (!hdl->ro) {
+        err = buf_list_flush(&hdl->buf_list, hdl);
+        buf_list_destroy(&hdl->buf_list);
+        tmp = (*hdl->fns->sync)(hdl->ctx);
+        if (tmp != 0)
+            err = tmp;
+    }
 
     tmp = (*hdl->fns->close)(hdl->ctx);
     if (tmp != 0)
@@ -1347,6 +1551,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
     semantic_action_t *act;
     size_t buflen;
     size_t binhlen, hlen;
+    struct buf *buf;
     struct elem_stack *stk;
     struct elem_stack_ent *ent;
     struct tm tm;
@@ -1433,24 +1638,30 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
     hlen += buflen;
     hdl->off += buflen;
 
-    res = (*hdl->fns->write)(hdl->ctx, hdl->buf, hdl->off);
+    res = buf_list_insert(&hdl->buf_list, hdl->buf, hlen - buflen, hdl->si,
+                          buflen, etype == ETYPE_MASTER ? 0 : elen);
     if (res != 0)
         return res;
+    buf = buf_list_tail(&hdl->buf_list);
 
+/*    res = (*hdl->fns->write)(hdl->ctx, hdl->buf, hdl->off);
+    if (res != 0)
+        return res;
+*/
     stk = &hdl->stk;
 
     anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
     if (!anon) {
-        res = return_from_master(stk, parent);
+        res = return_from_master(stk, parent, &hdl->buf_list, hdl);
         if (res != 0)
             return res;
     }
 
     if (etype == ETYPE_MASTER) {
         if (!anon) {
-            res = push_master(stk, data, eid == SEGMENT_ELEMENT_ID, master_cb,
-                              master_free_cb, mdata, mctx);
+            res = push_master(stk, data, eid == SEGMENT_ELEMENT_ID, buf,
+                              master_cb, master_free_cb, mdata, mctx);
             if (res != 0)
                 return res;
         }
@@ -1492,7 +1703,8 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
         if (res != 0)
             return res;
 
-        res = (*hdl->fns->write)(hdl->ctx, hdl->buf, buflen);
+        memcpy(buf->data, hdl->buf, buflen);
+/*        res = (*hdl->fns->write)(hdl->ctx, hdl->buf, buflen);*/
     } else {
         void *bufp;
 
@@ -1503,10 +1715,9 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
         if (res != 0)
             return res;
 
-        res = (*hdl->fns->write)(hdl->ctx, bufp, buflen);
+        memcpy(buf->data, bufp, buflen);
+/*        res = (*hdl->fns->write)(hdl->ctx, bufp, buflen);*/
     }
-    if (res != 0)
-        return res;
 
 end:
 
@@ -1524,6 +1735,10 @@ end:
             if (ent->segment)
                 ent->totlen += buflen;
         }
+    } else {
+        res = buf_list_flush(&hdl->buf_list, hdl);
+        if (res != 0)
+            return res;
     }
 
     if (len != NULL)
