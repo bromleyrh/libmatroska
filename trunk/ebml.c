@@ -159,6 +159,7 @@ static int resize_master_elem(struct buf *, int64_t *);
 static int push_master(struct elem_stack *, const struct elem_data *,
                        unsigned, struct buf *, ebml_master_cb_t *,
                        ebml_master_free_cb_t *, void *, void *);
+static int release_master(struct elem_stack_ent *);
 static int return_from_master(struct elem_stack *, const struct elem_data *,
                               struct buf_list *, struct ebml_hdl *);
 
@@ -773,6 +774,38 @@ push_master(struct elem_stack *stk, const struct elem_data *data,
 }
 
 static int
+release_master(struct elem_stack_ent *ent)
+{
+    int err;
+    struct buf *buf;
+
+    if (ent->segment)
+        return 0;
+
+    buf = ent->buf;
+
+    if (buf == NULL)
+        return 0;
+
+    buf->elenval = ent->totlen - ent->hdrlen;
+    if (buf->orig_elenval != buf->elenval) {
+        int64_t adj;
+
+        fprintf(stderr, "Element length %" PRIu64 " byte%s"
+                        " (%+" PRIi64 " byte%s)\n",
+                PL(buf->elenval),
+                PL((int64_t)buf->elenval - (int64_t)buf->orig_elenval));
+
+        err = resize_master_elem(buf, &adj);
+        if (err)
+            return err;
+        ent->totlen += adj;
+    }
+
+    return 0;
+}
+
+static int
 return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
                    struct buf_list *buf_list, struct ebml_hdl *hdl)
 {
@@ -793,8 +826,6 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
         return 0;
 
     for (;;) {
-        struct buf *buf;
-
         tmp = ent->totlen - ent->hdrlen;
         if (ent->elen != (size_t)-1 && tmp != ent->elen) {
             fprintf(stderr, "Synchronization error: master element size %zu"
@@ -812,24 +843,9 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
                 return ret;
         }
 
-        buf = ent->buf;
-
-        if (buf != NULL) {
-            buf->elenval = tmp;
-            if (buf->orig_elenval != buf->elenval) {
-                int64_t adj;
-
-                fprintf(stderr, "Element length %" PRIu64 " byte%s"
-                                " (%+" PRIi64 " byte%s)\n",
-                        PL(buf->elenval),
-                        PL((int64_t)buf->elenval - (int64_t)buf->orig_elenval));
-
-                ret = resize_master_elem(buf, &adj);
-                if (ret != 0)
-                    return ret;
-                ent->totlen += adj;
-            }
-        }
+        ret = release_master(ent);
+        if (ret != 0)
+            return ret;
 
         if (idx == 0)
             break;
@@ -1552,6 +1568,18 @@ ebml_close(ebml_hdl_t hdl)
     size_t i;
     struct elem_stack *stk;
 
+    if (!hdl->ro) {
+        err = return_from_master(&hdl->stk, NULL, &hdl->buf_list, hdl);
+        buf_list_destroy(&hdl->buf_list);
+        tmp = (*hdl->fns->sync)(hdl->ctx);
+        if (tmp != 0)
+            err = tmp;
+    }
+
+    tmp = (*hdl->fns->close)(hdl->ctx);
+    if (tmp != 0)
+        err = tmp;
+
     stk = &hdl->stk;
 
     for (i = 0; i < stk->len; i++) {
@@ -1562,18 +1590,6 @@ ebml_close(ebml_hdl_t hdl)
         free(ent);
     }
     free(stk->stk);
-
-    if (!hdl->ro) {
-        err = buf_list_flush(&hdl->buf_list, hdl);
-        buf_list_destroy(&hdl->buf_list);
-        tmp = (*hdl->fns->sync)(hdl->ctx);
-        if (tmp != 0)
-            err = tmp;
-    }
-
-    tmp = (*hdl->fns->close)(hdl->ctx);
-    if (tmp != 0)
-        err = tmp;
 
     free(hdl->valbuf);
 
