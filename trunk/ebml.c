@@ -765,15 +765,18 @@ static int
 parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
 {
     char *tmp;
+    int eof;
     int res;
+    off_t off;
 
     (void)flags;
+
+    eof = 0;
 
     for (;;) {
         const char *val;
         enum etype etype;
         int sz_unknown;
-        off_t off;
         semantic_action_t *act;
         size_t hdrlen;
         size_t sz;
@@ -796,15 +799,15 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         tmp = hdl->si;
         hdl->si = hdl->di;
         hdl->di = tmp;
-        res = read_elem_hdr(hdl, &hdl->di, hdl->si);
-        if (res != 0) {
-            if (res != 1)
-                return res;
-            if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
-                && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
-                return ERR_TAG(EIO);
-            break;
-        }
+        if (!eof)
+            eof = read_elem_hdr(hdl, &hdl->di, hdl->si);
+        if (eof == 1) {
+            if (sz == 0)
+                goto eof;
+            hdl->si = tmp;
+            hdl->di = hdl->si + sz;
+        } else if (eof != 0)
+            return eof;
 
         /* parse EBML element ID */
         res = parse_eid(&eid, &hdrlen, tmp);
@@ -888,6 +891,12 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         }
     }
 
+    return 0;
+
+eof:
+    if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
+        && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
+        return ERR_TAG(EIO);
     return 0;
 }
 
