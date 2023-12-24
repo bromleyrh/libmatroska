@@ -827,7 +827,7 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
 
     for (;;) {
         tmp = ent->totlen - ent->hdrlen;
-        if (ent->elen != (size_t)-1 && tmp != ent->elen) {
+        if (ent->elen != EDATASZ_UNKNOWN && tmp != ent->elen) {
             fprintf(stderr, "Synchronization error: master element size %zu"
                             " byte%s (%+" PRIi64 " byte%s)\n",
                     PL(tmp), PL((int64_t)tmp - (int64_t)ent->elen));
@@ -1483,9 +1483,13 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
             if (!anon) {
                 ent = stk->stk[stk->len-1];
                 if (etype == ETYPE_MASTER) {
-                    totlen -= elen;
+                    if (sz_unknown)
+                        ent->elen = EDATASZ_UNKNOWN;
+                    else {
+                        totlen -= elen;
+                        ent->elen = elen;
+                    }
                     ent->hdrlen = totlen;
-                    ent->elen = elen;
                 }
                 ent->totlen += totlen;
             } else {
@@ -1814,7 +1818,7 @@ end:
             ent = stk->stk[stk->len-1];
             if (etype == ETYPE_MASTER) {
                 ent->hdrlen = buflen = hlen;
-                ent->elen = (size_t)-1;
+                ent->elen = EDATASZ_UNKNOWN;
             } else
                 ent->totlen += hlen + binhlen;
             ent->totlen += buflen;
