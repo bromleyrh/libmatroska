@@ -29,6 +29,8 @@ struct ebml_file_args {
     const char  *pathname;
 };
 
+struct buf;
+
 typedef int ebml_metadata_cb_t(const char *, matroska_metadata_t *, size_t,
                                size_t, int, void *);
 
@@ -62,6 +64,8 @@ int ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
                int flags);
 
 void *ebml_ctx(ebml_hdl_t hdl);
+
+int buf_set_binhdr(struct buf *buf, char *binhdr, size_t binhdrsz);
 
 #endif
 

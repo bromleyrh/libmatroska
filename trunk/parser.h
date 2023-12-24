@@ -19,9 +19,11 @@ struct parser;
 
 struct semantic_processor;
 
+struct buf;
+
 typedef int semantic_action_t(const char *, enum etype, edata_t *, void **,
                               size_t *, void **, size_t *, size_t, size_t,
-                              off_t, void *, int);
+                              struct buf *, off_t, void *, int);
 
 struct elem_data {
     const char              *val;

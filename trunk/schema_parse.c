@@ -234,8 +234,8 @@ ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
 
     if (idnode->handler != NULL
         && printf("int %s(const char *, enum etype, edata_t *, void **, "
-                  "size_t *, void **, size_t *, size_t, size_t, off_t, void *,"
-                  "int);\n\n",
+                  "size_t *, void **, size_t *, size_t, size_t, struct buf *, "
+                  "off_t, void *, int);\n\n",
                   idnode->handler)
            < 0)
         return -EIO;

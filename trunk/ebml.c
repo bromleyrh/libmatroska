@@ -37,6 +37,8 @@ struct buf {
     uint64_t    orig_elenval;
     uint64_t    elenval;
     size_t      elensz;
+    char        *binhdr;
+    size_t      binhdrsz;
     char        *data;
     size_t      datasz;
 };
@@ -164,7 +166,7 @@ static int invoke_value_handler(enum etype, size_t, semantic_action_t *,
                                 edata_t *, struct ebml_hdl *);
 static int invoke_binary_handler(enum etype, semantic_action_t *, void **,
                                  size_t *, void **, size_t *, size_t, size_t,
-                                 int, struct ebml_hdl *);
+                                 struct buf *, int, struct ebml_hdl *);
 
 static int invoke_user_cb(const char *, enum etype, edata_t *, char *, uint64_t,
                           uint64_t, size_t, int, struct ebml_hdl *);
@@ -357,7 +359,7 @@ read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen,
             void *bufp = buf;
 
             res = (*act)(NULL, ETYPE_BINARY, NULL, NULL, NULL, &bufp, &sz,
-                         tot_elen, hdrlen, hdl->off, hdl->sproc_ctx, 0);
+                         tot_elen, hdrlen, NULL, hdl->off, hdl->sproc_ctx, 0);
             if (res != 0)
                 return res;
         }
@@ -523,7 +525,7 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
             return ERR_TAG(-res);
 
         res = (*action)(datap->val, datap->etype, NULL, NULL, 0, NULL, 0, 0,
-                        hdrlen, hdl->off, hdl->sproc_ctx, 0);
+                        hdrlen, NULL, hdl->off, hdl->sproc_ctx, 0);
         if (res != 0)
             return res;
     }
@@ -578,6 +580,9 @@ buf_new(struct buf **buf, char *eid, size_t eidsz, char *elen, size_t elensz,
     ret->orig_elenval = elenval;
     ret->elensz = elensz;
 
+    ret->binhdr = NULL;
+    ret->binhdrsz = 0;
+
     *buf = ret;
     return 0;
 
@@ -595,6 +600,7 @@ buf_destroy(struct buf *buf)
 {
     free(buf->eid);
     free(buf->elen);
+    free(buf->binhdr);
     free(buf->data);
 
     free(buf);
@@ -664,6 +670,7 @@ buf_list_flush(struct buf_list *list, struct ebml_hdl *hdl)
     } bufs[] = {
         E(eid),
         E(elen),
+        E(binhdr),
         E(data)
     };
 
@@ -860,7 +867,7 @@ invoke_value_handler(enum etype etype, size_t hdrlen, semantic_action_t *act,
                      edata_t *edata, struct ebml_hdl *hdl)
 {
     return act != NULL
-           ? (*act)(NULL, etype, edata, NULL, NULL, NULL, 0, 0, hdrlen,
+           ? (*act)(NULL, etype, edata, NULL, NULL, NULL, 0, 0, hdrlen, NULL,
                     hdl->off, hdl->sproc_ctx, 0)
            : 0;
 }
@@ -868,7 +875,8 @@ invoke_value_handler(enum etype etype, size_t hdrlen, semantic_action_t *act,
 static int
 invoke_binary_handler(enum etype etype, semantic_action_t *act, void **outbuf,
                       size_t *outlen, void **buf, size_t *len, size_t totlen,
-                      size_t hdrlen, int encode, struct ebml_hdl *hdl)
+                      size_t hdrlen, struct buf *bufhdl, int encode,
+                      struct ebml_hdl *hdl)
 {
     int res;
 
@@ -876,7 +884,7 @@ invoke_binary_handler(enum etype etype, semantic_action_t *act, void **outbuf,
         return 0;
 
     res = (*act)(NULL, ETYPE_BINARY, NULL, outbuf, outlen, buf, len, totlen,
-                 hdrlen, hdl->off, hdl->sproc_ctx, encode);
+                 hdrlen, bufhdl, hdl->off, hdl->sproc_ctx, encode);
     if (res == 1) {
         hdl->interrupt_read = 1;
         res = 0;
@@ -1068,7 +1076,7 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         bufp = buf;
         buflen = sz;
         res = invoke_binary_handler(etype, act, NULL, NULL, &bufp, &buflen,
-                                    elen, hdrlen, 0, hdl);
+                                    elen, hdrlen, NULL, 0, hdl);
         if (res != 0)
             return res;
 
@@ -1081,7 +1089,7 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         if (elen > bufsz) {
             buflen = elen;
             res = invoke_binary_handler(etype, act, NULL, NULL, NULL, &buflen,
-                                        elen, hdrlen, 0, hdl);
+                                        elen, hdrlen, NULL, 0, hdl);
             if (res != 0)
                 return res;
             goto end;
@@ -1114,14 +1122,14 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         bufp = si;
         buflen = elen;
         res = invoke_binary_handler(val.type, act, NULL, NULL, &bufp, &buflen,
-                                    elen, hdrlen, 0, hdl);
+                                    elen, hdrlen, NULL, 0, hdl);
         if (res != 0)
             return res;
     }
 
     buflen = elen;
     res = invoke_binary_handler(val.type, act, NULL, NULL, NULL, &buflen, elen,
-                                hdrlen, 0, hdl);
+                                hdrlen, NULL, 0, hdl);
     if (res != 0)
         goto err;
 
@@ -1684,10 +1692,10 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
 
     /* output EBML element length */
 
+    binhlen = 0;
     if (etype == ETYPE_BINARY) {
-        binhlen = 0;
         res = invoke_binary_handler(etype, act, NULL, &binhlen, NULL, &binhlen,
-                                    buflen, hlen, 1, hdl);
+                                    buflen, hlen, NULL, 1, hdl);
         if (res != 0)
             return res;
         val->len += binhlen;
@@ -1775,7 +1783,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
         bufp = val->data;
         buflen = val->len - binhlen;
         res = invoke_binary_handler(etype, act, &bufp, &buflen, &hdl->valbuf,
-                                    &hdl->vallen, buflen, hlen, 1, hdl);
+                                    &hdl->vallen, buflen, hlen, buf, 1, hdl);
         if (res != 0)
             return res;
 
@@ -1792,7 +1800,7 @@ end:
                 ent->hdrlen = buflen = hlen;
                 ent->elen = (size_t)-1;
             } else
-                ent->totlen += hlen;
+                ent->totlen += hlen + binhlen;
             ent->totlen += buflen;
         } else {
             ent = stk->stk[0];
@@ -1806,7 +1814,7 @@ end:
     }
 
     if (len != NULL)
-        *len = buflen;
+        *len = binhlen + buflen;
     if (hdrlen != NULL)
         *hdrlen = hlen;
     return 0;
@@ -1816,6 +1824,24 @@ void *
 ebml_ctx(ebml_hdl_t hdl)
 {
     return hdl->ctx;
+}
+
+int
+buf_set_binhdr(struct buf *buf, char *binhdr, size_t binhdrsz)
+{
+    char *bufp;
+
+    bufp = malloc(binhdrsz);
+    if (bufp == NULL)
+        return ERR_TAG(errno);
+
+    memcpy(bufp, binhdr, binhdrsz);
+
+    buf->binhdr = bufp;
+    buf->binhdrsz = binhdrsz;
+    buf->datasz -= binhdrsz;
+
+    return 0;
 }
 
 /* vi: set expandtab sw=4 ts=4: */

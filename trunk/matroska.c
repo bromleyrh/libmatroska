@@ -157,11 +157,11 @@ static int return_track_data(const char *, size_t, size_t, size_t, off_t,
                              struct track_data *, struct matroska_state *);
 
 static int block_output_handler(const char *, enum etype, void **, size_t *,
-                                void **, size_t *, size_t, size_t, off_t, int,
-                                void *);
+                                void **, size_t *, size_t, size_t, struct buf *,
+                                off_t, int, void *);
 static int block_input_handler(const char *, enum etype, void **, size_t *,
-                               void **, size_t *, size_t, size_t, off_t, int,
-                               void *);
+                               void **, size_t *, size_t, size_t, struct buf *,
+                               off_t, int, void *);
 
 #ifdef DEBUG_OUTPUT
 static int
@@ -462,7 +462,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
 static int
 block_output_handler(const char *val, enum etype etype, void **outbuf,
                      size_t *outlen, void **bufp, size_t *lenp, size_t totlen,
-                     size_t hdrlen, off_t off, int simple, void *ctx)
+                     size_t hdrlen, struct buf *bufhdl, off_t off, int simple,
+                     void *ctx)
 {
     const void *buf;
     int ret = 0;
@@ -475,6 +476,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
 
     (void)outbuf;
     (void)outlen;
+    (void)bufhdl;
 
     if (etype != ETYPE_BINARY)
         return ERR_TAG(EILSEQ);
@@ -763,7 +765,8 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
 static int
 block_input_handler(const char *val, enum etype etype, void **outbuf,
                     size_t *outlen, void **bufp, size_t *lenp, size_t totlen,
-                    size_t hdrlen, off_t off, int simple, void *ctx)
+                    size_t hdrlen, struct buf *bufhdl, off_t off, int simple,
+                    void *ctx)
 {
     char buf[MAX_OUTPUT_HDR_LEN];
     int err;
@@ -783,6 +786,7 @@ block_input_handler(const char *val, enum etype etype, void **outbuf,
     (void)etype;
     (void)totlen;
     (void)hdrlen;
+    (void)bufhdl;
     (void)off;
 
     if (!simple)
@@ -847,10 +851,14 @@ block_input_handler(const char *val, enum etype etype, void **outbuf,
     /* flags */
     buf[len] = keyframe << BLOCK_FLAG_KEYFRAME_IDX;
 
-    err = (*state->iofns.write)(ebml_ctx(state->hdl), buf, len + 1);
+    err = buf_set_binhdr(bufhdl, buf, len + 1);
     if (err)
         goto err;
 
+/*    err = (*state->iofns.write)(ebml_ctx(state->hdl), buf, len + 1);
+    if (err)
+        goto err;
+*/
     if (resize) {
         free(*bufp);
         *bufp = ret;
@@ -872,7 +880,8 @@ int
 matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
                              void **outbuf, size_t *outlen, void **buf,
                              size_t *len, size_t totlen, size_t hdrlen,
-                             off_t off, void *ctx, int encode)
+                             struct buf *bufhdl, off_t off, void *ctx,
+                             int encode)
 {
     int err;
     struct matroska_state *state = ctx;
@@ -884,6 +893,7 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
     (void)len;
     (void)totlen;
     (void)hdrlen;
+    (void)bufhdl;
     (void)off;
 
     if (encode)
@@ -936,32 +946,35 @@ int
 matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                              void **outbuf, size_t *outlen, void **buf,
                              size_t *len, size_t totlen, size_t hdrlen,
-                             off_t off, void *ctx, int encode)
+                             struct buf *bufhdl, off_t off, void *ctx,
+                             int encode)
 {
     (void)edata;
 
     return (encode ? block_input_handler : block_output_handler)
-           (val, etype, outbuf, outlen, buf, len, totlen, hdrlen, off, 1, ctx);
+           (val, etype, outbuf, outlen, buf, len, totlen, hdrlen, bufhdl, off,
+            1, ctx);
 }
 
 int
 matroska_block_handler(const char *val, enum etype etype, edata_t *edata,
                        void **outbuf, void *outlen, void **buf, size_t *len,
-                       size_t totlen, size_t hdrlen, off_t off, void *ctx,
-                       int encode)
+                       size_t totlen, size_t hdrlen, struct buf *bufhdl,
+                       off_t off, void *ctx, int encode)
 {
     (void)edata;
 
     return (encode ? block_input_handler : block_output_handler)
-           (val, etype, outbuf, outlen, buf, len, totlen, hdrlen, off, 0, ctx);
+           (val, etype, outbuf, outlen, buf, len, totlen, hdrlen, bufhdl, off,
+            0, ctx);
 }
 
 int
 matroska_contentcompalgo_handler(const char *val, enum etype etype,
                                  edata_t *edata, void **outbuf, size_t *outlen,
                                  void **buf, size_t *len, size_t totlen,
-                                 size_t hdrlen, off_t off, void *ctx,
-                                 int encode)
+                                 size_t hdrlen, struct buf *bufhdl, off_t off,
+                                 void *ctx, int encode)
 {
     int err;
     struct matroska_state *state;
@@ -972,6 +985,7 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
     (void)len;
     (void)totlen;
     (void)hdrlen;
+    (void)bufhdl;
     (void)off;
 
     if (encode)
@@ -1005,8 +1019,9 @@ int
 matroska_contentcompsettings_handler(const char *val, enum etype etype,
                                      edata_t *edata, void **outbuf,
                                      size_t *outlen, void **buf, size_t *len,
-                                     size_t totlen, size_t hdrlen, off_t off,
-                                     void *ctx, int encode)
+                                     size_t totlen, size_t hdrlen,
+                                     struct buf *bufhdl, off_t off, void *ctx,
+                                     int encode)
 {
     int err;
     size_t length;
@@ -1018,6 +1033,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
     (void)outlen;
     (void)totlen;
     (void)hdrlen;
+    (void)bufhdl;
     (void)off;
 
     if (encode)
