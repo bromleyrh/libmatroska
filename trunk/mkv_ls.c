@@ -835,7 +835,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         fputs("Synchronization error: total length of frames in block output "
               "too small\n",
               stderr);
-        return -EIO;
+/*        return -EIO;*/
     }
     ctxp->remlen = framelen;
 
@@ -933,7 +933,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
             fprintf(stderr, "Synchronization error: offset %" PRIi64 " byte%s "
                             "(%+" PRIi64 " byte%s)\n",
                     PL(off), PL(off - ctxp->off));
-            return -EIO;
+/*            return -EIO;*/
         }
     }
 
@@ -971,7 +971,7 @@ end:
         fputs("Synchronization error: total length of frames in block output "
               "too large\n",
               stderr);
-        return -EIO;
+/*        return -EIO;*/
     }
     ctxp->remlen -= len;
 
