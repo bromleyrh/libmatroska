@@ -654,7 +654,7 @@ cvt_string_to_binary(matroska_metadata_t *dst, size_t *len, json_val_t obj,
 
     vallen = strlen(str) / 2;
 
-    val = malloc(vallen + 1);
+    val = malloc(vallen);
     if (val == NULL) {
         res = MINUS_ERRNO;
         goto err;
@@ -672,12 +672,11 @@ cvt_string_to_binary(matroska_metadata_t *dst, size_t *len, json_val_t obj,
 
         s += 2;
     }
-    val[i] = '\0';
 
     free(str);
 
     dst->data = val;
-    dst->len = strlen(val);
+    dst->len = i;
 
     return 0;
 
