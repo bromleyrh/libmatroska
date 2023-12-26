@@ -315,7 +315,7 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
 static unsigned char
 from_hex(char c)
 {
-    return c - isdigit(c) ? '0' : 'a' - 10;
+    return c - (isdigit(c) ? '0' : 'a' - 10);
 }
 
 static int
