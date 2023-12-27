@@ -712,6 +712,7 @@ resize_master_elem(struct buf *buf, int64_t *adj)
     int64_t adjust;
     size_t elensz;
 
+    elensz = sizeof(elen);
     err = u64_to_edatasz(buf->elenval, elen, &elensz);
     if (err)
         return err;
