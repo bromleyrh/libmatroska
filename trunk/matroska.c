@@ -414,10 +414,10 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
                                              tdata->keyframe, state->ctx);
                 if (res != 0)
                     return res;
+                new_frame = 0;
             }
             assert((size_t)tdata->frame_idx < tdata->num_frames);
             tdata->next_frame_off += framelen;
-            new_frame = 0;
         }
 
         seglen = dp - sp;
@@ -435,6 +435,7 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
                         return res;
                     state->interrupt_read = 1;
                 }
+                new_frame = 0;
             }
 
             len -= seglen;
