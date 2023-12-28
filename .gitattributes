@@ -1,1 +1,2 @@
-*.png.gpg -delta
+*.png.gpg   -delta
+*.tar.xz    -delta
