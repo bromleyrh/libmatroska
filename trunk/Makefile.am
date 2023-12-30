@@ -8,7 +8,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = include
 
-EXTRA_DIST = bootstrap build-aux doc libmatroskalite.map libmatroskalite.pc.in \
+EXTRA_DIST = bootstrap build-aux libmatroskalite.map libmatroskalite.pc.in \
 	lsmkv pipefail schema_parse_cached schemas .version
 
 build_date = "$(shell date)"
