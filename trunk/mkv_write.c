@@ -897,6 +897,7 @@ write_mkv(int infd, struct ctx *ctx)
     }
     switch (errno) {
     case ENOTTY:
+    case ENOSYS:
     case 0:
         break;
     default:
