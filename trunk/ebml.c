@@ -53,7 +53,7 @@ struct elem_stack_ent {
     const struct elem_data  *data;
     size_t                  hdrlen;
     uint64_t                elen;
-    size_t                  totlen;
+    uint64_t                totlen;
     unsigned                segment;
     struct buf              *buf;
     ebml_master_cb_t        *master_cb;
