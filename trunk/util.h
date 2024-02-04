@@ -7,8 +7,8 @@
 
 #include "config.h"
 
-#include <time.h>
 #include <stddef.h>
+#include <time.h>
 
 #ifdef HAVE_FLS
 #include <strings.h>

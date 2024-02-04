@@ -812,8 +812,8 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
 {
     int ret;
     size_t idx, len;
-    size_t tmp;
     struct elem_stack_ent *ent;
+    uint64_t tmp;
 
     len = stk->len;
 
@@ -829,12 +829,12 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
     for (;;) {
         tmp = ent->totlen - ent->hdrlen;
         if (ent->elen != EDATASZ_UNKNOWN && tmp != ent->elen) {
-            fprintf(stderr, "Synchronization error: master element size %zu"
-                            " byte%s (%+" PRIi64 " byte%s)\n",
+            fprintf(stderr, "Synchronization error: master element size"
+                            " %" PRIu64 " byte%s (%+" PRIi64 " byte%s)\n",
                     PL(tmp), PL((int64_t)tmp - (int64_t)ent->elen));
             abort();
         }
-        fprintf(stderr, "Master element %s has size %zu byte%s\n",
+        fprintf(stderr, "Master element %s has size %" PRIu64 " byte%s\n",
                 ent->data->val, PL(tmp));
 
         if (ent->master_cb != NULL) {
