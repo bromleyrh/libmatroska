@@ -41,6 +41,7 @@ version.c
 *.so
 
 /mkv_cat
+/mkv_catalog
 /mkv_dump
 /mkv_ls
 /mkv_write

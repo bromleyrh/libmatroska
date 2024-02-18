@@ -7,12 +7,16 @@
 
 #include "config.h"
 
+#include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <time.h>
 
 #ifdef HAVE_FLS
 #include <strings.h>
 #endif
+
+#define UINT64_BIT (sizeof(uint64_t) * CHAR_BIT)
 
 #define power_of_2(x) ((~((x) - 1) & (x)) == (x))
 
