@@ -904,10 +904,11 @@ process_paths(int infd, int outfd)
     for (;;) {
         size_t len;
 
+        errno = 0;
         if (getline(&line, &linecap, inf) == -1) {
             res = -errno;
             free(line);
-            if (!feof(inf))
+            if (res != 0)
                 goto err3;
             break;
         }
