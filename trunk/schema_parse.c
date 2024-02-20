@@ -905,11 +905,10 @@ process_paths(int infd, int outfd)
         size_t len;
 
         if (getline(&line, &linecap, inf) == -1) {
+            res = -errno;
             free(line);
-            if (!feof(inf)) {
-                res = -errno;
+            if (!feof(inf))
                 goto err3;
-            }
             break;
         }
         len = strlen(line);
