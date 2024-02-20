@@ -162,6 +162,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, int reloff)
 
     str1 = NULL;
     len = 0;
+    errno = 0;
     if (getline(&str1, &len, outf) == -1) {
         err = errno == 0 ? -EIO : MINUS_ERRNO;
         goto err2;
@@ -175,6 +176,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, int reloff)
 
     str2 = NULL;
     len = 0;
+    errno = 0;
     if (getline(&str2, &len, outf) == -1) {
         err = errno == 0 ? -EIO : MINUS_ERRNO;
         free(str1);
