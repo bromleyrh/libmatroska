@@ -13,7 +13,7 @@ do_configure()
 {
 	rm_cache_file
 
-	scan-build ./configure --enable-debugging --with-go=no
+	scan-build ./configure --enable-debugging
 	touch "$dummy_file"
 }
 
