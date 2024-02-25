@@ -469,6 +469,8 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
     idnode->parent_idnode = k->addr == NULL
                             ? NULL : ((struct ns_key *)k->addr)->idnode;
 
+    free(k);
+
     res = radix_tree_insert(rt, idstr, &idnode);
     if (res != 0)
         goto err4;
