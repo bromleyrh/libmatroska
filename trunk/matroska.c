@@ -242,8 +242,10 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
         totframesz += framesz;
     }
 
-    if (totframesz >= totlen)
-        return ERR_TAG(EILSEQ);
+    if (totframesz >= totlen) {
+        err = ERR_TAG(EILSEQ);
+        goto err;
+    }
 
     hlen = bufp - state->lacing_hdr_buf;
 
@@ -259,7 +261,7 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
                             state->ebml_hdr_len + hlen, state->data_off + hlen,
                             tdata, state);
     if (err)
-        return err;
+        goto err;
 
     free(state->lacing_hdr_buf);
     state->lacing_hdr_buf = NULL;
@@ -270,6 +272,10 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
                   ? state->lacing_hdr_len - startoff : 0;
     }
     return 1;
+
+err:
+    assert(err < 0);
+    return err;
 }
 
 static int
@@ -303,14 +309,14 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
 
         err = vint_to_u64(bufp, &fsz, &hlen);
         if (err)
-            return err;
+            goto err1;
 
         if (i == 0)
             framesz = fsz;
         else {
             delta = fsz + 1 - (1 << (hlen * CHAR_BIT - hlen - 1));
             if (delta < 0 && (uint64_t)-delta > framesz)
-                return ERR_TAG(EILSEQ);
+                goto err2;
             framesz += delta;
         }
 
@@ -323,7 +329,7 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
     }
 
     if (totframesz >= totlen)
-        return ERR_TAG(EILSEQ);
+        goto err2;
 
     hlen = bufp - state->lacing_hdr_buf;
 
@@ -339,7 +345,7 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
                             state->ebml_hdr_len + hlen, state->data_off + hlen,
                             tdata, state);
     if (err)
-        return err;
+        goto err1;
 
     free(state->lacing_hdr_buf);
     state->lacing_hdr_buf = NULL;
@@ -350,6 +356,12 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
                   ? state->lacing_hdr_len - startoff : 0;
     }
     return 1;
+
+err2:
+    err = ERR_TAG(EILSEQ);
+err1:
+    assert(err < 0);
+    return err;
 }
 
 static int
