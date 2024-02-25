@@ -1713,6 +1713,8 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
 
     /* output EBML element length */
 
+    buflen = sizeof(hdl->buf) - hlen;
+
     binhlen = 0;
     if (etype == ETYPE_BINARY) {
         res = invoke_binary_handler(etype, act, NULL, &binhlen, NULL, &binhlen,
@@ -1723,7 +1725,6 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
     } else if (segment)
         val->len = (size_t)-1;
 
-    buflen = sizeof(hdl->buf) - hlen;
     res = output_edatasz(hdl->si, &buflen, val, etype, &elen);
     if (res != 0)
         return res;
