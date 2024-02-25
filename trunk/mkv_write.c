@@ -1326,9 +1326,10 @@ separate_data(int infd, struct ctx *ctx)
             json_val_free(elem.value);
         }
 
-        if (continued)
+        if (continued) {
+            assert(lastvalue != NULL);
             value = lastvalue;
-        else {
+        } else {
             res = parser_look_up(header ? EBML_PARSER : MATROSKA_PARSER, buf,
                                  &data, NULL);
             free(buf);
