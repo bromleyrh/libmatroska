@@ -435,7 +435,6 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
                         return res;
                     state->interrupt_read = 1;
                 }
-                new_frame = 0;
             }
 
             len -= seglen;
