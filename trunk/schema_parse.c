@@ -936,6 +936,7 @@ process_paths(int infd, int outfd)
         k->addr = retkey.addr;
         k->name = retkey.name;
         k->type = len > 0 && line[len-1] == '/' ? TYPE_DIR : TYPE_ENT;
+        k->idnode = NULL;
 
         res = ns_insert(ns, k, NULL);
         free(k);
