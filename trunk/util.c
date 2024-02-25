@@ -4,10 +4,7 @@
 
 #include "config.h"
 
-#define NO_ASSERT_MACROS
 #include "common.h"
-#undef NO_ASSERT_MACROS
-
 #include "util.h"
 
 #include <strings_ext.h>
@@ -33,11 +30,11 @@ get_locale(locale_t *loc)
 
     ret = uselocale((locale_t)0);
     if (ret == (locale_t)0)
-        return errno;
+        return ERRNO;
 
     ret = duplocale(ret);
     if (ret == (locale_t)0)
-        return errno;
+        return ERRNO;
 
     *loc = ret;
     return 0;
