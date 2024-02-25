@@ -279,7 +279,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
         res = avl_tree_search(ns, &kp, &kp);
         if (res != 1) {
             if (res != 0)
-                return res;
+                goto err;
             if (strtok_r(NULL, "/", &saveptr) != NULL) {
                 res = -ENOENT;
                 goto err;
