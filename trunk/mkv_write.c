@@ -1013,7 +1013,7 @@ write_mkv(int infd, struct ctx *ctx)
             /* fallthrough */
         default:
             res = -EILSEQ;
-            goto err5;
+            goto err6;
         }
 
         elem.value = NULL;
