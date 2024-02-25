@@ -4,12 +4,9 @@
 
 #define _WITH_GETLINE
 
+#include "common.h"
 #include "element.h"
 #include "radix_tree.h"
-
-#define NO_ASSERT_MACROS
-#include "common.h"
-#undef NO_ASSERT_MACROS
 
 #include <avl_tree.h>
 #include <crypto.h>
@@ -131,7 +128,7 @@ ns_key_output(const void *k, void *ctx)
     sz = 16;
     dir_stk = malloc(sz * sizeof(*dir_stk));
     if (dir_stk == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     dir_stk[0] = key;
     len = 1;
@@ -143,7 +140,7 @@ ns_key_output(const void *k, void *ctx)
             sz *= 2;
             tmp = realloc(dir_stk, sz * sizeof(*tmp));
             if (tmp == NULL) {
-                err = -errno;
+                err = MINUS_ERRNO;
                 goto err;
             }
             dir_stk = tmp;
@@ -212,7 +209,7 @@ ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
 
     k = malloc(sizeof(*k));
     if (k == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     k->addr = key->addr;
     k->name = key->name;
@@ -263,7 +260,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
 
     s = strdup(path);
     if (s == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     name = strtok_r(s, "/", &saveptr);
     if (name == NULL) {
@@ -309,7 +306,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
     if (res == 0) {
         k.name = strdup(k.name);
         if (k.name == NULL) {
-            res = -errno;
+            res = MINUS_ERRNO;
             goto err;
         }
         *retkey = k;
@@ -375,7 +372,7 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
 
     idnode = malloc(sizeof(*idnode));
     if (idnode == NULL)
-        return -errno;
+        return MINUS_ERRNO;
 
     prop = xmlGetProp(node, (unsigned char *)"type");
     if (prop == NULL) {
@@ -452,7 +449,7 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
 
     k = malloc(sizeof(*k));
     if (k == NULL) {
-        res = -errno;
+        res = MINUS_ERRNO;
         goto err5;
     }
 
@@ -776,7 +773,7 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype)
         if (strcmp("ebml", doctype) != 0) {
             idnode = malloc(sizeof(*idnode));
             if (idnode == NULL) {
-                err = -errno;
+                err = MINUS_ERRNO;
                 goto err1;
             }
 
@@ -787,7 +784,7 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype)
             k.name = strdup(strcmp("matroska_semantics", doctype) == 0
                             ? "EBMLSemantics" : "EBML");
             if (k.name == NULL) {
-                err = -errno;
+                err = MINUS_ERRNO;
                 goto err3;
             }
             k.addr = NULL;
@@ -840,7 +837,7 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype)
     if (fflush(stdout) == EOF
         || (fsync(STDOUT_FILENO) == -1
             && errno != EBADF && errno != EINVAL && errno != ENOTSUP)) {
-        err = -errno;
+        err = MINUS_ERRNO;
         goto err2;
     }
 
@@ -875,24 +872,24 @@ process_paths(int infd, int outfd)
 
     infd = dup(infd);
     if (infd == -1)
-        return -errno;
+        return MINUS_ERRNO;
 
     inf = fdopen(infd, "r");
     if (inf == NULL) {
-        res = -errno;
+        res = MINUS_ERRNO;
         close(infd);
         return res;
     }
 
     outfd = dup(outfd);
     if (outfd == -1) {
-        res = -errno;
+        res = MINUS_ERRNO;
         goto err1;
     }
 
     outf = fdopen(outfd, "w");
     if (outf == NULL) {
-        res = -errno;
+        res = MINUS_ERRNO;
         close(outfd);
         goto err1;
     }
@@ -929,7 +926,7 @@ process_paths(int infd, int outfd)
 
         k = malloc(sizeof(*k));
         if (k == NULL) {
-            res = -errno;
+            res = MINUS_ERRNO;
             goto err4;
         }
 
@@ -953,11 +950,11 @@ process_paths(int infd, int outfd)
     if (fflush(outf) == EOF
         || (fsync(fileno(outf)) == -1
             && errno != EBADF && errno != EINVAL && errno != ENOTSUP)) {
-        res = -errno;
+        res = MINUS_ERRNO;
         goto err2;
     }
 
-    res = fclose(outf) == EOF ? -errno : 0;
+    res = fclose(outf) == EOF ? MINUS_ERRNO : 0;
     fclose(inf);
 
     return res;
