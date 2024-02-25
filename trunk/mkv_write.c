@@ -1008,6 +1008,8 @@ write_mkv(int infd, struct ctx *ctx)
             goto err5;
         }
 
+        elem.value = NULL;
+
         continued = 1;
 
         n = json_val_object_get_num_elem(e);
@@ -1040,6 +1042,7 @@ write_mkv(int infd, struct ctx *ctx)
             free(buf);
             buf = NULL;
             json_val_free(elem.value);
+            elem.value = NULL;
         }
 
         if (continued) {
@@ -1171,7 +1174,8 @@ err9:
 err8:
     free(mdata);
 err7:
-    json_val_free(elem.value);
+    if (elem.value != NULL)
+        json_val_free(elem.value);
     free(buf);
 err6:
     json_val_free(e);
