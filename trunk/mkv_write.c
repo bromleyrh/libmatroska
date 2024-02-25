@@ -1284,7 +1284,7 @@ separate_data(int infd, struct ctx *ctx)
             /* fallthrough */
         default:
             res = -EILSEQ;
-            goto err4;
+            goto err5;
         }
 
         n = json_val_object_get_num_elem(e);
