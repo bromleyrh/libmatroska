@@ -256,18 +256,18 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
                 argc < 1
                 ? "Must specify input files"
                 : "Unrecognized arguments");
-        return -EINVAL;
+        goto err2;
     }
 
     sep1 = argv[0] + strcspn(argv[0], "#:");
     if (*sep1 == '\0')
-        return -EINVAL;
+        goto err2;
     fd1 = *sep1 == '#';
     *sep1++ = '\0';
 
     sep2 = strchr(sep1, ';');
     if (sep2 == NULL)
-        return -EINVAL;
+        goto err2;
     *sep2++ = '\0';
     if (*sep2 == '#') {
         fd2 = 1;
@@ -306,9 +306,17 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
         fd3 = -1;
 
     err = parse_file_spec(sep1, fd1, sep2, fd2, sep3, fd3, &ctx->cb);
-    if (!err)
-        ctx->import = strcmp(argv[0], "i") == 0;
+    if (err)
+        goto err1;
 
+    ctx->import = strcmp(argv[0], "i") == 0;
+
+    return 0;
+
+err2:
+    err = -EINVAL;
+err1:
+    free(ctx->basenm);
     return err;
 }
 
