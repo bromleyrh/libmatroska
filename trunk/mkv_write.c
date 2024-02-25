@@ -1411,6 +1411,8 @@ main(int argc, char **argv)
     if (tmp != 0)
         err = tmp;
 
+    free(ctx.basenm);
+
     return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
