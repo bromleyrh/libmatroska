@@ -1210,6 +1210,7 @@ separate_data(int infd, struct ctx *ctx)
 {
     char *buf;
     const char *errmsg;
+    const char *lastvalue;
     FILE *f;
     int header;
     int i, j, m, n;
@@ -1259,12 +1260,15 @@ separate_data(int infd, struct ctx *ctx)
     ctx->lastoff = -1;
     header = 1;
 
+    lastvalue = NULL;
+
     m = json_val_array_get_num_elem(jval);
 
     for (i = 0; i < m; i++) {
         char *name;
         const char *value;
         const struct elem_data *data;
+        int continued;
         size_t buflen;
 
         e = json_val_array_get_elem(jval, i);
@@ -1288,6 +1292,8 @@ separate_data(int infd, struct ctx *ctx)
             goto err5;
         }
 
+        continued = 1;
+
         n = json_val_object_get_num_elem(e);
 
         for (j = 0; j < n; j++) {
@@ -1306,25 +1312,33 @@ separate_data(int infd, struct ctx *ctx)
             }
 
             idx = HASH_MD_ELEM(buf);
-            if (idx >= ARRAY_SIZE(md_elem))
+            if (idx >= ARRAY_SIZE(md_elem)) {
+                continued = 0;
                 break;
+            }
             value = md_elem[idx];
-            if (value == NULL || strcmp(value, buf) != 0)
+            if (value == NULL || strcmp(value, buf) != 0) {
+                continued = 0;
                 break;
+            }
 
             free(buf);
             json_val_free(elem.value);
         }
 
-        res = parser_look_up(header ? EBML_PARSER : MATROSKA_PARSER, buf, &data,
-                             NULL);
-        free(buf);
-        if (res != 1) {
-            if (res == 0)
-                res = -EILSEQ;
-            goto err5;
+        if (continued)
+            value = lastvalue;
+        else {
+            res = parser_look_up(header ? EBML_PARSER : MATROSKA_PARSER, buf,
+                                 &data, NULL);
+            free(buf);
+            if (res != 1) {
+                if (res == 0)
+                    res = -EILSEQ;
+                goto err5;
+            }
+            lastvalue = value = data->val;
         }
-        value = data->val;
 
         buflen = strlen(value) + 1;
 
