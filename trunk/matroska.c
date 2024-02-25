@@ -254,6 +254,7 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->num_frames = state->lacing_nframes;
 
     debug_printf("Frame size %" PRIu64 " byte%s\n", PL(framesz));
+    (void)framesz;
 
     tdata->next_frame_off = 0;
 
@@ -338,6 +339,7 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
     tdata->num_frames = state->lacing_nframes;
 
     debug_printf("Frame size %" PRIu64 " byte%s\n", PL(framesz));
+    (void)framesz;
 
     tdata->next_frame_off = 0;
 
