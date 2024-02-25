@@ -1154,7 +1154,8 @@ write_mkv(int infd, struct ctx *ctx)
 
             if (!cluster && cstate.cluster_mdata != NULL)
                 cstate.cluster_mdata->len += hdrlen + len;
-        }
+        } else if (mdata != NULL)
+            free(mdata);
 
         free(buf);
         buf = NULL;
