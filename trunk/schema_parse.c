@@ -938,8 +938,9 @@ process_paths(int infd, int outfd)
         k->type = len > 0 && line[len-1] == '/' ? TYPE_DIR : TYPE_ENT;
 
         res = ns_insert(ns, k, NULL);
+        free(k);
         if (res != 0)
-            goto err5;
+            goto err4;
     }
 
     res = ns_dump(outf, ns);
@@ -960,8 +961,6 @@ process_paths(int infd, int outfd)
 
     return res;
 
-err5:
-    free(k);
 err4:
     free(retkey.name);
 err3:
