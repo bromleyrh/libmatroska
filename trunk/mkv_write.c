@@ -1283,13 +1283,13 @@ separate_data(int infd, struct ctx *ctx)
 
             res = json_val_object_get_elem_by_idx(e, j, &elem);
             if (res != 0)
-                goto err6;
+                goto err5;
 
             if (awcstombs(&buf, elem.key, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
                 res = MINUS_ERRNO;
                 json_val_free(elem.value);
-                goto err6;
+                goto err5;
             }
 
             idx = HASH_MD_ELEM(buf);
