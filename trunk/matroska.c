@@ -390,6 +390,7 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
                   struct matroska_state *state)
 {
     const char *dp, *sp;
+    int pending_new_frame;
     int res;
     size_t frame_off;
     size_t num_logical_bytes;
@@ -406,6 +407,8 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
     } else
         num_logical_bytes = 0;
 
+    pending_new_frame = 0;
+
     for (sp = buf;; sp = dp) {
         int new_frame;
         size_t framelen;
@@ -416,19 +419,22 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
         framelen = tdata->frame_sz[tdata->frame_idx];
 
         if (new_frame) {
-            if (state->cb.output_cb != NULL
-                && tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
-                res = (*state->cb.output_cb)(state->trackno,
-                                             tdata->stripped_bytes,
-                                             tdata->num_stripped_bytes,
-                                             tdata->num_stripped_bytes
-                                             + framelen,
-                                             totlen, hdrlen, num_logical_bytes,
-                                             off, tdata->ts, new_frame,
-                                             tdata->keyframe, state->ctx);
-                if (res != 0)
-                    return res;
-                new_frame = 0;
+            if (state->cb.output_cb != NULL) {
+                if (tdata->compalg == CONTENT_COMP_ALGO_HEADER_STRIPPING) {
+                    res = (*state->cb.output_cb)(state->trackno,
+                                                 tdata->stripped_bytes,
+                                                 tdata->num_stripped_bytes,
+                                                 tdata->num_stripped_bytes
+                                                 + framelen,
+                                                 totlen, hdrlen,
+                                                 num_logical_bytes, off,
+                                                 tdata->ts, 1, tdata->keyframe,
+                                                 state->ctx);
+                    if (res != 0)
+                        return res;
+                    new_frame = pending_new_frame = 0;
+                } else
+                    pending_new_frame = 1;
             }
             assert((size_t)tdata->frame_idx < tdata->num_frames);
             tdata->next_frame_off += framelen;
@@ -442,13 +448,14 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
                                              tdata->num_stripped_bytes
                                              + framelen,
                                              totlen, hdrlen, num_logical_bytes,
-                                             off, tdata->ts, new_frame,
+                                             off, tdata->ts, pending_new_frame,
                                              tdata->keyframe, state->ctx);
                 if (res != 0) {
                     if (res != 1)
                         return res;
                     state->interrupt_read = 1;
                 }
+                pending_new_frame = 0;
             }
 
             len -= seglen;
