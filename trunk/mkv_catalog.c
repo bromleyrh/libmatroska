@@ -1243,6 +1243,21 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
     struct index_obj_ent e;
     uint64_t id;
 
+    static const wchar_t *filtered_keys[] = {
+        L"Cluster",     L"pNvET",
+        L"SimpleBlock", L"X0",
+        L"Timestamp",   L"b1",
+        L"continued"
+    };
+
+    for (i = 0; i < (int)ARRAY_SIZE(filtered_keys); i++) {
+        json_object_elem_t tmpe;
+
+        res = json_val_object_get_elem_by_key(jval, filtered_keys[i], &tmpe);
+        if (res != -EINVAL)
+            return res == 0 ? 1 : res;
+    }
+
     n = json_val_object_get_num_elem(jval);
     if (n == 0)
         return 0;
@@ -1251,11 +1266,6 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
     json_val_free(elm.value);
     if (res != 0)
         return res;
-
-    if (wcscmp(L"Cluster", elm.key) == 0 || wcscmp(L"Timestamp", elm.key) == 0
-        || wcscmp(L"SimpleBlock", elm.key) == 0
-        || wcscmp(L"continued", elm.key) == 0)
-        return 1;
 
     res = do_index_trans_new(ctx);
     if (res != 0)
