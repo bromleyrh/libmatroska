@@ -641,6 +641,7 @@ do_index_open(struct index_ctx **ctx, const char *pathname, size_t key_size,
               db_hl_key_cmp_t key_cmp, int ro)
 {
     int err;
+    int fl;
     struct index_ctx *ret;
 
     if (omalloc(&ret) == NULL)
@@ -660,8 +661,11 @@ do_index_open(struct index_ctx **ctx, const char *pathname, size_t key_size,
     }
     ret->key_ctx->last_key_valid = 0;
 
-    err = db_hl_open(&ret->dbh, pathname, key_size, key_cmp, ret->key_ctx,
-                     ro ? DB_HL_RDONLY : 0);
+    fl = DB_HL_NDELAY;
+    if (ro)
+        fl |= DB_HL_RDONLY;
+
+    err = db_hl_open(&ret->dbh, pathname, key_size, key_cmp, ret->key_ctx, fl);
     if (err) {
         if (err != -EROFS) {
             err = ERR_TAG(-err);
@@ -669,7 +673,7 @@ do_index_open(struct index_ctx **ctx, const char *pathname, size_t key_size,
         }
 
         err = db_hl_open(&ret->dbh, pathname, key_size, key_cmp, ret->key_ctx,
-                         0);
+                         fl & ~DB_HL_RDONLY);
         if (err) {
             err = ERR_TAG(-err);
             goto err3;
@@ -680,7 +684,7 @@ do_index_open(struct index_ctx **ctx, const char *pathname, size_t key_size,
             goto err3;
         }
         err = db_hl_open(&ret->dbh, pathname, key_size, key_cmp, ret->key_ctx,
-                         DB_HL_RDONLY);
+                         fl);
         if (err) {
             err = ERR_TAG(-err);
             goto err3;
