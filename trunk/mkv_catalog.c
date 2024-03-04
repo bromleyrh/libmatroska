@@ -1244,10 +1244,10 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
     uint64_t id;
 
     static const wchar_t *filtered_keys[] = {
+        L"continued",
         L"Cluster",     L"pNvET",
         L"SimpleBlock", L"X0",
-        L"Timestamp",   L"b1",
-        L"continued"
+        L"Timestamp",   L"b1"
     };
 
     for (i = 0; i < (int)ARRAY_SIZE(filtered_keys); i++) {
