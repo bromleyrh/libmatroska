@@ -1254,7 +1254,7 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
 
     if (wcscmp(L"Cluster", elm.key) == 0 || wcscmp(L"Timestamp", elm.key) == 0
         || wcscmp(L"SimpleBlock", elm.key) == 0
-        || wcscmp(L"data_len", elm.key) == 0)
+        || wcscmp(L"continued", elm.key) == 0)
         return 1;
 
     res = do_index_trans_new(ctx);

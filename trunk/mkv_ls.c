@@ -828,6 +828,21 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         err = json_val_array_insert_elem(ctxp->cb.jval, jval);
         if (err)
             return err;
+
+        elem.value = json_val_new(JSON_TYPE_BOOLEAN);
+        if (elem.value == NULL)
+            return -ENOMEM;
+        json_val_boolean_set(elem.value, 1);
+
+        key = wcsdup(L"continued");
+        if (key == NULL)
+            goto err1;
+        elem.key = key;
+
+        err = json_val_object_insert_elem(jval, &elem);
+        json_val_free(elem.value);
+        if (err)
+            goto err2;
     } else
         new_frame = 0;
 
