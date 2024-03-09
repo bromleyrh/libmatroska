@@ -165,6 +165,8 @@ struct attr_output_args {
 
 #define INDEX_PATH_SEP "/"
 
+static volatile sig_atomic_t sigpipe_recv;
+
 static const struct {
     const char  *typestr;
     char        typechar;
@@ -178,6 +180,8 @@ static const struct {
 };
 
 static int enable_debugging_features(void);
+
+static void pipe_handler(int);
 
 static int set_up_signal_handlers(void);
 
@@ -334,22 +338,23 @@ enable_debugging_features()
     return 0;
 }
 
+static void
+pipe_handler(int signum)
+{
+    sigpipe_recv = 1;
+    signal(signum, SIG_IGN);
+}
+
 static int
 set_up_signal_handlers()
 {
     int err;
-    size_t i;
-    struct sigaction sa = {.sa_handler = SIG_IGN};
+    struct sigaction sa = {.sa_handler = &pipe_handler};
 
-    static const int ign_signals[] = {SIGPIPE};
-
-    for (i = 0; i < ARRAY_SIZE(ign_signals); i++) {
-        if (sigaction(ign_signals[i], &sa, NULL) == -1) {
-            err = MINUS_ERRNO;
-            fprintf(stderr, "Couldn't set signal handler: %s\n",
-                    strerror(-err));
-            return err;
-        }
+    if (sigaction(SIGPIPE, &sa, NULL) == -1) {
+        err = MINUS_ERRNO;
+        fprintf(stderr, "Couldn't set signal handler: %s\n", strerror(-err));
+        return err;
     }
 
     return 0;
@@ -2462,9 +2467,11 @@ err3:
 err2:
     fclose(f);
 err1:
-    if (err > 0)
-        err = print_err(err);
-    fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
+    if (!sigpipe_recv) {
+        if (err > 0)
+            err = print_err(err);
+        fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
+    }
     return err;
 }
 
@@ -2551,9 +2558,11 @@ err3:
 err2:
     fclose(f);
 err1:
-    if (err > 0)
-        err = print_err(err);
-    fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
+    if (!sigpipe_recv) {
+        if (err > 0)
+            err = print_err(err);
+        fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
+    }
     return err;
 }
 
@@ -2609,11 +2618,13 @@ err3:
 err2:
     fclose(f);
 err1:
-    if (err > 0)
-        err = print_err(err);
-    if (errmsg != NULL)
-        fprintf(stderr, "%s: ", errmsg);
-    fprintf(stderr, "%s\n", strerror(-err));
+    if (!sigpipe_recv) {
+        if (err > 0)
+            err = print_err(err);
+        if (errmsg != NULL)
+            fprintf(stderr, "%s: ", errmsg);
+        fprintf(stderr, "%s\n", strerror(-err));
+    }
     return err;
 }
 
@@ -2681,11 +2692,13 @@ err3:
 err2:
     fclose(f);
 err1:
-    if (err > 0)
-        err = print_err(err);
-    if (errmsg != NULL)
-        fprintf(stderr, "%s: ", errmsg);
-    fprintf(stderr, "%s\n", strerror(-err));
+    if (!sigpipe_recv) {
+        if (err > 0)
+            err = print_err(err);
+        if (errmsg != NULL)
+            fprintf(stderr, "%s: ", errmsg);
+        fprintf(stderr, "%s\n", strerror(-err));
+    }
     return err;
 }
 
@@ -3020,6 +3033,13 @@ main(int argc, char **argv)
 end:
     free(index_pathname_buf);
     free(pathname);
+    if (sigpipe_recv) {
+        if (signal(SIGPIPE, SIG_DFL) == SIG_ERR)
+            return EXIT_FAILURE;
+        raise(SIGPIPE);
+        for (;;)
+            pause();
+    }
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
