@@ -240,21 +240,23 @@ static int get_id(struct index_ctx *, uint64_t *);
 
 static const char *tabs(int);
 
+static int create_xref_marker(json_val_t *);
+
 static int index_null_value(struct index_ctx *, struct entry *, json_val_t, int,
-                            int, int);
+                            int, int *, int);
 static int index_boolean_value(struct index_ctx *, struct entry *, json_val_t,
-                               int, int, int);
+                               int, int, int *, int);
 static int index_object_value(struct index_ctx *, struct entry *, json_val_t,
-                              int, int, int);
+                              int, int, int *, int);
 static int index_array_value(struct index_ctx *, struct entry *, json_val_t,
-                             int, int, int);
+                             int, int, int *, int);
 static int index_number_value(struct index_ctx *, struct entry *, json_val_t,
-                              int, int, int);
+                              int, int, int *, int);
 static int index_string_value(struct index_ctx *, struct entry *, json_val_t,
-                              int, int, int);
+                              int, int, int *, int);
 
 static int index_value(struct index_ctx *, struct entry *, json_val_t, int,
-                       int, int);
+                       int, int *, int);
 
 static int path_look_up(struct index_ctx *, const char *, uint64_t *,
                         struct entry *, int, FILE *);
@@ -1175,12 +1177,57 @@ tabs(int n)
 }
 
 static int
+create_xref_marker(json_val_t *jval)
+{
+    int err;
+    json_object_elem_t elem;
+    json_val_t ret;
+    wchar_t *key;
+
+    ret = json_val_new(JSON_TYPE_OBJECT);
+    if (ret == NULL)
+        return ERR_TAG(ENOMEM);
+
+    key = wcsdup(L"xref_marker");
+    if (key == NULL) {
+        err = ERR_TAG(errno);
+        goto err1;
+    }
+    elem.key = key;
+
+    elem.value = json_val_new(JSON_TYPE_BOOLEAN);
+    if (elem.value == NULL) {
+        err = ERR_TAG(ENOMEM);
+        goto err2;
+    }
+    json_val_boolean_set(elem.value, 1);
+
+    err = json_val_object_insert_elem(ret, &elem);
+    if (err) {
+        err = ERR_TAG(-err);
+        json_val_free(elem.value);
+        goto err2;
+    }
+
+    *jval = ret;
+    return 0;
+
+err2:
+    free(key);
+err1:
+    json_val_free(ret);
+    return err;
+}
+
+static int
 index_null_value(struct index_ctx *ctx, struct entry *parent_ent,
-                 json_val_t jval, int level, int elem, int output_state)
+                 json_val_t jval, int level, int elem, int *filter_state,
+                 int output_state)
 {
     int err;
 
     (void)jval;
+    (void)filter_state;
     (void)output_state;
 
     err = do_index_trans_new(ctx);
@@ -1209,11 +1256,13 @@ err:
 
 static int
 index_boolean_value(struct index_ctx *ctx, struct entry *parent_ent,
-                    json_val_t jval, int level, int elem, int output_state)
+                    json_val_t jval, int level, int elem, int *filter_state,
+                    int output_state)
 {
     int err;
     int val;
 
+    (void)filter_state;
     (void)output_state;
 
     err = do_index_trans_new(ctx);
@@ -1242,10 +1291,12 @@ err:
 
 static int
 index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
-                   json_val_t jval, int level, int elem, int output_state)
+                   json_val_t jval, int level, int elem, int *filter_state,
+                   int output_state)
 {
     int i, n;
     int res;
+    json_val_t rval;
     json_object_elem_t elm;
     struct entry ent;
     struct index_key k;
@@ -1259,26 +1310,44 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         L"Timestamp",   L"b1"
     };
 
-    for (i = 0; i < (int)ARRAY_SIZE(filtered_keys); i++) {
+    rval = NULL;
+
+    i = 0;
+    for (;;) {
         json_object_elem_t tmpe;
 
         res = json_val_object_get_elem_by_key(jval, filtered_keys[i], &tmpe);
-        if (res != -EINVAL)
-            return res == 0 ? 1 : res;
+        if (res != -EINVAL) {
+            if (res != 0)
+                return res;
+            if (*filter_state == 1)
+                return 1;
+            res = create_xref_marker(&rval);
+            if (res != 0)
+                return res;
+            jval = rval;
+            *filter_state = 1;
+            break;
+        }
+        ++i;
+        if (i == (int)ARRAY_SIZE(filtered_keys)) {
+            *filter_state = 0;
+            break;
+        }
     }
 
     n = json_val_object_get_num_elem(jval);
     if (n == 0)
-        return 0;
+        goto end;
 
     res = json_val_object_get_elem_by_idx(jval, 0, &elm);
     json_val_free(elm.value);
     if (res != 0)
-        return res;
+        goto err1;
 
     res = do_index_trans_new(ctx);
     if (res != 0)
-        return res;
+        goto err1;
 
     if (parent_ent == NULL) {
         k.type = TYPE_INTERNAL;
@@ -1286,46 +1355,46 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         res = do_index_look_up(ctx, &k, &k, NULL, NULL);
         if (res != 1) {
             if (res != 0)
-                goto err;
+                goto err2;
 
             res = get_id(ctx, &id);
             if (res != 0)
-                goto err;
+                goto err2;
             if (id != ROOT_ID) {
                 res = ERR_TAG(EIO);
-                goto err;
+                goto err2;
             }
 
             k.type = TYPE_INTERNAL;
             k.id = id;
             res = do_index_insert(ctx, &k, NULL, 0);
             if (res != 0)
-                goto err;
+                goto err2;
         } else
             id = k.id;
     } else {
         res = do_index_look_up(ctx, &parent_ent->k, &k, &e, NULL);
         if (res != 1) {
             if (res != 0)
-                goto err;
+                goto err2;
 
             res = get_id(ctx, &id);
             if (res != 0)
-                goto err;
+                goto err2;
 
             parent_ent->e.subtype = TYPE_OBJECT;
             parent_ent->e.id = id;
             res = do_index_insert(ctx, &parent_ent->k, &parent_ent->e,
                                   sizeof(parent_ent->e));
             if (res != 0)
-                goto err;
+                goto err2;
         } else
             id = e.id;
     }
 
     res = do_index_trans_commit(ctx);
     if (res != 0)
-        goto err;
+        goto err2;
 
     ent.k.type = TYPE_EXTERNAL_STRING;
     ent.k.id = id;
@@ -1336,35 +1405,49 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         size_t n;
 
         res = json_val_object_get_elem_by_idx(jval, i, &elm);
-        if (res != 0)
-            return ERR_TAG(res == -EADDRNOTAVAIL ? EIO : -res);
+        if (res != 0) {
+            res = ERR_TAG(res == -EADDRNOTAVAIL ? EIO : -res);
+            goto err1;
+        }
 
         src = elm.key;
         n = wcsrtombs((char *)ent.k.string, &src, sizeof(ent.k.string),
                       memset(&s, 0, sizeof(s)));
-        if (n == (size_t)-1)
-            return ERR_TAG(errno);
-        if (src != NULL)
-            return ERR_TAG(ENAMETOOLONG);
+        if (n == (size_t)-1) {
+            res = ERR_TAG(errno);
+            goto err1;
+        }
+        if (src != NULL) {
+            res = ERR_TAG(ENAMETOOLONG);
+            goto err1;
+        }
 
         fprintf(stderr, "%s%ls: ", elem ? "" : tabs(level), elm.key);
 
-        res = index_value(ctx, &ent, elm.value, level, 1, output_state);
+        res = index_value(ctx, &ent, elm.value, level, 1, filter_state,
+                          output_state);
         json_val_free(elm.value);
         if (res != 0)
-            return res;
+            goto err1;
     }
 
+end:
+    if (rval != NULL)
+        json_val_free(rval);
     return 0;
 
-err:
+err2:
     do_index_trans_abort(ctx);
+err1:
+    if (rval != NULL)
+        json_val_free(rval);
     return res;
 }
 
 static int
 index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
-                  json_val_t jval, int level, int elem, int output_state)
+                  json_val_t jval, int level, int elem, int *filter_state,
+                  int output_state)
 {
     int i, n;
     int init_output_state;
@@ -1422,7 +1505,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
         if (output_state == 0)
             fprintf(stderr, "%s[%d]: ", elem ? "" : tabs(level), nelem);
 
-        res = index_value(ctx, &ent, val, level, 1, output_state);
+        res = index_value(ctx, &ent, val, level, 1, filter_state, output_state);
         json_val_free(val);
         switch (res) {
         case 0:
@@ -1446,10 +1529,12 @@ err:
 
 static int
 index_number_value(struct index_ctx *ctx, struct entry *parent_ent,
-                   json_val_t jval, int level, int elem, int output_state)
+                   json_val_t jval, int level, int elem, int *filter_state,
+                   int output_state)
 {
     int err;
 
+    (void)filter_state;
     (void)output_state;
 
     parent_ent->d.numeric = json_val_numeric_get(jval);
@@ -1480,7 +1565,8 @@ err:
 
 static int
 index_string_value(struct index_ctx *ctx, struct entry *parent_ent,
-                   json_val_t jval, int level, int elem, int output_state)
+                   json_val_t jval, int level, int elem, int *filter_state,
+                   int output_state)
 {
     const wchar_t *src;
     int err;
@@ -1488,6 +1574,7 @@ index_string_value(struct index_ctx *ctx, struct entry *parent_ent,
     size_t n;
     wchar_t *str;
 
+    (void)filter_state;
     (void)output_state;
 
     str = json_val_string_get(jval);
@@ -1531,13 +1618,14 @@ err1:
 
 static int
 index_value(struct index_ctx *ctx, struct entry *parent_ent, json_val_t jval,
-            int level, int elem, int output_state)
+            int level, int elem, int *filter_state, int output_state)
 {
-    int (*fn)(struct index_ctx *, struct entry *, json_val_t, int, int, int);
+    int (*fn)(struct index_ctx *, struct entry *, json_val_t, int, int, int *,
+              int);
     json_val_type_t type;
 
     static int (*const fns[])(struct index_ctx *, struct entry *, json_val_t,
-                              int, int, int) = {
+                              int, int, int *, int) = {
         [JSON_TYPE_NULL]    = &index_null_value,
         [JSON_TYPE_BOOLEAN] = &index_boolean_value,
         [JSON_TYPE_OBJECT]  = &index_object_value,
@@ -1563,7 +1651,8 @@ index_value(struct index_ctx *ctx, struct entry *parent_ent, json_val_t jval,
         elem = 0;
     }
 
-    return (*fn)(ctx, parent_ent, jval, level, elem, output_state);
+    return (*fn)(ctx, parent_ent, jval, level, elem, filter_state,
+                 output_state);
 }
 
 static int
@@ -2361,6 +2450,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     const char *src;
     FILE *f;
     int err;
+    int filter_state;
     json_object_elem_t elem;
     json_val_t jval, new_jval;
     mbstate_t s;
@@ -2440,7 +2530,9 @@ index_json(int infd, const char *index_pathname, const char *filename)
     json_val_free(jval);
     jval = new_jval;
 
-    err = index_value(ctx, NULL, jval, -1, 0, 0);
+    filter_state = 0;
+
+    err = index_value(ctx, NULL, jval, -1, 0, &filter_state, 0);
     if (err)
         goto err5;
 
