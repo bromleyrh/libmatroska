@@ -1303,7 +1303,7 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
     struct index_obj_ent e;
     uint64_t id;
 
-    static const wchar_t *filtered_keys[] = {
+    static const wchar_t *const filtered_keys[] = {
         L"continued",
         L"Cluster",     L"pNvET",
         L"SimpleBlock", L"X0",
