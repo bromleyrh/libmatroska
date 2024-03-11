@@ -43,6 +43,7 @@ version.c
 /mkv_cat
 /mkv_catalog
 /mkv_dump
+/mkv_join
 /mkv_ls
 /mkv_write
 /zlib_cat

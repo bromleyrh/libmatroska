@@ -80,7 +80,7 @@ if LD_VERSION_SCRIPT
 version_script = -Wl,--version-script=libmatroskalite.map
 endif
 
-bin_PROGRAMS = mkv_cat mkv_catalog mkv_dump mkv_ls mkv_write zlib_cat
+bin_PROGRAMS = mkv_cat mkv_catalog mkv_dump mkv_join mkv_ls mkv_write zlib_cat
 
 mkv_cat_SOURCES = mkv_cat.c
 mkv_cat_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libutil_cppflags@
@@ -101,6 +101,11 @@ mkv_dump_LDADD = $(matroskalite_link) $(matroskalite_link_dep) \
 	@libutil_link_dep@
 mkv_dump_LDFLAGS = -rpath @abs_top_builddir@/.libs
 mkv_dump_DEPENDENCIES = libmatroskalite.la
+
+mkv_join_SOURCES = debug.c mkv_join.c util.c
+mkv_join_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@
+mkv_join_CFLAGS = $(AM_CFLAGS)
+mkv_join_LDADD = @libjson_link_dep@
 
 mkv_ls_SOURCES = mkv_ls.c
 mkv_ls_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@ @libutil_cppflags@
