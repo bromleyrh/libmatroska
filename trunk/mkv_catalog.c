@@ -71,6 +71,7 @@ struct index_ctx {
     size_t                  key_size;
     db_hl_key_cmp_t         key_cmp;
     struct index_key_ctx    *key_ctx;
+    int                     trans;
 };
 
 struct index_iter {
@@ -212,6 +213,8 @@ static size_t json_read_cb(char *, size_t, size_t, void *);
 static int uint64_cmp(uint64_t, uint64_t);
 
 static int index_key_cmp(const void *, const void *, void *);
+
+static int unescape_pathname(char **, const char *, const char *);
 
 static int do_index_create(struct index_ctx **, const char *, mode_t, size_t,
                            db_hl_key_cmp_t);
@@ -448,8 +451,7 @@ parse_cmdline(int argc, char **argv, enum op *op, char **index_pathname,
         case 'P':
         case 'u':
             free(*pathname);
-            *pathname = strdup(optarg);
-            if (*pathname == NULL)
+            if (unescape_pathname(pathname, optarg, "-") != 0)
                 goto err3;
             /* fallthrough */
         case 'd':
@@ -682,6 +684,59 @@ index_key_cmp(const void *k1, const void *k2, void *key_ctx)
     }
 
     return cmp;
+}
+
+static int
+unescape_pathname(char **dst, const char *src, const char *escchars)
+{
+    char *ptr, *ret;
+    int err;
+    int first;
+    size_t len, sz;
+
+    sz = 16;
+    ret = malloc(sz);
+    if (ret == NULL)
+        return MINUS_ERRNO;
+    len = 0;
+
+    first = 1;
+    for (ptr = ret;; ptr++) {
+        char c = *src;
+
+        if (c == '\0')
+            break;
+        ++src;
+        if (strchr(escchars, c) != NULL) {
+            if (*src == c)
+                ++src;
+            else if (first && *src == '\0') {
+                free(ret);
+                ret = NULL;
+                goto end;
+            }
+        }
+        if (len == sz - 1) {
+            char *tmp;
+
+            sz *= 2;
+            tmp = realloc(ret, sz);
+            if (tmp == NULL) {
+                err = MINUS_ERRNO;
+                free(ret);
+                return err;
+            }
+            ret = tmp;
+            ptr = ret + len;
+        }
+        *ptr = c;
+        first = 0;
+    }
+    *ptr = '\0';
+
+end:
+    *dst = ret;
+    return 0;
 }
 
 static int
@@ -1078,6 +1133,7 @@ open_or_create(struct index_ctx **ctx, const char *pathname)
         if (err)
             goto err3;
     }
+    ret->trans = 0;
 
     *ctx = ret;
     return 0;
@@ -2588,6 +2644,11 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     errmsg = "Error opening input";
 
+    if (filename == NULL) {
+        err = -ENOSYS;
+        goto err1;
+    }
+
     infd = dup(infd);
     if (infd == -1) {
         err = MINUS_ERRNO;
@@ -2791,9 +2852,20 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
     const char *errmsg;
     FILE *f;
     int err;
+    int paths_from_stdin;
     struct index_ctx *ctx;
 
     errmsg = "Error opening input";
+
+    if (pathname == NULL) {
+        if (infd != -1) {
+            err = -ENOSYS;
+            goto err1;
+        }
+        infd = STDIN_FILENO;
+        paths_from_stdin = 1;
+    } else
+        paths_from_stdin = 0;
 
     infd = dup(infd);
     if (infd == -1) {
@@ -2815,9 +2887,44 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
         goto err2;
     }
 
-    err = (*op)(ctx, pathname, f, &errmsg);
-    if (err)
-        goto err3;
+    if (paths_from_stdin) {
+        char *line;
+        size_t linecap;
+
+        err = do_index_trans_new(ctx);
+        if (err)
+            goto err3;
+        ctx->trans = 1;
+
+        line = NULL;
+        linecap = 0;
+        for (;;) {
+            errno = 0;
+            if (getline(&line, &linecap, f) == -1) {
+                if (errno != 0) {
+                    err = MINUS_ERRNO;
+                    free(line);
+                    goto err4;
+                }
+                break;
+            }
+
+            err = (*op)(ctx, line, NULL, &errmsg);
+            if (err) {
+                free(line);
+                goto err4;
+            }
+        }
+        free(line);
+
+        err = do_index_trans_commit(ctx);
+        if (err)
+            goto err3;
+    } else {
+        err = (*op)(ctx, pathname, f, &errmsg);
+        if (err)
+            goto err3;
+    }
 
     err = do_index_close(ctx);
     if (err) {
@@ -2831,6 +2938,8 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
 
     return 0;
 
+err4:
+    do_index_trans_abort(ctx);
 err3:
     do_index_close(ctx);
 err2:
@@ -2854,6 +2963,12 @@ output_index(const char *index_pathname, const char *pathname, int outfd,
     FILE *f;
     int err;
     struct index_ctx *ctx;
+
+    if (pathname == NULL) {
+        err = -ENOSYS;
+        errmsg = "Error opening input";
+        goto err1;
+    }
 
     errmsg = "Error opening output";
 
@@ -2972,21 +3087,28 @@ delete_from_index(struct index_ctx *ctx, const char *pathname, FILE *f,
         }
     }
 
-    res = do_index_trans_new(ctx);
-    if (res != 0)
-        goto err1;
+    if (!ctx->trans) {
+        res = do_index_trans_new(ctx);
+        if (res != 0)
+            goto err1;
+    }
 
     walkctx.f = stderr;
     walkctx.ctx = ctx;
     walkctx.level = 0;
     res = delete_from_index_cb(type, k->id, subtype, id, nval1, nval2, sval1,
                                sval2, &walkctx);
-    if (res != 0)
-        goto err2;
+    if (res != 0) {
+        if (!ctx->trans)
+            goto err2;
+        goto err1;
+    }
 
-    res = do_index_trans_commit(ctx);
-    if (res != 0)
-        goto err2;
+    if (!ctx->trans) {
+        res = do_index_trans_commit(ctx);
+        if (res != 0)
+            goto err2;
+    }
 
     return 0;
 
@@ -3235,14 +3357,18 @@ main(int argc, char **argv)
         break;
     case DELETE_FROM_INDEX:
     case UPDATE_INDEX:
-        ret = modify_index(index_pathname, pathname, STDIN_FILENO, ops[op]);
+        ret = modify_index(index_pathname, pathname,
+                           op == DELETE_FROM_INDEX ? -1 : STDIN_FILENO,
+                           ops[op]);
         break;
     case LIST_INDEX_ENTRIES:
     case SEARCH_INDEX:
     case PREFIX_SEARCH_INDEX:
     case WALK_INDEX:
     case DUMP_INDEX:
-        ret = output_index(index_pathname, pathname, STDOUT_FILENO, ops[op]);
+        ret = output_index(index_pathname,
+                           op == WALK_INDEX || op == DUMP_INDEX ? "" : pathname,
+                           STDOUT_FILENO, ops[op]);
         break;
     default:
         abort();
