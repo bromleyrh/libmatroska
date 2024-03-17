@@ -199,6 +199,9 @@ static int parse_cmdline(int, char **, enum op *, char **, char **, int *);
 
 static int print_verbose(FILE *, const char *, ...);
 
+static char *strtok_unescape(const char *, const char *, const char *,
+                             const char **);
+
 static int syncf(FILE *);
 
 static int print_err(int);
@@ -492,6 +495,76 @@ print_verbose(FILE *f, const char *fmt, ...)
     ret = vfprintf(f, fmt, ap);
     va_end(ap);
 
+    return ret;
+}
+
+static char *
+strtok_unescape(const char *str, const char *delim, const char *escchar,
+                const char **saveptr)
+{
+    char *dst, *ret;
+    const char *endptr, *ptr;
+    size_t len, sz;
+
+    if (str != NULL) {
+        ptr = delim + strcspn(delim, escchar);
+        if (*ptr != '\0')
+            return NULL;
+
+        ptr = str;
+    } else if (*saveptr != NULL)
+        ptr = *saveptr + 1;
+    else
+        return NULL;
+
+    endptr = ptr + strspn(ptr, delim);
+    if (*endptr == '\0')
+        return NULL;
+
+    sz = 16;
+    ret = malloc(sz);
+    if (ret == NULL)
+        return NULL;
+    len = 0;
+
+    for (dst = ret;; dst++) {
+        char c = *endptr;
+
+        if (c == '\0') {
+            endptr = NULL;
+            break;
+        }
+        if (strchr(delim, c) != NULL)
+            break;
+        ++endptr;
+        if (strchr(escchar, c) != NULL) {
+            char nextc = *endptr;
+
+            if (nextc == '\0') {
+                *dst++ = c;
+                endptr = NULL;
+                break;
+            }
+            c = nextc;
+            ++endptr;
+        }
+        if (len == sz - 1) {
+            char *tmp;
+
+            sz *= 2;
+            tmp = realloc(ret, sz);
+            if (tmp == NULL) {
+                free(ret);
+                return NULL;
+            }
+            ret = tmp;
+            dst = ret + len;
+        }
+        *dst = c;
+    }
+    *dst = '\0';
+
+    *saveptr = endptr;
     return ret;
 }
 
@@ -1714,8 +1787,8 @@ static int
 path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
              struct entry *e, int prefix, FILE *f)
 {
-    char *path, *saveptr;
-    const char *elem;
+    char *elem, *nextelem;
+    const char *saveptr;
     int res;
     int terminal;
     struct index_key k;
@@ -1724,28 +1797,23 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
         struct index_obj_ent_data   d;
     } ent;
 
-    path = strdup(pathname);
-    if (path == NULL) {
-        res = ERR_TAG(errno);
-        goto err1;
-    }
-
-    elem = strtok_r(path, INDEX_PATH_SEP, &saveptr);
+    elem = strtok_unescape(pathname, INDEX_PATH_SEP, "\\", &saveptr);
     if (elem == NULL) {
+        nextelem = NULL;
         terminal = 0;
-        ent.e = (struct index_obj_ent){TYPE_OBJECT, ROOT_ID};
+        ent.e.subtype = TYPE_OBJECT;
+        ent.e.id = ROOT_ID;
         res = 1;
-        goto end2;
+        goto end3;
     }
 
     k.id = ROOT_ID;
     k.type = TYPE_EXTERNAL_STRING;
 
     for (;;) {
-        const char *nextelem;
         size_t datasize;
 
-        nextelem = strtok_r(NULL, INDEX_PATH_SEP, &saveptr);
+        nextelem = strtok_unescape(NULL, INDEX_PATH_SEP, "\\", &saveptr);
         if (prefix && nextelem == NULL) {
             if (k.type == TYPE_EXTERNAL_NUMERIC) {
                 res = 0;
@@ -1754,13 +1822,13 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
             if (strlcpy((char *)k.string, elem, sizeof(k.string))
                 >= sizeof(k.string)) {
                 res = ERR_TAG(ENAMETOOLONG);
-                goto err2;
+                goto err1;
             }
 
             res = path_list_possible(ctx, &k, f);
             if (res != 1 && res != 0) {
                 res = ERR_TAG(-res);
-                goto err2;
+                goto err1;
             }
 
             goto end1;
@@ -1782,7 +1850,7 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
                 res = ERR_TAG(-res);
                 goto err2;
             }
-            goto end1;
+            goto end2;
         }
 
         switch (datasize) {
@@ -1792,7 +1860,7 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
             break;
         default:
             res = ERR_TAG(EILSEQ);
-            goto err2;
+            goto err1;
         }
 
         if (nextelem == NULL)
@@ -1809,7 +1877,7 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
         k.id = ent.e.id;
     }
 
-end2:
+end3:
     if (id != NULL)
         *id = terminal ? 0 : ent.e.id;
     if (e != NULL) {
@@ -1823,13 +1891,16 @@ end2:
         e->k = k;
         e->d = ent.d;
     }
+end2:
+    free(nextelem);
 end1:
-    free(path);
+    free(elem);
     return res;
 
 err2:
-    free(path);
+    free(nextelem);
 err1:
+    free(elem);
     assert(res < 0 || res >= ERRDES_MIN);
     return res;
 }
