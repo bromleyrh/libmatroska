@@ -1685,7 +1685,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
 
         prev_state = filter_state->state;
         if (prev_state == 1)
-            filter_state->end = i;
+            filter_state->end = i - 1;
 
         res = index_value(ctx, &ent, val, level, 1, filter_state, output_state);
         json_val_free(val);
