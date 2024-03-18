@@ -730,6 +730,7 @@ unescape_pathname(char **dst, const char *src, const char *escchars)
             ptr = ret + len;
         }
         *ptr = c;
+        ++len;
         first = 0;
     }
     *ptr = '\0';
