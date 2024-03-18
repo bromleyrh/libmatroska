@@ -563,6 +563,7 @@ strtok_unescape(const char *str, const char *delim, const char *escchar,
             dst = ret + len;
         }
         *dst = c;
+        ++len;
     }
     *dst = '\0';
 
