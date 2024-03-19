@@ -2,6 +2,8 @@
  * mkv_write.c
  */
 
+#include "config.h"
+
 #include "common.h"
 #include "matroska.h"
 #include "parser.h"
@@ -227,8 +229,8 @@ static int
 parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
 {
     char *sep1, *sep2, *sep3;
-    int err;
     int fd1, fd2, fd3;
+    int ret;
 
     static const enum op ops[256] = {
         [(unsigned char)'m'] = MULTIPLEX,
@@ -236,18 +238,25 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
     };
 
     for (;;) {
-        int opt = getopt(argc, argv, "ms:");
+        int opt = getopt(argc, argv, "ms:V");
 
         if (opt == -1)
             break;
 
-        if (opt == 's') {
+        switch (opt) {
+        case 'V':
+            ret = puts(PACKAGE_VERSION) == EOF ? -1 : -2;
+            goto quit1;
+        case 's':
             free(ctx->basenm);
             ctx->basenm = strdup(optarg);
             if (ctx->basenm == NULL)
                 return MINUS_ERRNO;
+            /* fallthrough */
+        case 'm':
+            *op = ops[opt];
+            break;
         }
-        *op = ops[opt];
     }
     argc -= optind;
     argv += optind;
@@ -257,18 +266,18 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
                 argc < 1
                 ? "Must specify input files"
                 : "Unrecognized arguments");
-        goto err2;
+        goto quit2;
     }
 
     sep1 = argv[0] + strcspn(argv[0], "#:");
     if (*sep1 == '\0')
-        goto err2;
+        goto quit2;
     fd1 = *sep1 == '#';
     *sep1++ = '\0';
 
     sep2 = strchr(sep1, ';');
     if (sep2 == NULL)
-        goto err2;
+        goto quit2;
     *sep2++ = '\0';
     if (*sep2 == '#') {
         fd2 = 1;
@@ -306,19 +315,19 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
     } else
         fd3 = -1;
 
-    err = parse_file_spec(sep1, fd1, sep2, fd2, sep3, fd3, &ctx->cb);
-    if (err)
-        goto err1;
+    ret = parse_file_spec(sep1, fd1, sep2, fd2, sep3, fd3, &ctx->cb);
+    if (ret != 0)
+        goto quit1;
 
     ctx->import = strcmp(argv[0], "i") == 0;
 
     return 0;
 
-err2:
-    err = -EINVAL;
-err1:
+quit2:
+    ret = -EINVAL;
+quit1:
     free(ctx->basenm);
-    return err;
+    return ret;
 }
 
 static unsigned char
@@ -1415,21 +1424,22 @@ int
 main(int argc, char **argv)
 {
     enum op op = MULTIPLEX;
-    int err, tmp;
+    int ret, tmp;
     struct ctx ctx = {0};
 
-    if (parse_cmdline(argc, argv, &op, &ctx) != 0)
-        return EXIT_FAILURE;
+    ret = parse_cmdline(argc, argv, &op, &ctx);
+    if (ret != 0)
+        return ret == -2 ? EXIT_SUCCESS : EXIT_FAILURE;
 
-    err = (op == MULTIPLEX ? write_mkv : separate_data)(STDIN_FILENO, &ctx);
+    ret = (op == MULTIPLEX ? write_mkv : separate_data)(STDIN_FILENO, &ctx);
 
     tmp = free_cb(&ctx.cb);
     if (tmp != 0)
-        err = tmp;
+        ret = tmp;
 
     free(ctx.basenm);
 
-    return err ? EXIT_FAILURE : EXIT_SUCCESS;
+    return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 /* vi: set expandtab sw=4 ts=4: */
