@@ -87,6 +87,7 @@ struct cluster_state {
 #define HASH_MD_ELEM(str) _HASH_MD_ELEM((str)[0], strlen(str))
 
 static const char *const md_elem[] = {
+    [1593] = "continued",
     [1608] = "data_len",
     [1611] = "data_offset",
     [1671] = "hdr_len",
