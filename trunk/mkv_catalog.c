@@ -2892,6 +2892,7 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
     if (paths_from_stdin) {
         char *line;
         size_t linecap;
+        ssize_t ret;
 
         err = do_index_trans_new(ctx);
         if (err)
@@ -2902,13 +2903,19 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
         linecap = 0;
         for (;;) {
             errno = 0;
-            if (getline(&line, &linecap, f) == -1) {
+            ret = getline(&line, &linecap, f);
+            if (ret == -1) {
                 if (errno != 0) {
                     err = MINUS_ERRNO;
                     free(line);
                     goto err4;
                 }
                 break;
+            }
+            if (ret > 0) {
+                --ret;
+                if (line[ret] == '\n')
+                    line[ret] = '\0';
             }
 
             err = (*op)(ctx, line, NULL, &errmsg);
