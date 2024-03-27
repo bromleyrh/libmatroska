@@ -82,7 +82,7 @@ struct cluster_state {
         .tm_isdst   = -1 \
     }
 
-#define TIME_GRAN 1000000000
+#define TIME_GRAN INT64_C(1000000000)
 
 #define _HASH_MD_ELEM(c0, len) ((unsigned char)(c0) * 16 + MIN(len, 15))
 

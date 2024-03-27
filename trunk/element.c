@@ -34,7 +34,7 @@ typedef int pack_fn_t(const edata_t *, char *, size_t *);
         .tm_isdst   = -1 \
     }
 
-#define TIME_GRAN 1000000000
+#define TIME_GRAN INT64_C(1000000000)
 
 static unpack_fn_t unpack_integer;
 

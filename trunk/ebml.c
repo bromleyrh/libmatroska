@@ -115,7 +115,7 @@ struct ebml_file_ctx {
         .tm_isdst   = -1 \
     }
 
-#define TIME_GRAN 1000000000
+#define TIME_GRAN INT64_C(1000000000)
 
 static int ebml_file_open(void **, int, void *);
 static int ebml_file_close(void *);
@@ -1636,7 +1636,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
     enum etype etype;
     int anon, segment;
     int res;
-    long int tmp;
+    long tmp;
     semantic_action_t *act;
     size_t buflen;
     size_t binhlen, hlen;

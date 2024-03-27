@@ -73,7 +73,7 @@ struct ctx {
         .tm_isdst   = -1 \
     }
 
-#define TIME_GRAN 1000000000
+#define TIME_GRAN INT64_C(1000000000)
 
 int parser_look_up(const struct parser *, const char *,
                    const struct elem_data **, const struct elem_data **);
