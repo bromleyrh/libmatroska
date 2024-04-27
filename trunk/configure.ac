@@ -4,7 +4,7 @@
 
 env_cflags="$CFLAGS"
 
-AC_INIT([libmatroskalite], m4_esyscmd_s([cat .version]))
+AC_INIT([libmatroska], m4_esyscmd_s([cat .version]))
 AC_PREREQ([2.69])
 
 AC_CONFIG_SRCDIR([matroska.c])
@@ -111,11 +111,11 @@ AS_IF(
 
 AC_SUBST([libxml2_cppflags])
 AC_SUBST([zlib_cppflags])
-AC_SUBST([libmatroskalite_cppflags], [""])
+AC_SUBST([libmatroska_cppflags], [""])
 
 AC_SUBST([libxml2_link_dep])
 AC_SUBST([zlib_link_dep])
-AC_SUBST([libmatroskalite_link_dep], ["$libutil_link_dep $zlib_link_dep"])
+AC_SUBST([libmatroska_link_dep], ["$libutil_link_dep $zlib_link_dep"])
 
 AC_ARG_WITH([pkgconfigdir],
             [  --with-pkgconfigdir=DIR install pkg-config data in DIR],
@@ -130,7 +130,7 @@ AC_SUBST([lm_rev], [0])
 dnl FIXME: Later, only prevent Autoconf from adding "-g -O2" to CFLAGS
 CFLAGS="$env_cflags"
 
-AC_CONFIG_FILES([Makefile include/Makefile libmatroskalite.pc])
+AC_CONFIG_FILES([Makefile include/Makefile libmatroska.pc])
 AC_CONFIG_HEADERS([config.h])
 AC_OUTPUT
 
@@ -140,7 +140,7 @@ dnl FIXME: Replace with wrapper script or utility
 postlink_cmds=:
 AS_IF(
     [test x$platform = xdarwin],
-    [libpath="$(pwd | sed -e 's/\//\\\//g')\/.libs\/libmatroskalite.dylib"
+    [libpath="$(pwd | sed -e 's/\//\\\//g')\/.libs\/libmatroska.dylib"
      postlink_cmds="${postlink_cmds}; scripts\/fix_up_linking_os_x.sh"
      postlink_cmds="$postlink_cmds @OUTPUT@ $libpath"]
 )

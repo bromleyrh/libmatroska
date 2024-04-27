@@ -9,9 +9,9 @@
 #error "'-D_FILE_OFFSET_BITS=64' is required to use this module"
 #endif
 
-#define _LIBMATROSKALITE_H_INTERNAL
-#include <matroska/libmatroskalite_common.h>
-#undef _LIBMATROSKALITE_H_INTERNAL
+#define _LIBMATROSKA_H_INTERNAL
+#include <matroska/libmatroska_common.h>
+#undef _LIBMATROSKA_H_INTERNAL
 
 #include <stddef.h>
 #include <stdint.h>

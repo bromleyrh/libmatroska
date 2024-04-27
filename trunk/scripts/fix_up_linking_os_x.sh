@@ -1,8 +1,8 @@
 #!/bin/sh
 
-get_cur_libmatroskalite_path()
+get_cur_libmatroska_path()
 {
-	otool -L "$1" | tail -n +2 | grep libmatroskalite \
+	otool -L "$1" | tail -n +2 | grep libmatroska \
 		| sed 's/ (compatibility version .*, current version .*)$//' | cut -f 2-
 }
 
@@ -18,7 +18,7 @@ set -- "element_test" "mkv_cat" "mkv_dump" "mkv_ls" "mkv_write" "vint_test"
 
 for i; do
 	if [ "$file" = "$i" ]; then
-		curpath=$(get_cur_libmatroskalite_path "$file")
+		curpath=$(get_cur_libmatroska_path "$file")
 		test -z "$curpath" && exit 0
 		replace_path "$curpath" "$lib" "$file"
 		exit $?

@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: @PACKAGE@
 Description: Matroska stream processing library
 Version: @VERSION@
-Libs: -L${libdir} -lmatroskalite @libmatroskalite_link_dep@
-Cflags: @libmatroskalite_cppflags@ -I${includedir}
+Libs: -L${libdir} -lmatroska @libmatroska_link_dep@
+Cflags: @libmatroska_cppflags@ -I${includedir}
