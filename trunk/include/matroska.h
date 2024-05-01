@@ -100,9 +100,9 @@ int matroska_close(matroska_hdl_t hdl);
 
 int matroska_read(FILE *f, matroska_hdl_t hdl, int flags);
 
-int matroska_read_header(FILE *f, matroska_hdl_t hdl);
+int matroska_read_header(FILE *f, matroska_hdl_t hdl, int flags);
 
-int matroska_read_body(FILE *f, matroska_hdl_t hdl);
+int matroska_read_body(FILE *f, matroska_hdl_t hdl, int flags);
 
 int matroska_write(matroska_hdl_t hdl, const char *id, matroska_metadata_t *val,
                    size_t *len, size_t *hdrlen,

@@ -163,6 +163,9 @@ static int block_input_handler(const char *, enum etype, void **, size_t *,
                                void **, size_t *, size_t, size_t, struct buf *,
                                off_t, int, void *);
 
+static int _matroska_read(FILE *, matroska_hdl_t, int,
+                          int (*)(FILE *, ebml_hdl_t, int));
+
 #ifdef DEBUG_OUTPUT
 static int
 print_handler(FILE *f, const char *func, const char *val)
@@ -897,6 +900,32 @@ err:
 
 #undef BLOCK_HDR_FIXED_LEN
 
+static int
+_matroska_read(FILE *f, matroska_hdl_t hdl, int flags,
+               int (*fn)(FILE *, ebml_hdl_t, int))
+{
+    int fl;
+    size_t i;
+
+    static const struct ent {
+        int src;
+        int dst;
+    } flagmap[] = {
+        {MATROSKA_READ_FLAG_HEADER, EBML_READ_FLAG_HEADER},
+        {MATROSKA_READ_FLAG_MASTER, EBML_READ_FLAG_MASTER}
+    };
+
+    fl = 0;
+    for (i = 0; i < ARRAY_SIZE(flagmap); i++) {
+        const struct ent *ent = &flagmap[i];
+
+        if (flags & ent->src)
+            fl |= ent->dst;
+    }
+
+    return (*fn)(f, hdl->hdl, fl);
+}
+
 int
 matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
                              void **outbuf, size_t *outlen, void **buf,
@@ -1178,38 +1207,19 @@ matroska_close(matroska_hdl_t hdl)
 int
 matroska_read(FILE *f, matroska_hdl_t hdl, int flags)
 {
-    int fl;
-    size_t i;
-
-    static const struct ent {
-        int src;
-        int dst;
-    } flagmap[] = {
-        {MATROSKA_READ_FLAG_HEADER, EBML_READ_FLAG_HEADER},
-        {MATROSKA_READ_FLAG_MASTER, EBML_READ_FLAG_MASTER}
-    };
-
-    fl = 0;
-    for (i = 0; i < ARRAY_SIZE(flagmap); i++) {
-        const struct ent *ent = &flagmap[i];
-
-        if (flags & ent->src)
-            fl |= ent->dst;
-    }
-
-    return ebml_read(f, hdl->hdl, fl);
+    return _matroska_read(f, hdl, flags, &ebml_read);
 }
 
 int
-matroska_read_header(FILE *f, matroska_hdl_t hdl)
+matroska_read_header(FILE *f, matroska_hdl_t hdl, int flags)
 {
-    return ebml_read_header(f, hdl->hdl, 0);
+    return _matroska_read(f, hdl, flags, &ebml_read_header);
 }
 
 int
-matroska_read_body(FILE *f, matroska_hdl_t hdl)
+matroska_read_body(FILE *f, matroska_hdl_t hdl, int flags)
 {
-    return ebml_read_body(f, hdl->hdl, 0);
+    return _matroska_read(f, hdl, flags, &ebml_read_body);
 }
 
 int

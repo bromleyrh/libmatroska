@@ -55,8 +55,6 @@ LIBMATROSKALITE_58 {
     global:
         ebml_read;
         matroska_read;
-        matroska_read_body;
-        matroska_read_header;
 } LIBMATROSKALITE_53;
 
 LIBMATROSKALITE_67 {
@@ -66,3 +64,9 @@ LIBMATROSKALITE_67 {
         matroska_open;
         matroska_write;
 } LIBMATROSKALITE_58;
+
+LIBMATROSKA_91 {
+    global:
+        matroska_read_body;
+        matroska_read_header;
+};
