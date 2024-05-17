@@ -2815,7 +2815,7 @@ output_json(const char *index_pathname, const char *filename, int outfd,
     }
 
     if (octx.jval != NULL) {
-        err = json_write_text(octx.jval, &json_write_cb, f, NULL, NULL, 1);
+        err = json_write_text(NULL, NULL, octx.jval, &json_write_cb, f, 1);
         if (err)
             goto err3;
 

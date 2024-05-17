@@ -1160,7 +1160,7 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err3;
     }
 
-    res = json_write_text(jval, &json_write_cb, ctx->cb.f, NULL, NULL, 1);
+    res = json_write_text(NULL, NULL, jval, &json_write_cb, ctx->cb.f, 1);
     if (res != 0) {
         errmsg = "Error writing output";
         goto err2;
