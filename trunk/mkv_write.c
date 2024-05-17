@@ -947,7 +947,7 @@ write_mkv(int infd, struct ctx *ctx)
 
     errmsg = "Error parsing input";
 
-    json_read_cb_ctx_init(&rctx);
+    json_in_filter_ctx_init(&rctx);
     rctx.read_cb = &json_read_cb;
     rctx.ctx = f;
 
@@ -1254,7 +1254,7 @@ separate_data(int infd, struct ctx *ctx)
 
     errmsg = "Error parsing input";
 
-    json_read_cb_ctx_init(&rctx);
+    json_in_filter_ctx_init(&rctx);
     rctx.read_cb = &json_read_cb;
     rctx.ctx = f;
 
