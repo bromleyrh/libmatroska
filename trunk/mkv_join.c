@@ -79,7 +79,7 @@ parse_json(json_value_t *jval, const char *pathname)
     rctx.read_cb = &json_read_cb;
     rctx.ctx = f;
 
-    err = json_parse(NULL, 0, &json_read_cb_strip_comments, &rctx, jval);
+    err = json_parse_text(NULL, 0, &json_read_cb_strip_comments, &rctx, jval);
 
     fclose(f);
 
