@@ -20,13 +20,13 @@ static size_t json_read_cb(char *, size_t, size_t, void *);
 
 static size_t json_write_cb(const char *, size_t, size_t, void *);
 
-static int parse_json(json_val_t *, const char *);
+static int parse_json(json_value_t *, const char *);
 
-static int handle_xref_marker(json_val_t, json_val_t, json_val_t);
+static int handle_xref_marker(json_value_t, json_value_t, json_value_t);
 
-static int handle_object(json_val_t, json_val_t, json_val_t);
+static int handle_object(json_value_t, json_value_t, json_value_t);
 
-static int process_docs(json_val_t, json_val_t *);
+static int process_docs(json_value_t, json_value_t *);
 
 static size_t
 json_read_cb(char *buf, size_t off, size_t len, void *ctx)
@@ -65,7 +65,7 @@ json_write_cb(const char *buf, size_t off, size_t len, void *ctx)
 }
 
 static int
-parse_json(json_val_t *jval, const char *pathname)
+parse_json(json_value_t *jval, const char *pathname)
 {
     FILE *f;
     int err;
@@ -87,10 +87,10 @@ parse_json(json_val_t *jval, const char *pathname)
 }
 
 static int
-handle_xref_marker(json_val_t out, json_val_t alt_in, json_val_t jval)
+handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
 {
     int err;
-    json_val_t e;
+    json_value_t e;
     size_t i;
     uint64_t end, start;
 
@@ -134,7 +134,7 @@ err:
 }
 
 static int
-handle_object(json_val_t out, json_val_t alt_in, json_val_t jval)
+handle_object(json_value_t out, json_value_t alt_in, json_value_t jv)
 {
     int res;
     json_object_elem_t elem;
@@ -149,10 +149,10 @@ handle_object(json_val_t out, json_val_t alt_in, json_val_t jval)
 }
 
 static int
-process_docs(json_val_t out, json_val_t *in)
+process_docs(json_value_t out, json_value_t *in)
 {
     int res;
-    json_val_t jval;
+    json_value_t jval;
     size_t i, n;
 
     if (json_val_get_type(in[0]) != JSON_TYPE_ARRAY
@@ -194,7 +194,7 @@ int
 main(int argc, char **argv)
 {
     int err;
-    json_val_t in[2], out;
+    json_value_t in[2], out;
     size_t i, j;
 
     if (argc < 3) {

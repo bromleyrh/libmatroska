@@ -152,15 +152,15 @@ struct walk_index_ctx {
 
 struct output_json_ctx {
     struct walk_index_ctx   wctx;
-    json_val_t              jval;
+    json_value_t            jval;
 };
 
 struct filter_state {
-    int         state;
-    uint64_t    start;
-    uint64_t    end;
-    json_val_t  jval;
-    json_val_t  e[2];
+    int             state;
+    uint64_t        start;
+    uint64_t        end;
+    json_value_t    jval;
+    json_value_t    e[2];
 };
 
 struct attr_output_args {
@@ -254,25 +254,25 @@ static int get_id(struct index_ctx *, uint64_t *);
 
 static const char *tabs(int);
 
-static int create_xref_marker(json_val_t *, struct filter_state *);
+static int create_xref_marker(json_value_t *, struct filter_state *);
 
-static int _index_object_value(struct index_ctx *, struct entry *, json_val_t,
+static int _index_object_value(struct index_ctx *, struct entry *, json_value_t,
                                int, int, struct filter_state *, int);
 
-static int index_null_value(struct index_ctx *, struct entry *, json_val_t, int,
-                            int, struct filter_state *, int);
-static int index_boolean_value(struct index_ctx *, struct entry *, json_val_t,
+static int index_null_value(struct index_ctx *, struct entry *, json_value_t,
+                            int, int, struct filter_state *, int);
+static int index_boolean_value(struct index_ctx *, struct entry *, json_value_t,
                                int, int, struct filter_state *, int);
-static int index_object_value(struct index_ctx *, struct entry *, json_val_t,
+static int index_object_value(struct index_ctx *, struct entry *, json_value_t,
                               int, int, struct filter_state *, int);
-static int index_array_value(struct index_ctx *, struct entry *, json_val_t,
+static int index_array_value(struct index_ctx *, struct entry *, json_value_t,
                              int, int, struct filter_state *, int);
-static int index_number_value(struct index_ctx *, struct entry *, json_val_t,
+static int index_number_value(struct index_ctx *, struct entry *, json_value_t,
                               int, int, struct filter_state *, int);
-static int index_string_value(struct index_ctx *, struct entry *, json_val_t,
+static int index_string_value(struct index_ctx *, struct entry *, json_value_t,
                               int, int, struct filter_state *, int);
 
-static int index_value(struct index_ctx *, struct entry *, json_val_t, int,
+static int index_value(struct index_ctx *, struct entry *, json_value_t, int,
                        int, struct filter_state *, int);
 
 static int path_look_up(struct index_ctx *, const char *, uint64_t *,
@@ -1319,12 +1319,12 @@ tabs(int n)
 }
 
 static int
-create_xref_marker(json_val_t *jval, struct filter_state *state)
+create_xref_marker(json_value_t *jval, struct filter_state *state)
 {
     int err;
     json_object_elem_t elem;
-    json_val_t estart;
-    json_val_t e, ret;
+    json_value_t estart;
+    json_value_t e, ret;
     wchar_t *key;
 
     ret = json_val_new(JSON_TYPE_OBJECT);
@@ -1394,7 +1394,7 @@ err1:
 
 static int
 _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
-                    json_val_t jval, int level, int elem,
+                    json_value_t jval, int level, int elem,
                     struct filter_state *filter_state, int output_state)
 {
     int i, n;
@@ -1503,7 +1503,7 @@ err:
 
 static int
 index_null_value(struct index_ctx *ctx, struct entry *parent_ent,
-                 json_val_t jval, int level, int elem,
+                 json_value_t jval, int level, int elem,
                  struct filter_state *filter_state, int output_state)
 {
     int err;
@@ -1538,7 +1538,7 @@ err:
 
 static int
 index_boolean_value(struct index_ctx *ctx, struct entry *parent_ent,
-                    json_val_t jval, int level, int elem,
+                    json_value_t jval, int level, int elem,
                     struct filter_state *filter_state, int output_state)
 {
     int err;
@@ -1573,7 +1573,7 @@ err:
 
 static int
 index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
-                   json_val_t jval, int level, int elem,
+                   json_value_t jval, int level, int elem,
                    struct filter_state *filter_state, int output_state)
 {
     int i;
@@ -1623,7 +1623,7 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
 
 static int
 index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
-                  json_val_t jval, int level, int elem,
+                  json_value_t jval, int level, int elem,
                   struct filter_state *filter_state, int output_state)
 {
     int i, n;
@@ -1672,7 +1672,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
     nelem = 0;
     for (i = 0; i < n; i++) {
         int prev_state;
-        json_val_t val;
+        json_value_t val;
 
         val = json_val_array_get_elem(jval, i);
         if (val == NULL)
@@ -1714,7 +1714,7 @@ err:
 
 static int
 index_number_value(struct index_ctx *ctx, struct entry *parent_ent,
-                   json_val_t jval, int level, int elem,
+                   json_value_t jval, int level, int elem,
                    struct filter_state *filter_state, int output_state)
 {
     int err;
@@ -1750,7 +1750,7 @@ err:
 
 static int
 index_string_value(struct index_ctx *ctx, struct entry *parent_ent,
-                   json_val_t jval, int level, int elem,
+                   json_value_t jval, int level, int elem,
                    struct filter_state *filter_state, int output_state)
 {
     const wchar_t *src;
@@ -1802,15 +1802,15 @@ err1:
 }
 
 static int
-index_value(struct index_ctx *ctx, struct entry *parent_ent, json_val_t jval,
+index_value(struct index_ctx *ctx, struct entry *parent_ent, json_value_t jval,
             int level, int elem, struct filter_state *filter_state,
             int output_state)
 {
-    int (*fn)(struct index_ctx *, struct entry *, json_val_t, int, int,
+    int (*fn)(struct index_ctx *, struct entry *, json_value_t, int, int,
               struct filter_state *, int);
     json_val_type_t type;
 
-    static int (*const fns[])(struct index_ctx *, struct entry *, json_val_t,
+    static int (*const fns[])(struct index_ctx *, struct entry *, json_value_t,
                               int, int, struct filter_state *, int) = {
         [JSON_TYPE_NULL]    = &index_null_value,
         [JSON_TYPE_BOOLEAN] = &index_boolean_value,
@@ -2318,7 +2318,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
 {
     FILE *f;
     int res;
-    json_val_t jval, parent_jval;
+    json_value_t jval, parent_jval;
     mbstate_t s;
     size_t len;
     struct output_json_ctx *octx = ctx;
@@ -2635,7 +2635,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     FILE *f;
     int err;
     json_object_elem_t elem;
-    json_val_t jval, new_jval;
+    json_value_t jval, new_jval;
     mbstate_t s;
     size_t len;
     size_t ret;

@@ -38,16 +38,16 @@ enum op {
 };
 
 struct cb {
-    char        *path;
-    int         fd;
-    FILE        *f;
-    json_val_t  jval;
-    char        *datapath;
-    int         datafd;
-    FILE        *dataf;
-    char        *tracepath;
-    int         tracefd;
-    FILE        *tracef;
+    char            *path;
+    int             fd;
+    FILE            *f;
+    json_value_t    jval;
+    char            *datapath;
+    int             datafd;
+    FILE            *dataf;
+    char            *tracepath;
+    int             tracefd;
+    FILE            *tracef;
 };
 
 struct ctx {
@@ -99,7 +99,7 @@ static const char *const md_elem[] = {
 };
 
 typedef int cvt_jval_to_metadata_fn_t(matroska_metadata_t *, size_t *,
-                                      json_val_t, json_val_t, const char *,
+                                      json_value_t, json_value_t, const char *,
                                       struct ctx *);
 
 int parser_look_up(const struct parser *, const char *,
@@ -118,9 +118,9 @@ static int free_cb(struct cb *);
 
 static size_t json_read_cb(char *, size_t, size_t, void *);
 
-static int _cvt_string_to_utf8(char **, json_val_t);
+static int _cvt_string_to_utf8(char **, json_value_t);
 
-static int cvt_block_data(json_val_t, struct ctx *);
+static int cvt_block_data(json_value_t, struct ctx *);
 
 static cvt_jval_to_metadata_fn_t cvt_number_to_integer;
 static cvt_jval_to_metadata_fn_t cvt_number_to_uinteger;
@@ -135,7 +135,7 @@ static void master_free_cb(void *, void *);
 
 static matroska_bitstream_input_cb_t bitstream_cb;
 
-static int process_block_data(json_val_t, struct ctx *);
+static int process_block_data(json_value_t, struct ctx *);
 
 static int write_mkv(int, struct ctx *);
 
@@ -378,7 +378,7 @@ json_read_cb(char *buf, size_t off, size_t len, void *ctx)
 }
 
 static int
-_cvt_string_to_utf8(char **dst, json_val_t src)
+_cvt_string_to_utf8(char **dst, json_value_t src)
 {
     char *str;
     int err;
@@ -434,7 +434,7 @@ err1:
 }
 
 static int
-cvt_block_data(json_val_t jval, struct ctx *ctx)
+cvt_block_data(json_value_t jval, struct ctx *ctx)
 {
     int res;
     json_object_elem_t elem;
@@ -521,8 +521,8 @@ cvt_block_data(json_val_t jval, struct ctx *ctx)
 }
 
 static int
-cvt_number_to_integer(matroska_metadata_t *dst, size_t *len, json_val_t obj,
-                      json_val_t src, const char *name, struct ctx *ctx)
+cvt_number_to_integer(matroska_metadata_t *dst, size_t *len, json_value_t obj,
+                      json_value_t src, const char *name, struct ctx *ctx)
 {
     (void)len;
     (void)obj;
@@ -538,8 +538,8 @@ cvt_number_to_integer(matroska_metadata_t *dst, size_t *len, json_val_t obj,
 }
 
 static int
-cvt_number_to_uinteger(matroska_metadata_t *dst, size_t *len, json_val_t obj,
-                       json_val_t src, const char *name, struct ctx *ctx)
+cvt_number_to_uinteger(matroska_metadata_t *dst, size_t *len, json_value_t obj,
+                       json_value_t src, const char *name, struct ctx *ctx)
 {
     (void)len;
     (void)obj;
@@ -555,8 +555,8 @@ cvt_number_to_uinteger(matroska_metadata_t *dst, size_t *len, json_val_t obj,
 }
 
 static int
-cvt_number_to_float(matroska_metadata_t *dst, size_t *len, json_val_t obj,
-                    json_val_t src, const char *name, struct ctx *ctx)
+cvt_number_to_float(matroska_metadata_t *dst, size_t *len, json_value_t obj,
+                    json_value_t src, const char *name, struct ctx *ctx)
 {
     (void)len;
     (void)obj;
@@ -572,8 +572,8 @@ cvt_number_to_float(matroska_metadata_t *dst, size_t *len, json_val_t obj,
 }
 
 static int
-cvt_string_to_utf8(matroska_metadata_t *dst, size_t *len, json_val_t obj,
-                   json_val_t src, const char *name, struct ctx *ctx)
+cvt_string_to_utf8(matroska_metadata_t *dst, size_t *len, json_value_t obj,
+                   json_value_t src, const char *name, struct ctx *ctx)
 {
     char *str;
     int err;
@@ -593,8 +593,8 @@ cvt_string_to_utf8(matroska_metadata_t *dst, size_t *len, json_val_t obj,
 }
 
 static int
-cvt_string_to_date(matroska_metadata_t *dst, size_t *len, json_val_t obj,
-                   json_val_t src, const char *name, struct ctx *ctx)
+cvt_string_to_date(matroska_metadata_t *dst, size_t *len, json_value_t obj,
+                   json_value_t src, const char *name, struct ctx *ctx)
 {
     char *str;
     int err;
@@ -633,8 +633,8 @@ err:
 }
 
 static int
-cvt_number_to_master(matroska_metadata_t *dst, size_t *len, json_val_t obj,
-                     json_val_t src, const char *name, struct ctx *ctx)
+cvt_number_to_master(matroska_metadata_t *dst, size_t *len, json_value_t obj,
+                     json_value_t src, const char *name, struct ctx *ctx)
 {
     (void)obj;
     (void)name;
@@ -648,8 +648,8 @@ cvt_number_to_master(matroska_metadata_t *dst, size_t *len, json_val_t obj,
 }
 
 static int
-cvt_string_to_binary(matroska_metadata_t *dst, size_t *len, json_val_t obj,
-                     json_val_t src, const char *name, struct ctx *ctx)
+cvt_string_to_binary(matroska_metadata_t *dst, size_t *len, json_value_t obj,
+                     json_value_t src, const char *name, struct ctx *ctx)
 {
     char *s, *str;
     char *val;
@@ -797,7 +797,7 @@ end:
 }
 
 static int
-process_block_data(json_val_t jval, struct ctx *ctx)
+process_block_data(json_value_t jval, struct ctx *ctx)
 {
     int res;
     json_object_elem_t elem;
@@ -893,7 +893,7 @@ write_mkv(int infd, struct ctx *ctx)
     int i, j, m, n;
     int res;
     json_object_elem_t elem, obje;
-    json_val_t e, jval;
+    json_value_t e, jval;
     matroska_bitstream_cb_t cb;
     matroska_hdl_t hdl;
     struct cluster_state cstate;
@@ -1226,7 +1226,7 @@ separate_data(int infd, struct ctx *ctx)
     int i, j, m, n;
     int res;
     json_object_elem_t elem;
-    json_val_t e, jval;
+    json_value_t e, jval;
     struct json_read_cb_ctx rctx;
 
     (void)ctx;
