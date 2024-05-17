@@ -69,17 +69,17 @@ parse_json(json_value_t *jv, const char *pathname)
 {
     FILE *f;
     int err;
-    struct json_in_filter_ctx rctx;
+    struct json_in_filter_ctx ictx;
 
     f = fopen(pathname, "r");
     if (f == NULL)
         return ERR_TAG(errno);
 
-    json_in_filter_ctx_init(&rctx);
-    rctx.rd_cb = &json_read_cb;
-    rctx.ctx = f;
+    json_in_filter_ctx_init(&ictx);
+    ictx.rd_cb = &json_read_cb;
+    ictx.ctx = f;
 
-    err = json_parse_text(jv, NULL, 0, &json_in_filter_discard_comments, &rctx);
+    err = json_parse_text(jv, NULL, 0, &json_in_filter_discard_comments, &ictx);
 
     fclose(f);
 

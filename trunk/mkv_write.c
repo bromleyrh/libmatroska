@@ -897,7 +897,7 @@ write_mkv(int infd, struct ctx *ctx)
     matroska_bitstream_cb_t cb;
     matroska_hdl_t hdl;
     struct cluster_state cstate;
-    struct json_in_filter_ctx rctx;
+    struct json_in_filter_ctx ictx;
     struct master_elem_data *mdata;
     struct matroska_file_args args;
 
@@ -947,12 +947,12 @@ write_mkv(int infd, struct ctx *ctx)
 
     errmsg = "Error parsing input";
 
-    json_in_filter_ctx_init(&rctx);
-    rctx.rd_cb = &json_read_cb;
-    rctx.ctx = f;
+    json_in_filter_ctx_init(&ictx);
+    ictx.rd_cb = &json_read_cb;
+    ictx.ctx = f;
 
     res = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,
-                          &rctx);
+                          &ictx);
     if (res != 0)
         goto err3;
 
@@ -1228,7 +1228,7 @@ separate_data(int infd, struct ctx *ctx)
     int res;
     json_kv_pair_t elm;
     json_value_t e, jv;
-    struct json_in_filter_ctx rctx;
+    struct json_in_filter_ctx ictx;
 
     (void)ctx;
 
@@ -1255,12 +1255,12 @@ separate_data(int infd, struct ctx *ctx)
 
     errmsg = "Error parsing input";
 
-    json_in_filter_ctx_init(&rctx);
-    rctx.rd_cb = &json_read_cb;
-    rctx.ctx = f;
+    json_in_filter_ctx_init(&ictx);
+    ictx.rd_cb = &json_read_cb;
+    ictx.ctx = f;
 
     res = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,
-                          &rctx);
+                          &ictx);
     if (res != 0)
         goto err3;
 

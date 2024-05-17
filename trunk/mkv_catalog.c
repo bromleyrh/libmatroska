@@ -2640,7 +2640,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     size_t ret;
     struct filter_state filter_state;
     struct index_ctx *ctx = NULL;
-    struct json_in_filter_ctx rctx;
+    struct json_in_filter_ctx ictx;
     wchar_t *k;
 
     errmsg = "Error opening input";
@@ -2669,12 +2669,12 @@ index_json(int infd, const char *index_pathname, const char *filename)
         goto err2;
     }
 
-    json_in_filter_ctx_init(&rctx);
-    rctx.rd_cb = &json_read_cb;
-    rctx.ctx = f;
+    json_in_filter_ctx_init(&ictx);
+    ictx.rd_cb = &json_read_cb;
+    ictx.ctx = f;
 
     err = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,
-                          &rctx);
+                          &ictx);
     if (err) {
         errmsg = "Error parsing input";
         goto err3;
