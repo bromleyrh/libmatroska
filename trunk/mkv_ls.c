@@ -367,7 +367,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
         goto end;
     }
 
-    err = json_val_string_set(ret, str);
+    err = json_string_set_value(ret, str);
     if (err)
         json_value_put(ret);
     else

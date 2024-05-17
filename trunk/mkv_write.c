@@ -388,7 +388,7 @@ _cvt_string_to_utf8(char **dst, json_value_t src)
     if (json_value_get_type(src) != JSON_STRING_T)
         return -EILSEQ;
 
-    val = json_val_string_get(src);
+    val = json_string_get_value(src);
     if (val == NULL)
         return MINUS_ERRNO;
 

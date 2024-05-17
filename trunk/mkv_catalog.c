@@ -1762,7 +1762,7 @@ index_string_value(struct index_ctx *ctx, struct entry *parent_ent,
     (void)filter_state;
     (void)output_state;
 
-    str = json_val_string_get(jval);
+    str = json_string_get_value(jval);
     if (str == NULL)
         return ERR_TAG(ENOMEM);
 
@@ -2391,7 +2391,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
             res = ERR_TAG(errno);
             goto err2;
         }
-        res = json_val_string_set(jval, str);
+        res = json_string_set_value(jval, str);
         free(str);
         if (res != 0)
             goto err1;
