@@ -11,7 +11,7 @@
 
 #include <json.h>
 
-#include <json/filters.h>
+#include <json/scanner.h>
 
 #include <checksums.h>
 #include <strings_ext.h>

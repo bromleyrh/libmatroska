@@ -10,7 +10,7 @@
 
 #include <json.h>
 
-#include <json/filters.h>
+#include <json/scanner.h>
 
 #include <dbm_high_level.h>
 #include <malloc_ext.h>

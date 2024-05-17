@@ -6,7 +6,7 @@
 
 #include <json.h>
 
-#include <json/filters.h>
+#include <json/scanner.h>
 
 #include <errno.h>
 #include <inttypes.h>
