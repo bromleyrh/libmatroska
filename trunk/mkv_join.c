@@ -101,9 +101,9 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     if (jvt != JSON_ARRAY_T)
         return -EINVAL;
 
-    e = json_array_get_at(jv, 0);
-    if (e == NULL)
-        return -EINVAL;
+    err = json_array_get_at(jv, 0, &e);
+    if (err)
+        return err;
     err = json_value_get_type(e, &jvt);
     if (err)
         goto err;
@@ -114,9 +114,9 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     start = json_numeric_get(e);
     json_value_put(e);
 
-    e = json_array_get_at(jv, 1);
-    if (e == NULL)
-        return -EINVAL;
+    err = json_array_get_at(jv, 1, &e);
+    if (err)
+        return err;
     err = json_value_get_type(e, &jvt);
     if (err)
         goto err;
@@ -130,9 +130,9 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     fprintf(stderr, "xref_marker: [%" PRIu64 ", %" PRIu64 "]\n", start, end);
 
     for (i = start; i <= end; i++) {
-        e = json_array_get_at(alt_in, i);
-        if (e == NULL)
-            return -EINVAL;
+        err = json_array_get_at(alt_in, i, &e);
+        if (err)
+            return err;
 
         err = json_array_push(out, e);
         json_value_put(e);
@@ -181,9 +181,9 @@ process_docs(json_value_t out, json_value_t *in)
     n = json_array_get_size(in[1]);
 
     for (i = 0; i < n; i++) {
-        jv = json_array_get_at(in[1], i);
-        if (jv == NULL)
-            return ERR_TAG(EIO);
+        res = json_array_get_at(in[1], i, &jv);
+        if (res != 0)
+            return ERR_TAG(-res);
 
         res = json_value_get_type(jv, &jvt);
         if (res != 0)

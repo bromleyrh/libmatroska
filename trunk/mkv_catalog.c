@@ -1674,9 +1674,9 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
         int prev_state;
         json_value_t v;
 
-        v = json_array_get_at(jv, i);
-        if (v == NULL)
-            return ERR_TAG(EIO);
+        res = json_array_get_at(jv, i, &v);
+        if (res != 0)
+            return ERR_TAG(-res);
 
         ent.k.numeric = nelem;
 

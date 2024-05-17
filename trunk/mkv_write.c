@@ -1083,11 +1083,9 @@ write_mkv(int infd, struct ctx *ctx)
             [ETYPE_BINARY]      = &cvt_string_to_binary
         };
 
-        e = json_array_get_at(jv, i);
-        if (e == NULL) {
-            res = -EIO;
+        res = json_array_get_at(jv, i, &e);
+        if (res != 0)
             goto err5;
-        }
 
         res = json_value_get_type(e, &jvt);
         if (res != 0)
@@ -1374,11 +1372,9 @@ separate_data(int infd, struct ctx *ctx)
         int continued;
         size_t buflen;
 
-        e = json_array_get_at(jv, i);
-        if (e == NULL) {
-            res = -EIO;
+        res = json_array_get_at(jv, i, &e);
+        if (res != 0)
             goto err4;
-        }
 
         res = json_value_get_type(e, &jvt);
         if (res != 0)
