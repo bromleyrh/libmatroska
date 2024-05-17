@@ -225,7 +225,7 @@ main(int argc, char **argv)
     for (i = 0; i < 2; i++)
         json_val_free(in[i]);
 
-    err = json_generate(out, &json_write_cb, stdout, NULL, NULL, 1);
+    err = json_write_text(out, &json_write_cb, stdout, NULL, NULL, 1);
     if (err) {
         fprintf(stderr, "Error generating output: %s\n", strerror(-err));
         goto err2;
