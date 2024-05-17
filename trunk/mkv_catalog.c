@@ -1327,7 +1327,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
     json_value_t e, ret;
     wchar_t *key;
 
-    ret = json_val_new(JSON_TYPE_OBJECT);
+    ret = json_val_new(JSON_OBJECT_T);
     if (ret == NULL)
         return ERR_TAG(ENOMEM);
 
@@ -1338,13 +1338,13 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
     }
     elem.key = key;
 
-    elem.value = json_val_new(JSON_TYPE_ARRAY);
+    elem.value = json_val_new(JSON_ARRAY_T);
     if (elem.value == NULL) {
         err = ERR_TAG(ENOMEM);
         goto err2;
     }
 
-    e = json_val_new(JSON_TYPE_NUMBER);
+    e = json_val_new(JSON_NUMBER_T);
     if (e == NULL) {
         err = ERR_TAG(ENOMEM);
         goto err3;
@@ -1358,7 +1358,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
 
     estart = e;
 
-    e = json_val_new(JSON_TYPE_NUMBER);
+    e = json_val_new(JSON_NUMBER_T);
     if (e == NULL) {
         err = ERR_TAG(ENOMEM);
         goto err3;
@@ -1812,12 +1812,12 @@ index_value(struct index_ctx *ctx, struct entry *parent_ent, json_value_t jval,
 
     static int (*const fns[])(struct index_ctx *, struct entry *, json_value_t,
                               int, int, struct filter_state *, int) = {
-        [JSON_TYPE_NULL]    = &index_null_value,
-        [JSON_TYPE_BOOLEAN] = &index_boolean_value,
-        [JSON_TYPE_OBJECT]  = &index_object_value,
-        [JSON_TYPE_ARRAY]   = &index_array_value,
-        [JSON_TYPE_NUMBER]  = &index_number_value,
-        [JSON_TYPE_STRING]  = &index_string_value
+        [JSON_NULL_T]       = &index_null_value,
+        [JSON_BOOLEAN_T]    = &index_boolean_value,
+        [JSON_OBJECT_T]     = &index_object_value,
+        [JSON_ARRAY_T]      = &index_array_value,
+        [JSON_NUMBER_T]     = &index_number_value,
+        [JSON_STRING_T]     = &index_string_value
     };
 
     type = json_val_get_type(jval);
@@ -1830,7 +1830,7 @@ index_value(struct index_ctx *ctx, struct entry *parent_ent, json_value_t jval,
     if (fn == NULL)
         return ERR_TAG(EILSEQ);
 
-    if (type == JSON_TYPE_OBJECT || type == JSON_TYPE_ARRAY) {
+    if (type == JSON_OBJECT_T || type == JSON_ARRAY_T) {
         ++level;
         if (output_state == 0 && level > 0)
             fputc('\n', stderr);
@@ -2325,13 +2325,13 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     struct walk_index_ctx *wctx = &octx->wctx;
     wchar_t *str;
 
-    static const json_val_type_t types[] = {
-        [TYPE_NULL]    = JSON_TYPE_NULL,
-        [TYPE_BOOLEAN] = JSON_TYPE_BOOLEAN,
-        [TYPE_OBJECT]  = JSON_TYPE_OBJECT,
-        [TYPE_ARRAY]   = JSON_TYPE_ARRAY,
-        [TYPE_NUMERIC] = JSON_TYPE_NUMBER,
-        [TYPE_STRING]  = JSON_TYPE_STRING
+    static const json_type_t types[] = {
+        [TYPE_NULL]    = JSON_NULL_T,
+        [TYPE_BOOLEAN] = JSON_BOOLEAN_T,
+        [TYPE_OBJECT]  = JSON_OBJECT_T,
+        [TYPE_ARRAY]   = JSON_ARRAY_T,
+        [TYPE_NUMERIC] = JSON_NUMBER_T,
+        [TYPE_STRING]  = JSON_STRING_T
     };
 
     f = wctx->f;
@@ -2688,7 +2688,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     errmsg = "Error generating index";
 
-    new_jval = json_val_new(JSON_TYPE_OBJECT);
+    new_jval = json_val_new(JSON_OBJECT_T);
     if (new_jval == NULL) {
         err = -ENOMEM;
         goto err5;

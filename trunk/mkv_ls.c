@@ -361,7 +361,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
 
     free(buf);
 
-    ret = json_val_new(JSON_TYPE_STRING);
+    ret = json_val_new(JSON_STRING_T);
     if (ret == NULL) {
         err = -ENOMEM;
         goto end;
@@ -393,7 +393,7 @@ cvt_integer_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     (void)len;
     (void)name;
 
-    ret = json_val_new(JSON_TYPE_NUMBER);
+    ret = json_val_new(JSON_NUMBER_T);
     if (ret == NULL)
         return -ENOMEM;
 
@@ -412,7 +412,7 @@ cvt_uinteger_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     (void)len;
     (void)name;
 
-    ret = json_val_new(JSON_TYPE_NUMBER);
+    ret = json_val_new(JSON_NUMBER_T);
     if (ret == NULL)
         return -ENOMEM;
 
@@ -431,7 +431,7 @@ cvt_float_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     (void)len;
     (void)name;
 
-    ret = json_val_new(JSON_TYPE_NUMBER);
+    ret = json_val_new(JSON_NUMBER_T);
     if (ret == NULL)
         return -ENOMEM;
 
@@ -493,7 +493,7 @@ cvt_master_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     (void)src;
     (void)name;
 
-    ret = json_val_new(JSON_TYPE_NUMBER);
+    ret = json_val_new(JSON_NUMBER_T);
     if (ret == NULL)
         return -ENOMEM;
 
@@ -517,7 +517,7 @@ cvt_binary_to_string(json_value_t *dst, matroska_metadata_t *src, size_t len,
     if (len > LEN_MAX) {
         json_value_t ret;
 
-        ret = json_val_new(JSON_TYPE_NULL);
+        ret = json_val_new(JSON_NULL_T);
         if (ret == NULL)
             return -ENOMEM;
         *dst = ret;
@@ -590,7 +590,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     if (ctxp->header && !(flags & MATROSKA_METADATA_FLAG_HEADER)) {
         ctxp->header = 0;
 
-        jval = json_val_new(JSON_TYPE_NULL);
+        jval = json_val_new(JSON_NULL_T);
         if (jval == NULL)
             return -ENOMEM;
 
@@ -700,7 +700,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         key = tmp;
     }
 
-    jval = json_val_new(JSON_TYPE_OBJECT);
+    jval = json_val_new(JSON_OBJECT_T);
     if (jval == NULL) {
         res = -ENOMEM;
         goto err2;
@@ -720,7 +720,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     json_val_free(elem.value);
 
     if (!block) {
-        elem.value = json_val_new(JSON_TYPE_NUMBER);
+        elem.value = json_val_new(JSON_NUMBER_T);
         if (elem.value == NULL) {
             res = -ENOMEM;
             goto err3;
@@ -742,7 +742,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         json_val_free(elem.value);
 
         if (data->etype != ETYPE_MASTER) {
-            elem.value = json_val_new(JSON_TYPE_NUMBER);
+            elem.value = json_val_new(JSON_NUMBER_T);
             if (elem.value == NULL) {
                 res = -ENOMEM;
                 goto err3;
@@ -821,7 +821,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         fprintf(stderr, "New frame in same block at %" PRIi64 " byte%s\n",
                 PL(ctxp->off));
 
-        jval = json_val_new(JSON_TYPE_OBJECT);
+        jval = json_val_new(JSON_OBJECT_T);
         if (jval == NULL)
             return -ENOMEM;
 
@@ -829,7 +829,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         if (err)
             return err;
 
-        elem.value = json_val_new(JSON_TYPE_BOOLEAN);
+        elem.value = json_val_new(JSON_BOOLEAN_T);
         if (elem.value == NULL)
             return -ENOMEM;
         json_val_boolean_set(elem.value, 1);
@@ -854,7 +854,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     }
     ctxp->remlen = framelen;
 
-    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    elem.value = json_val_new(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
     json_val_numeric_set(elem.value, trackno);
@@ -869,7 +869,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     if (err)
         goto err2;
 
-    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    elem.value = json_val_new(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
     json_val_numeric_set(elem.value, ts);
@@ -884,7 +884,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     if (err)
         goto err2;
 
-    elem.value = json_val_new(JSON_TYPE_BOOLEAN);
+    elem.value = json_val_new(JSON_BOOLEAN_T);
     if (elem.value == NULL)
         return -ENOMEM;
     json_val_boolean_set(elem.value, keyframe);
@@ -899,7 +899,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     if (err)
         goto err2;
 
-    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    elem.value = json_val_new(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
     json_val_numeric_set(elem.value, ctxp->off);
@@ -914,7 +914,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     if (err)
         goto err2;
 
-    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    elem.value = json_val_new(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
     json_val_numeric_set(elem.value, hdrlen);
@@ -952,7 +952,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         }
     }
 
-    elem.value = json_val_new(JSON_TYPE_NUMBER);
+    elem.value = json_val_new(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
     json_val_numeric_set(elem.value, framelen);
@@ -1106,7 +1106,7 @@ cvt_mkv(int infd, struct ctx *ctx)
     if (res != 0)
         goto err1;
 
-    jval = json_val_new(JSON_TYPE_ARRAY);
+    jval = json_val_new(JSON_ARRAY_T);
     if (jval == NULL) {
         res = -ENOMEM;
         goto err2;
