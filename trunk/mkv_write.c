@@ -981,7 +981,7 @@ write_mkv(int infd, struct ctx *ctx)
     lastvalue = NULL;
     lastetype = ETYPE_NONE;
 
-    m = json_val_array_get_num_elem(jval);
+    m = json_array_get_size(jval);
 
     for (i = 0; i < m; i++) {
         char *name;
@@ -1005,7 +1005,7 @@ write_mkv(int infd, struct ctx *ctx)
             [ETYPE_BINARY]      = &cvt_string_to_binary
         };
 
-        e = json_val_array_get_elem(jval, i);
+        e = json_array_get_at(jval, i);
         if (e == NULL) {
             res = -EIO;
             goto err5;
@@ -1272,7 +1272,7 @@ separate_data(int infd, struct ctx *ctx)
 
     lastvalue = NULL;
 
-    m = json_val_array_get_num_elem(jval);
+    m = json_array_get_size(jval);
 
     for (i = 0; i < m; i++) {
         char *name;
@@ -1281,7 +1281,7 @@ separate_data(int infd, struct ctx *ctx)
         int continued;
         size_t buflen;
 
-        e = json_val_array_get_elem(jval, i);
+        e = json_array_get_at(jval, i);
         if (e == NULL) {
             res = -EIO;
             goto err4;

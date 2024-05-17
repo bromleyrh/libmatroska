@@ -1350,7 +1350,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
         goto err3;
     }
 
-    err = json_val_array_insert_elem(elem.value, e);
+    err = json_array_push(elem.value, e);
     if (err) {
         err = ERR_TAG(-err);
         goto err4;
@@ -1364,7 +1364,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
         goto err3;
     }
 
-    err = json_val_array_insert_elem(elem.value, e);
+    err = json_array_push(elem.value, e);
     if (err) {
         err = ERR_TAG(-err);
         goto err4;
@@ -1635,7 +1635,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
     struct index_obj_ent e;
     uint64_t id;
 
-    n = json_val_array_get_num_elem(jval);
+    n = json_array_get_size(jval);
     if (n == 0)
         return 0;
 
@@ -1674,7 +1674,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
         int prev_state;
         json_value_t val;
 
-        val = json_val_array_get_elem(jval, i);
+        val = json_array_get_at(jval, i);
         if (val == NULL)
             return ERR_TAG(EIO);
 
@@ -2428,7 +2428,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
                 goto err2;
             break;
         case TYPE_ARRAY:
-            res = json_val_array_insert_elem(parent_jval, jval);
+            res = json_array_push(parent_jval, jval);
             if (res != 0)
                 goto err1;
             /* fallthrough */

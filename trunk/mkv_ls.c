@@ -594,7 +594,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         if (jval == NULL)
             return -ENOMEM;
 
-        res = json_val_array_insert_elem(ctxp->cb.jval, jval);
+        res = json_array_push(ctxp->cb.jval, jval);
         json_value_put(jval);
         if (res != 0)
             return res;
@@ -766,7 +766,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         }
     }
 
-    res = json_val_array_insert_elem(ctxp->cb.jval, jval);
+    res = json_array_push(ctxp->cb.jval, jval);
     if (res != 0)
         goto err3;
 
@@ -825,7 +825,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         if (jval == NULL)
             return -ENOMEM;
 
-        err = json_val_array_insert_elem(ctxp->cb.jval, jval);
+        err = json_array_push(ctxp->cb.jval, jval);
         if (err)
             return err;
 
