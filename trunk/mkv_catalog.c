@@ -1808,7 +1808,7 @@ index_value(struct index_ctx *ctx, struct entry *parent_ent, json_value_t jval,
 {
     int (*fn)(struct index_ctx *, struct entry *, json_value_t, int, int,
               struct filter_state *, int);
-    json_val_type_t type;
+    json_type_t type;
 
     static int (*const fns[])(struct index_ctx *, struct entry *, json_value_t,
                               int, int, struct filter_state *, int) = {
