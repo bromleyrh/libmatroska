@@ -1762,9 +1762,9 @@ index_string_value(struct index_ctx *ctx, struct entry *parent_ent,
     (void)filter_state;
     (void)output_state;
 
-    str = json_string_get_value(jv);
-    if (str == NULL)
-        return ERR_TAG(ENOMEM);
+    err = json_string_get_value(jv, &str);
+    if (err)
+        return ERR_TAG(-err);
 
     src = str;
     n = wcsrtombs((char *)parent_ent->d.string, &src,

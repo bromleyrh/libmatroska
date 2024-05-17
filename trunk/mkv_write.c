@@ -392,9 +392,9 @@ _cvt_string_to_utf8(char **dst, json_value_t src)
     if (jvt != JSON_STRING_T)
         return -EILSEQ;
 
-    val = json_string_get_value(src);
-    if (val == NULL)
-        return MINUS_ERRNO;
+    err = json_string_get_value(src, &val);
+    if (err)
+        return err;
 
     slen = 16;
     str = malloc(slen);
