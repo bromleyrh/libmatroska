@@ -90,26 +90,40 @@ static int
 handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
 {
     int err;
+    json_type_t jvt;
     json_value_t e;
     size_t i;
     uint64_t end, start;
 
-    if (json_value_get_type(jv) != JSON_ARRAY_T)
+    err = json_value_get_type(jv, &jvt);
+    if (err)
+        return err;
+    if (jvt != JSON_ARRAY_T)
         return -EINVAL;
 
     e = json_array_get_at(jv, 0);
     if (e == NULL)
         return -EINVAL;
-    if (json_value_get_type(e) != JSON_NUMBER_T)
+    err = json_value_get_type(e, &jvt);
+    if (err)
         goto err;
+    if (jvt != JSON_NUMBER_T) {
+        err = -EINVAL;
+        goto err;
+    }
     start = json_numeric_get(e);
     json_value_put(e);
 
     e = json_array_get_at(jv, 1);
     if (e == NULL)
         return -EINVAL;
-    if (json_value_get_type(e) != JSON_NUMBER_T)
+    err = json_value_get_type(e, &jvt);
+    if (err)
         goto err;
+    if (jvt != JSON_NUMBER_T) {
+        err = -EINVAL;
+        goto err;
+    }
     end = json_numeric_get(e);
     json_value_put(e);
 
@@ -130,7 +144,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
 
 err:
     json_value_put(e);
-    return -EINVAL;
+    return err;
 }
 
 static int
@@ -152,12 +166,17 @@ static int
 process_docs(json_value_t out, json_value_t *in)
 {
     int res;
+    json_type_t jvt;
     json_value_t jv;
     size_t i, n;
 
-    if (json_value_get_type(in[0]) != JSON_ARRAY_T
-        || json_value_get_type(in[1]) != JSON_ARRAY_T)
-        return -EINVAL;
+    for (i = 0; i < 2; i++) {
+        res = json_value_get_type(in[i], &jvt);
+        if (res != 0)
+            return res;
+        if (jvt != JSON_ARRAY_T)
+            return -EINVAL;
+    }
 
     n = json_array_get_size(in[1]);
 
@@ -166,7 +185,10 @@ process_docs(json_value_t out, json_value_t *in)
         if (jv == NULL)
             return ERR_TAG(EIO);
 
-        if (json_value_get_type(jv) == JSON_OBJECT_T) {
+        res = json_value_get_type(jv, &jvt);
+        if (res != 0)
+            return ERR_TAG(-res);
+        if (jvt == JSON_OBJECT_T) {
             res = handle_object(out, in[0], jv);
             if (res != 0) {
                 if (res != 1)

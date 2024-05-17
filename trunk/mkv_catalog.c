@@ -1806,6 +1806,7 @@ index_value(struct index_ctx *ctx, struct entry *parent_ent, json_value_t jv,
             int level, int elem, struct filter_state *filter_state,
             int output_state)
 {
+    int err;
     int (*fn)(struct index_ctx *, struct entry *, json_value_t, int, int,
               struct filter_state *, int);
     json_type_t jvt;
@@ -1820,7 +1821,9 @@ index_value(struct index_ctx *ctx, struct entry *parent_ent, json_value_t jv,
         [JSON_STRING_T]     = &index_string_value
     };
 
-    jvt = json_value_get_type(jv);
+    err = json_value_get_type(jv, &jvt);
+    if (err)
+        return ERR_TAG(-err);
     if (jvt == JSON_NONE_T)
         return ERR_TAG(EIO);
 
