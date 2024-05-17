@@ -41,7 +41,7 @@ struct cb {
     char            *path;
     int             fd;
     FILE            *f;
-    json_value_t    jval;
+    json_value_t    jv;
     char            *datapath;
     int             datafd;
     FILE            *dataf;
@@ -98,9 +98,9 @@ static const char *const md_elem[] = {
     [1858] = "ts"
 };
 
-typedef int cvt_jval_to_metadata_fn_t(matroska_metadata_t *, size_t *,
-                                      json_value_t, json_value_t, const char *,
-                                      struct ctx *);
+typedef int cvt_jv_to_metadata_fn_t(matroska_metadata_t *, size_t *,
+                                    json_value_t, json_value_t, const char *,
+                                    struct ctx *);
 
 int parser_look_up(const struct parser *, const char *,
                    const struct elem_data **, const struct elem_data **);
@@ -122,13 +122,13 @@ static int _cvt_string_to_utf8(char **, json_value_t);
 
 static int cvt_block_data(json_value_t, struct ctx *);
 
-static cvt_jval_to_metadata_fn_t cvt_number_to_integer;
-static cvt_jval_to_metadata_fn_t cvt_number_to_uinteger;
-static cvt_jval_to_metadata_fn_t cvt_number_to_float;
-static cvt_jval_to_metadata_fn_t cvt_string_to_utf8;
-static cvt_jval_to_metadata_fn_t cvt_string_to_date;
-static cvt_jval_to_metadata_fn_t cvt_number_to_master;
-static cvt_jval_to_metadata_fn_t cvt_string_to_binary;
+static cvt_jv_to_metadata_fn_t cvt_number_to_integer;
+static cvt_jv_to_metadata_fn_t cvt_number_to_uinteger;
+static cvt_jv_to_metadata_fn_t cvt_number_to_float;
+static cvt_jv_to_metadata_fn_t cvt_string_to_utf8;
+static cvt_jv_to_metadata_fn_t cvt_string_to_date;
+static cvt_jv_to_metadata_fn_t cvt_number_to_master;
+static cvt_jv_to_metadata_fn_t cvt_string_to_binary;
 
 static int master_cb(const char *, size_t, size_t, void *, void *);
 static void master_free_cb(void *, void *);
@@ -434,40 +434,40 @@ err1:
 }
 
 static int
-cvt_block_data(json_value_t jval, struct ctx *ctx)
+cvt_block_data(json_value_t jv, struct ctx *ctx)
 {
     int res;
-    json_kv_pair_t elem;
+    json_kv_pair_t elm;
     uint64_t off;
     uint64_t hdrsz, sz;
 
-    res = json_object_get(jval, L"trackno", &elem);
+    res = json_object_get(jv, L"trackno", &elm);
     if (res != 0)
         return res == -EINVAL ? 1 : res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    ctx->trackno = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    ctx->trackno = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Track number: %" PRIu64 "\n", ctx->trackno);
 
-    res = json_object_get(jval, L"hdr_len", &elem);
+    res = json_object_get(jv, L"hdr_len", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    hdrsz = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    hdrsz = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Header length: %" PRIu64 " byte%s\n", PL(hdrsz));
 
-    res = json_object_get(jval, L"data_offset", &elem);
+    res = json_object_get(jv, L"data_offset", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    off = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    off = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     if (ctx->lastoff >= 0) {
         size_t disp = off - ctx->lastoff;
@@ -483,33 +483,33 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Data offset: %" PRIu64 " byte%s\n", PL(off));
 
-    res = json_object_get(jval, L"data_len", &elem);
+    res = json_object_get(jv, L"data_len", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    sz = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    sz = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Data length: %" PRIu64 " byte%s\n", PL(sz));
 
-    res = json_object_get(jval, L"keyframe", &elem);
+    res = json_object_get(jv, L"keyframe", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_BOOLEAN_T)
+    if (json_value_get_type(elm.v) != JSON_BOOLEAN_T)
         return -EILSEQ;
-    ctx->keyframe = json_boolean_get(elem.v);
-    json_value_put(elem.v);
+    ctx->keyframe = json_boolean_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Keyframe: %d\n", ctx->keyframe);
 
-    res = json_object_get(jval, L"ts", &elem);
+    res = json_object_get(jv, L"ts", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    ctx->ts = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    ctx->ts = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Timestamp: %" PRIi16 "\n", ctx->ts);
 
@@ -797,39 +797,39 @@ end:
 }
 
 static int
-process_block_data(json_value_t jval, struct ctx *ctx)
+process_block_data(json_value_t jv, struct ctx *ctx)
 {
     int res;
-    json_kv_pair_t elem;
+    json_kv_pair_t elm;
     uint64_t off, sz;
 
-    res = json_object_get(jval, L"trackno", &elem);
+    res = json_object_get(jv, L"trackno", &elm);
     if (res != 0)
         return res == -EINVAL ? 0 : res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    res = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    res = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Track number: %d\n", res);
 
-    res = json_object_get(jval, L"hdr_len", &elem);
+    res = json_object_get(jv, L"hdr_len", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    sz = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    sz = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Header length: %" PRIu64 " byte%s\n", PL(sz));
 
-    res = json_object_get(jval, L"data_offset", &elem);
+    res = json_object_get(jv, L"data_offset", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    off = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    off = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     if (ctx->lastoff >= 0) {
         size_t disp = off - ctx->lastoff;
@@ -845,33 +845,33 @@ process_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Data offset: %" PRIu64 " byte%s\n", PL(off));
 
-    res = json_object_get(jval, L"data_len", &elem);
+    res = json_object_get(jv, L"data_len", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    sz = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    sz = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Data length: %" PRIu64 " byte%s\n", PL(sz));
 
-    res = json_object_get(jval, L"keyframe", &elem);
+    res = json_object_get(jv, L"keyframe", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_BOOLEAN_T)
+    if (json_value_get_type(elm.v) != JSON_BOOLEAN_T)
         return -EILSEQ;
-    res = json_boolean_get(elem.v);
-    json_value_put(elem.v);
+    res = json_boolean_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Keyframe: %d\n", res);
 
-    res = json_object_get(jval, L"ts", &elem);
+    res = json_object_get(jv, L"ts", &elm);
     if (res != 0)
         return res;
-    if (json_value_get_type(elem.v) != JSON_NUMBER_T)
+    if (json_value_get_type(elm.v) != JSON_NUMBER_T)
         return -EILSEQ;
-    res = json_numeric_get(elem.v);
-    json_value_put(elem.v);
+    res = json_numeric_get(elm.v);
+    json_value_put(elm.v);
 
     fprintf(stderr, "Timestamp: %d\n", res);
 
@@ -892,8 +892,8 @@ write_mkv(int infd, struct ctx *ctx)
     int header;
     int i, j, m, n;
     int res;
-    json_kv_pair_t elem, obje;
-    json_value_t e, jval;
+    json_kv_pair_t elm, obje;
+    json_value_t e, jv;
     matroska_bitstream_cb_t cb;
     matroska_hdl_t hdl;
     struct cluster_state cstate;
@@ -951,12 +951,12 @@ write_mkv(int infd, struct ctx *ctx)
     rctx.rd_cb = &json_read_cb;
     rctx.ctx = f;
 
-    res = json_parse_text(&jval, NULL, 0, &json_in_filter_discard_comments,
+    res = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,
                           &rctx);
     if (res != 0)
         goto err3;
 
-    if (json_value_get_type(jval) != JSON_ARRAY_T) {
+    if (json_value_get_type(jv) != JSON_ARRAY_T) {
         res = -EILSEQ;
         goto err4;
     }
@@ -982,20 +982,20 @@ write_mkv(int infd, struct ctx *ctx)
     lastvalue = NULL;
     lastetype = ETYPE_NONE;
 
-    m = json_array_get_size(jval);
+    m = json_array_get_size(jv);
 
     for (i = 0; i < m; i++) {
         char *name;
         const char *value;
         const struct elem_data *data;
-        cvt_jval_to_metadata_fn_t *fn;
+        cvt_jv_to_metadata_fn_t *fn;
         enum etype etype;
         int block, cluster, continued;
         matroska_metadata_t val;
         size_t buflen, hdrlen;
         size_t len;
 
-        static cvt_jval_to_metadata_fn_t *const fns[] = {
+        static cvt_jv_to_metadata_fn_t *const fns[] = {
             [ETYPE_INTEGER]     = &cvt_number_to_integer,
             [ETYPE_UINTEGER]    = &cvt_number_to_uinteger,
             [ETYPE_FLOAT]       = &cvt_number_to_float,
@@ -1006,7 +1006,7 @@ write_mkv(int infd, struct ctx *ctx)
             [ETYPE_BINARY]      = &cvt_string_to_binary
         };
 
-        e = json_array_get_at(jval, i);
+        e = json_array_get_at(jv, i);
         if (e == NULL) {
             res = -EIO;
             goto err5;
@@ -1027,7 +1027,7 @@ write_mkv(int infd, struct ctx *ctx)
             goto err6;
         }
 
-        elem.v = NULL;
+        elm.v = NULL;
 
         continued = 1;
 
@@ -1037,11 +1037,11 @@ write_mkv(int infd, struct ctx *ctx)
             mbstate_t s;
             size_t idx;
 
-            res = json_object_get_at(e, j, &elem);
+            res = json_object_get_at(e, j, &elm);
             if (res != 0)
                 goto err6;
 
-            if (awcstombs(&buf, elem.key, memset(&s, 0, sizeof(s)))
+            if (awcstombs(&buf, elm.k, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
                 res = MINUS_ERRNO;
                 goto err7;
@@ -1060,8 +1060,8 @@ write_mkv(int infd, struct ctx *ctx)
 
             free(buf);
             buf = NULL;
-            json_value_put(elem.v);
-            elem.v = NULL;
+            json_value_put(elm.v);
+            elm.v = NULL;
         }
 
         if (continued) {
@@ -1107,7 +1107,7 @@ write_mkv(int infd, struct ctx *ctx)
             goto err7;
         }
 
-        res = (*fn)(&val, &len, e, elem.value, name, ctx);
+        res = (*fn)(&val, &len, e, elm.v, name, ctx);
         if (res < 0)
             goto err7;
 
@@ -1171,7 +1171,7 @@ write_mkv(int infd, struct ctx *ctx)
         free(buf);
         buf = NULL;
         if (!continued)
-            json_value_put(elem.v);
+            json_value_put(elm.v);
 
         json_value_put(e);
     }
@@ -1181,7 +1181,7 @@ write_mkv(int infd, struct ctx *ctx)
     if (res != 0)
         goto err4;
 
-    json_value_put(jval);
+    json_value_put(jv);
 
     json_deinit();
 
@@ -1194,8 +1194,8 @@ err9:
 err8:
     free(mdata);
 err7:
-    if (elem.v != NULL)
-        json_value_put(elem.v);
+    if (elm.v != NULL)
+        json_value_put(elm.v);
     free(buf);
 err6:
     json_value_put(e);
@@ -1203,7 +1203,7 @@ err5:
     matroska_close(hdl);
     ctx->cb.fd = -1;
 err4:
-    json_value_put(jval);
+    json_value_put(jv);
 err3:
     json_deinit();
 err2:
@@ -1226,8 +1226,8 @@ separate_data(int infd, struct ctx *ctx)
     int header;
     int i, j, m, n;
     int res;
-    json_kv_pair_t elem;
-    json_value_t e, jval;
+    json_kv_pair_t elm;
+    json_value_t e, jv;
     struct json_in_filter_ctx rctx;
 
     (void)ctx;
@@ -1259,12 +1259,12 @@ separate_data(int infd, struct ctx *ctx)
     rctx.rd_cb = &json_read_cb;
     rctx.ctx = f;
 
-    res = json_parse_text(&jval, NULL, 0, &json_in_filter_discard_comments,
+    res = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,
                           &rctx);
     if (res != 0)
         goto err3;
 
-    if (json_value_get_type(jval) != JSON_ARRAY_T) {
+    if (json_value_get_type(jv) != JSON_ARRAY_T) {
         res = -EILSEQ;
         goto err4;
     }
@@ -1274,7 +1274,7 @@ separate_data(int infd, struct ctx *ctx)
 
     lastvalue = NULL;
 
-    m = json_array_get_size(jval);
+    m = json_array_get_size(jv);
 
     for (i = 0; i < m; i++) {
         char *name;
@@ -1283,7 +1283,7 @@ separate_data(int infd, struct ctx *ctx)
         int continued;
         size_t buflen;
 
-        e = json_array_get_at(jval, i);
+        e = json_array_get_at(jv, i);
         if (e == NULL) {
             res = -EIO;
             goto err4;
@@ -1312,14 +1312,14 @@ separate_data(int infd, struct ctx *ctx)
             mbstate_t s;
             size_t idx;
 
-            res = json_object_get_at(e, j, &elem);
+            res = json_object_get_at(e, j, &elm);
             if (res != 0)
                 goto err5;
 
-            if (awcstombs(&buf, elem.key, memset(&s, 0, sizeof(s)))
+            if (awcstombs(&buf, elm.k, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
                 res = MINUS_ERRNO;
-                json_value_put(elem.v);
+                json_value_put(elm.v);
                 goto err5;
             }
 
@@ -1335,7 +1335,7 @@ separate_data(int infd, struct ctx *ctx)
             }
 
             free(buf);
-            json_value_put(elem.v);
+            json_value_put(elm.v);
         }
 
         if (continued) {
@@ -1372,22 +1372,22 @@ separate_data(int infd, struct ctx *ctx)
             if (res != 0)
                 goto err6;
         } else {
-            res = json_object_get(e, L"hdr_len", &elem);
+            res = json_object_get(e, L"hdr_len", &elm);
             if (res != 0)
                 goto err6;
-            if (json_value_get_type(elem.v) != JSON_NUMBER_T) {
+            if (json_value_get_type(elm.v) != JSON_NUMBER_T) {
                 res = -EILSEQ;
                 goto err7;
             }
-            json_value_put(elem.v);
+            json_value_put(elm.v);
 
-            res = json_object_get(e, L"data_len", &elem);
+            res = json_object_get(e, L"data_len", &elm);
             if (res == 0) {
-                if (json_value_get_type(elem.v) != JSON_NUMBER_T) {
+                if (json_value_get_type(elm.v) != JSON_NUMBER_T) {
                     res = -EILSEQ;
                     goto err7;
                 }
-                json_value_put(elem.v);
+                json_value_put(elm.v);
             } else if (res != -EINVAL)
                 goto err6;
         }
@@ -1397,7 +1397,7 @@ separate_data(int infd, struct ctx *ctx)
         json_value_put(e);
     }
 
-    json_value_put(jval);
+    json_value_put(jv);
 
     json_deinit();
 
@@ -1406,13 +1406,13 @@ separate_data(int infd, struct ctx *ctx)
     return 0;
 
 err7:
-    json_value_put(elem.v);
+    json_value_put(elm.v);
 err6:
     free(buf);
 err5:
     json_value_put(e);
 err4:
-    json_value_put(jval);
+    json_value_put(jv);
 err3:
     json_deinit();
 err2:

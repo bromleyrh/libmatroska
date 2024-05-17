@@ -65,7 +65,7 @@ json_write_cb(const void *buf, size_t off, size_t len, void *ctx)
 }
 
 static int
-parse_json(json_value_t *jval, const char *pathname)
+parse_json(json_value_t *jv, const char *pathname)
 {
     FILE *f;
     int err;
@@ -79,8 +79,7 @@ parse_json(json_value_t *jval, const char *pathname)
     rctx.rd_cb = &json_read_cb;
     rctx.ctx = f;
 
-    err = json_parse_text(jval, NULL, 0, &json_in_filter_discard_comments,
-                          &rctx);
+    err = json_parse_text(jv, NULL, 0, &json_in_filter_discard_comments, &rctx);
 
     fclose(f);
 
@@ -95,10 +94,10 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     size_t i;
     uint64_t end, start;
 
-    if (json_value_get_type(jval) != JSON_ARRAY_T)
+    if (json_value_get_type(jv) != JSON_ARRAY_T)
         return -EINVAL;
 
-    e = json_array_get_at(jval, 0);
+    e = json_array_get_at(jv, 0);
     if (e == NULL)
         return -EINVAL;
     if (json_value_get_type(e) != JSON_NUMBER_T)
@@ -106,7 +105,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     start = json_numeric_get(e);
     json_value_put(e);
 
-    e = json_array_get_at(jval, 1);
+    e = json_array_get_at(jv, 1);
     if (e == NULL)
         return -EINVAL;
     if (json_value_get_type(e) != JSON_NUMBER_T)
@@ -138,22 +137,22 @@ static int
 handle_object(json_value_t out, json_value_t alt_in, json_value_t jv)
 {
     int res;
-    json_kv_pair_t elem;
+    json_kv_pair_t elm;
 
-    res = json_object_get(jval, L"xref_marker", &elem);
+    res = json_object_get(jv, L"xref_marker", &elm);
     if (res == -EINVAL)
         return 0;
     if (res != 0)
         return res;
 
-    return handle_xref_marker(out, alt_in, elem.v);
+    return handle_xref_marker(out, alt_in, elm.v);
 }
 
 static int
 process_docs(json_value_t out, json_value_t *in)
 {
     int res;
-    json_value_t jval;
+    json_value_t jv;
     size_t i, n;
 
     if (json_value_get_type(in[0]) != JSON_ARRAY_T
@@ -163,31 +162,31 @@ process_docs(json_value_t out, json_value_t *in)
     n = json_array_get_size(in[1]);
 
     for (i = 0; i < n; i++) {
-        jval = json_array_get_at(in[1], i);
-        if (jval == NULL)
+        jv = json_array_get_at(in[1], i);
+        if (jv == NULL)
             return ERR_TAG(EIO);
 
-        if (json_value_get_type(jval) == JSON_OBJECT_T) {
-            res = handle_object(out, in[0], jval);
+        if (json_value_get_type(jv) == JSON_OBJECT_T) {
+            res = handle_object(out, in[0], jv);
             if (res != 0) {
                 if (res != 1)
                     goto err;
-                json_value_put(jval);
+                json_value_put(jv);
                 continue;
             }
         }
 
-        res = json_array_push(out, jval);
+        res = json_array_push(out, jv);
         if (res != 0)
             goto err;
 
-        json_value_put(jval);
+        json_value_put(jv);
     }
 
     return 0;
 
 err:
-    json_value_put(jval);
+    json_value_put(jv);
     return res;
 }
 
