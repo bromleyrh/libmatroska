@@ -897,7 +897,7 @@ write_mkv(int infd, struct ctx *ctx)
     matroska_bitstream_cb_t cb;
     matroska_hdl_t hdl;
     struct cluster_state cstate;
-    struct json_read_cb_ctx rctx;
+    struct json_in_filter_ctx rctx;
     struct master_elem_data *mdata;
     struct matroska_file_args args;
 
@@ -1227,7 +1227,7 @@ separate_data(int infd, struct ctx *ctx)
     int res;
     json_kv_pair_t elem;
     json_value_t e, jval;
-    struct json_read_cb_ctx rctx;
+    struct json_in_filter_ctx rctx;
 
     (void)ctx;
 

@@ -69,7 +69,7 @@ parse_json(json_value_t *jval, const char *pathname)
 {
     FILE *f;
     int err;
-    struct json_read_cb_ctx rctx;
+    struct json_in_filter_ctx rctx;
 
     f = fopen(pathname, "r");
     if (f == NULL)

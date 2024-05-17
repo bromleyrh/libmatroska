@@ -2641,7 +2641,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     size_t ret;
     struct filter_state filter_state;
     struct index_ctx *ctx = NULL;
-    struct json_read_cb_ctx rctx;
+    struct json_in_filter_ctx rctx;
     wchar_t *key;
 
     errmsg = "Error opening input";
