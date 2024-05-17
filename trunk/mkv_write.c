@@ -951,8 +951,8 @@ write_mkv(int infd, struct ctx *ctx)
     rctx.read_cb = &json_read_cb;
     rctx.ctx = f;
 
-    res = json_parse_text(NULL, 0, &json_in_filter_discard_comments, &rctx,
-                          &jval);
+    res = json_parse_text(&jval, NULL, 0, &json_in_filter_discard_comments,
+                          &rctx);
     if (res != 0)
         goto err3;
 
@@ -1259,8 +1259,8 @@ separate_data(int infd, struct ctx *ctx)
     rctx.read_cb = &json_read_cb;
     rctx.ctx = f;
 
-    res = json_parse_text(NULL, 0, &json_in_filter_discard_comments, &rctx,
-                          &jval);
+    res = json_parse_text(&jval, NULL, 0, &json_in_filter_discard_comments,
+                          &rctx);
     if (res != 0)
         goto err3;
 

@@ -2674,8 +2674,8 @@ index_json(int infd, const char *index_pathname, const char *filename)
     rctx.read_cb = &json_read_cb;
     rctx.ctx = f;
 
-    err = json_parse_text(NULL, 0, &json_in_filter_discard_comments, &rctx,
-                          &jval);
+    err = json_parse_text(&jval, NULL, 0, &json_in_filter_discard_comments,
+                          &rctx);
     if (err) {
         errmsg = "Error parsing input";
         goto err3;
