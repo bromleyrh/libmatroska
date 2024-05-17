@@ -2671,7 +2671,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     }
 
     json_in_filter_ctx_init(&rctx);
-    rctx.read_cb = &json_read_cb;
+    rctx.rd_cb = &json_read_cb;
     rctx.ctx = f;
 
     err = json_parse_text(&jval, NULL, 0, &json_in_filter_discard_comments,

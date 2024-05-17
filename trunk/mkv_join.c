@@ -76,7 +76,7 @@ parse_json(json_value_t *jval, const char *pathname)
         return ERR_TAG(errno);
 
     json_in_filter_ctx_init(&rctx);
-    rctx.read_cb = &json_read_cb;
+    rctx.rd_cb = &json_read_cb;
     rctx.ctx = f;
 
     err = json_parse_text(jval, NULL, 0, &json_in_filter_discard_comments,
