@@ -108,7 +108,7 @@ static matroska_metadata_output_cb_t metadata_cb;
 
 static matroska_bitstream_output_cb_t bitstream_cb;
 
-static size_t json_write_cb(const void *, size_t, size_t, void *);
+static size_t json_wr_cb(const void *, size_t, size_t, void *);
 
 static int cvt_mkv(int, struct ctx *);
 
@@ -1048,7 +1048,7 @@ err1:
 }
 
 static size_t
-json_write_cb(const void *buf, size_t off, size_t len, void *ctx)
+json_wr_cb(const void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     int end;
@@ -1159,7 +1159,7 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err3;
     }
 
-    res = json_write_text(NULL, NULL, jv, &json_write_cb, ctx->cb.f, 1);
+    res = json_write_text(NULL, NULL, jv, &json_wr_cb, ctx->cb.f, 1);
     if (res != 0) {
         errmsg = "Error writing output";
         goto err2;

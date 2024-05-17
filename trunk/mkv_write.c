@@ -116,7 +116,7 @@ static unsigned char from_hex(char);
 
 static int free_cb(struct cb *);
 
-static size_t json_read_cb(void *, size_t, size_t, void *);
+static size_t json_rd_cb(void *, size_t, size_t, void *);
 
 static int _cvt_string_to_utf8(char **, json_value_t);
 
@@ -366,7 +366,7 @@ free_cb(struct cb *cb)
 }
 
 static size_t
-json_read_cb(void *buf, size_t off, size_t len, void *ctx)
+json_rd_cb(void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     size_t ret;
@@ -948,7 +948,7 @@ write_mkv(int infd, struct ctx *ctx)
     errmsg = "Error parsing input";
 
     json_in_filter_ctx_init(&ictx);
-    ictx.rd_cb = &json_read_cb;
+    ictx.rd_cb = &json_rd_cb;
     ictx.ctx = f;
 
     res = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,
@@ -1256,7 +1256,7 @@ separate_data(int infd, struct ctx *ctx)
     errmsg = "Error parsing input";
 
     json_in_filter_ctx_init(&ictx);
-    ictx.rd_cb = &json_read_cb;
+    ictx.rd_cb = &json_rd_cb;
     ictx.ctx = f;
 
     res = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,

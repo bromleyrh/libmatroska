@@ -208,7 +208,7 @@ static int syncf(FILE *);
 static int print_err(int);
 static void clear_err(int);
 
-static size_t json_read_cb(void *, size_t, size_t, void *);
+static size_t json_rd_cb(void *, size_t, size_t, void *);
 
 static int uint64_cmp(uint64_t, uint64_t);
 
@@ -289,7 +289,7 @@ static int get_ents(struct index_ctx *, uint64_t, uint64_t, int,
 static void print_attr(const struct attr_output_args *, const char *,
                        const char *, ...);
 
-static size_t json_write_cb(const void *, size_t, size_t, void *);
+static size_t json_wr_cb(const void *, size_t, size_t, void *);
 
 static int list_index_entries_cb(uint64_t, uint64_t, uint64_t, uint64_t,
                                  uint64_t, uint64_t, const char *, const char *,
@@ -631,7 +631,7 @@ clear_err(int errdes)
 }
 
 static size_t
-json_read_cb(void *buf, size_t off, size_t len, void *ctx)
+json_rd_cb(void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     size_t ret;
@@ -2164,7 +2164,7 @@ print_attr(const struct attr_output_args *args, const char *fmt,
 }
 
 static size_t
-json_write_cb(const void *buf, size_t off, size_t len, void *ctx)
+json_wr_cb(const void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     int end;
@@ -2670,7 +2670,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     }
 
     json_in_filter_ctx_init(&ictx);
-    ictx.rd_cb = &json_read_cb;
+    ictx.rd_cb = &json_rd_cb;
     ictx.ctx = f;
 
     err = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,
@@ -2814,7 +2814,7 @@ output_json(const char *index_pathname, const char *filename, int outfd,
     }
 
     if (octx.jv != NULL) {
-        err = json_write_text(NULL, NULL, octx.jv, &json_write_cb, f, 1);
+        err = json_write_text(NULL, NULL, octx.jv, &json_wr_cb, f, 1);
         if (err)
             goto err3;
 

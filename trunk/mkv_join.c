@@ -16,9 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-static size_t json_read_cb(void *, size_t, size_t, void *);
+static size_t json_rd_cb(void *, size_t, size_t, void *);
 
-static size_t json_write_cb(const void *, size_t, size_t, void *);
+static size_t json_wr_cb(const void *, size_t, size_t, void *);
 
 static int parse_json(json_value_t *, const char *);
 
@@ -29,7 +29,7 @@ static int handle_object(json_value_t, json_value_t, json_value_t);
 static int process_docs(json_value_t, json_value_t *);
 
 static size_t
-json_read_cb(void *buf, size_t off, size_t len, void *ctx)
+json_rd_cb(void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     size_t ret;
@@ -41,7 +41,7 @@ json_read_cb(void *buf, size_t off, size_t len, void *ctx)
 }
 
 static size_t
-json_write_cb(const void *buf, size_t off, size_t len, void *ctx)
+json_wr_cb(const void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     int end;
@@ -76,7 +76,7 @@ parse_json(json_value_t *jv, const char *pathname)
         return ERR_TAG(errno);
 
     json_in_filter_ctx_init(&ictx);
-    ictx.rd_cb = &json_read_cb;
+    ictx.rd_cb = &json_rd_cb;
     ictx.ctx = f;
 
     err = json_parse_text(jv, NULL, 0, &json_in_filter_discard_comments, &ictx);
@@ -225,7 +225,7 @@ main(int argc, char **argv)
     for (i = 0; i < 2; i++)
         json_value_put(in[i]);
 
-    err = json_write_text(NULL, NULL, out, &json_write_cb, stdout, 1);
+    err = json_write_text(NULL, NULL, out, &json_wr_cb, stdout, 1);
     if (err) {
         fprintf(stderr, "Error generating output: %s\n", strerror(-err));
         goto err2;
