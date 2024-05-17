@@ -1322,7 +1322,7 @@ static int
 create_xref_marker(json_value_t *jval, struct filter_state *state)
 {
     int err;
-    json_object_elem_t elem;
+    json_kv_pair_t elem;
     json_value_t estart;
     json_value_t e, ret;
     wchar_t *key;
@@ -1399,7 +1399,7 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
 {
     int i, n;
     int res;
-    json_object_elem_t elm;
+    json_kv_pair_t elm;
     struct entry ent;
     struct index_key k;
     struct index_obj_ent e;
@@ -1588,7 +1588,7 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
 
     i = 0;
     for (;;) {
-        json_object_elem_t tmpe;
+        json_kv_pair_t tmpe;
 
         res = json_val_object_get_elem_by_key(jval, filtered_keys[i], &tmpe);
         if (res != -EINVAL) {
@@ -2407,7 +2407,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     if (parent_jval == NULL)
         octx->jval = jval;
     else {
-        json_object_elem_t elem;
+        json_kv_pair_t elem;
 
         switch (type) {
         case TYPE_OBJECT:
@@ -2634,7 +2634,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     const char *src;
     FILE *f;
     int err;
-    json_object_elem_t elem;
+    json_kv_pair_t elem;
     json_value_t jval, new_jval;
     mbstate_t s;
     size_t len;

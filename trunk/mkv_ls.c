@@ -567,7 +567,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     int block;
     int new_val;
     int res;
-    json_object_elem_t elem;
+    json_kv_pair_t elem;
     json_value_t jval;
     matroska_metadata_t valbuf;
     mbstate_t s;
@@ -802,7 +802,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
              int16_t ts, int new_frame, int keyframe, void *ctx)
 {
     int err;
-    json_object_elem_t elem;
+    json_kv_pair_t elem;
     json_value_t jval;
     struct ctx *ctxp = ctx;
     wchar_t *key;

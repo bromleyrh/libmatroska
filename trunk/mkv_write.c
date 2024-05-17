@@ -437,7 +437,7 @@ static int
 cvt_block_data(json_value_t jval, struct ctx *ctx)
 {
     int res;
-    json_object_elem_t elem;
+    json_kv_pair_t elem;
     uint64_t off;
     uint64_t hdrsz, sz;
 
@@ -800,7 +800,7 @@ static int
 process_block_data(json_value_t jval, struct ctx *ctx)
 {
     int res;
-    json_object_elem_t elem;
+    json_kv_pair_t elem;
     uint64_t off, sz;
 
     res = json_val_object_get_elem_by_key(jval, L"trackno", &elem);
@@ -892,7 +892,7 @@ write_mkv(int infd, struct ctx *ctx)
     int header;
     int i, j, m, n;
     int res;
-    json_object_elem_t elem, obje;
+    json_kv_pair_t elem, obje;
     json_value_t e, jval;
     matroska_bitstream_cb_t cb;
     matroska_hdl_t hdl;
@@ -1225,7 +1225,7 @@ separate_data(int infd, struct ctx *ctx)
     int header;
     int i, j, m, n;
     int res;
-    json_object_elem_t elem;
+    json_kv_pair_t elem;
     json_value_t e, jval;
     struct json_read_cb_ctx rctx;
 

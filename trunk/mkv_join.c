@@ -137,7 +137,7 @@ static int
 handle_object(json_value_t out, json_value_t alt_in, json_value_t jv)
 {
     int res;
-    json_object_elem_t elem;
+    json_kv_pair_t elem;
 
     res = json_val_object_get_elem_by_key(jval, L"xref_marker", &elem);
     if (res == -EINVAL)
