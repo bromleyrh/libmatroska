@@ -16,9 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-static size_t json_read_cb(char *, size_t, size_t, void *);
+static size_t json_read_cb(void *, size_t, size_t, void *);
 
-static size_t json_write_cb(const char *, size_t, size_t, void *);
+static size_t json_write_cb(const void *, size_t, size_t, void *);
 
 static int parse_json(json_value_t *, const char *);
 
@@ -29,7 +29,7 @@ static int handle_object(json_value_t, json_value_t, json_value_t);
 static int process_docs(json_value_t, json_value_t *);
 
 static size_t
-json_read_cb(char *buf, size_t off, size_t len, void *ctx)
+json_read_cb(void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     size_t ret;
@@ -41,7 +41,7 @@ json_read_cb(char *buf, size_t off, size_t len, void *ctx)
 }
 
 static size_t
-json_write_cb(const char *buf, size_t off, size_t len, void *ctx)
+json_write_cb(const void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     int end;
@@ -51,7 +51,7 @@ json_write_cb(const char *buf, size_t off, size_t len, void *ctx)
     (void)off;
 
     ret = len - 1;
-    end = buf[ret] == '\0';
+    end = ((const char *)buf)[ret] == '\0';
     towrite = end ? ret : len;
 
     ret = fwrite(buf, 1, towrite, f);

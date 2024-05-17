@@ -208,7 +208,7 @@ static int syncf(FILE *);
 static int print_err(int);
 static void clear_err(int);
 
-static size_t json_read_cb(char *, size_t, size_t, void *);
+static size_t json_read_cb(void *, size_t, size_t, void *);
 
 static int uint64_cmp(uint64_t, uint64_t);
 
@@ -289,7 +289,7 @@ static int get_ents(struct index_ctx *, uint64_t, uint64_t, int,
 static void print_attr(const struct attr_output_args *, const char *,
                        const char *, ...);
 
-static size_t json_write_cb(const char *, size_t, size_t, void *);
+static size_t json_write_cb(const void *, size_t, size_t, void *);
 
 static int list_index_entries_cb(uint64_t, uint64_t, uint64_t, uint64_t,
                                  uint64_t, uint64_t, const char *, const char *,
@@ -631,7 +631,7 @@ clear_err(int errdes)
 }
 
 static size_t
-json_read_cb(char *buf, size_t off, size_t len, void *ctx)
+json_read_cb(void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     size_t ret;
@@ -2165,7 +2165,7 @@ print_attr(const struct attr_output_args *args, const char *fmt,
 }
 
 static size_t
-json_write_cb(const char *buf, size_t off, size_t len, void *ctx)
+json_write_cb(const void *buf, size_t off, size_t len, void *ctx)
 {
     FILE *f = ctx;
     int end;
@@ -2175,7 +2175,7 @@ json_write_cb(const char *buf, size_t off, size_t len, void *ctx)
     (void)off;
 
     ret = len - 1;
-    end = buf[ret] == '\0';
+    end = ((const char *)buf)[ret] == '\0';
     towrite = end ? ret : len;
 
     ret = fwrite(buf, 1, towrite, f);
