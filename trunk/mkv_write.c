@@ -446,7 +446,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
         return res == -EINVAL ? 1 : res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    ctx->trackno = json_val_numeric_get(elem.value);
+    ctx->trackno = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Track number: %" PRIu64 "\n", ctx->trackno);
@@ -456,7 +456,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    hdrsz = json_val_numeric_get(elem.value);
+    hdrsz = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Header length: %" PRIu64 " byte%s\n", PL(hdrsz));
@@ -466,7 +466,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    off = json_val_numeric_get(elem.value);
+    off = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     if (ctx->lastoff >= 0) {
@@ -488,7 +488,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    sz = json_val_numeric_get(elem.value);
+    sz = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Data length: %" PRIu64 " byte%s\n", PL(sz));
@@ -508,7 +508,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    ctx->ts = json_val_numeric_get(elem.value);
+    ctx->ts = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Timestamp: %" PRIi16 "\n", ctx->ts);
@@ -532,7 +532,7 @@ cvt_number_to_integer(matroska_metadata_t *dst, size_t *len, json_value_t obj,
     if (json_value_get_type(src) != JSON_NUMBER_T)
         return -EILSEQ;
 
-    dst->integer = json_val_numeric_get(src);
+    dst->integer = json_numeric_get(src);
 
     return 0;
 }
@@ -549,7 +549,7 @@ cvt_number_to_uinteger(matroska_metadata_t *dst, size_t *len, json_value_t obj,
     if (json_value_get_type(src) != JSON_NUMBER_T)
         return -EILSEQ;
 
-    dst->uinteger = json_val_numeric_get(src);
+    dst->uinteger = json_numeric_get(src);
 
     return 0;
 }
@@ -566,7 +566,7 @@ cvt_number_to_float(matroska_metadata_t *dst, size_t *len, json_value_t obj,
     if (json_value_get_type(src) != JSON_NUMBER_T)
         return -EILSEQ;
 
-    dst->dbl = json_val_numeric_get(src);
+    dst->dbl = json_numeric_get(src);
 
     return 0;
 }
@@ -643,7 +643,7 @@ cvt_number_to_master(matroska_metadata_t *dst, size_t *len, json_value_t obj,
     if (json_value_get_type(src) != JSON_NUMBER_T)
         return -EILSEQ;
 
-    dst->len = *len = json_val_numeric_get(src);
+    dst->len = *len = json_numeric_get(src);
     return 0;
 }
 
@@ -808,7 +808,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
         return res == -EINVAL ? 0 : res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    res = json_val_numeric_get(elem.value);
+    res = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Track number: %d\n", res);
@@ -818,7 +818,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    sz = json_val_numeric_get(elem.value);
+    sz = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Header length: %" PRIu64 " byte%s\n", PL(sz));
@@ -828,7 +828,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    off = json_val_numeric_get(elem.value);
+    off = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     if (ctx->lastoff >= 0) {
@@ -850,7 +850,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    sz = json_val_numeric_get(elem.value);
+    sz = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Data length: %" PRIu64 " byte%s\n", PL(sz));
@@ -870,7 +870,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
-    res = json_val_numeric_get(elem.value);
+    res = json_numeric_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Timestamp: %d\n", res);

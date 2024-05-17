@@ -397,7 +397,7 @@ cvt_integer_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     if (ret == NULL)
         return -ENOMEM;
 
-    json_val_numeric_set(ret, src->integer);
+    json_numeric_set(ret, src->integer);
 
     *dst = ret;
     return 0;
@@ -416,7 +416,7 @@ cvt_uinteger_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     if (ret == NULL)
         return -ENOMEM;
 
-    json_val_numeric_set(ret, src->uinteger);
+    json_numeric_set(ret, src->uinteger);
 
     *dst = ret;
     return 0;
@@ -435,7 +435,7 @@ cvt_float_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     if (ret == NULL)
         return -ENOMEM;
 
-    json_val_numeric_set(ret, src->dbl);
+    json_numeric_set(ret, src->dbl);
 
     *dst = ret;
     return 0;
@@ -497,7 +497,7 @@ cvt_master_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     if (ret == NULL)
         return -ENOMEM;
 
-    json_val_numeric_set(ret, len);
+    json_numeric_set(ret, len);
 
     *dst = ret;
     return 0;
@@ -725,7 +725,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             res = -ENOMEM;
             goto err3;
         }
-        json_val_numeric_set(elem.value, hdrlen);
+        json_numeric_set(elem.value, hdrlen);
 
         key = wcsdup(L"hdr_len");
         if (key == NULL) {
@@ -747,7 +747,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
                 res = -ENOMEM;
                 goto err3;
             }
-            json_val_numeric_set(elem.value, len);
+            json_numeric_set(elem.value, len);
 
             key = wcsdup(L"data_len");
             if (key == NULL) {
@@ -857,7 +857,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.value = json_value_init(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
-    json_val_numeric_set(elem.value, trackno);
+    json_numeric_set(elem.value, trackno);
 
     key = wcsdup(L"trackno");
     if (key == NULL)
@@ -872,7 +872,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.value = json_value_init(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
-    json_val_numeric_set(elem.value, ts);
+    json_numeric_set(elem.value, ts);
 
     key = wcsdup(L"ts");
     if (key == NULL)
@@ -902,7 +902,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.value = json_value_init(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
-    json_val_numeric_set(elem.value, ctxp->off);
+    json_numeric_set(elem.value, ctxp->off);
 
     key = wcsdup(L"data_offset");
     if (key == NULL)
@@ -917,7 +917,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.value = json_value_init(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
-    json_val_numeric_set(elem.value, hdrlen);
+    json_numeric_set(elem.value, hdrlen);
 
     key = wcsdup(L"hdr_len");
     if (key == NULL)
@@ -955,7 +955,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.value = json_value_init(JSON_NUMBER_T);
     if (elem.value == NULL)
         return -ENOMEM;
-    json_val_numeric_set(elem.value, framelen);
+    json_numeric_set(elem.value, framelen);
 
     key = wcsdup(L"data_len");
     if (key == NULL)

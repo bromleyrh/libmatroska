@@ -1607,8 +1607,8 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
             break;
     }
     if (filter_state->state == 1) {
-        json_val_numeric_set(filter_state->e[0], filter_state->start);
-        json_val_numeric_set(filter_state->e[1], filter_state->end);
+        json_numeric_set(filter_state->e[0], filter_state->start);
+        json_numeric_set(filter_state->e[1], filter_state->end);
         res = _index_object_value(ctx, parent_ent, filter_state->jval, level,
                                   elem, filter_state, output_state);
         if (res != 0)
@@ -1722,7 +1722,7 @@ index_number_value(struct index_ctx *ctx, struct entry *parent_ent,
     (void)filter_state;
     (void)output_state;
 
-    parent_ent->d.numeric = json_val_numeric_get(jval);
+    parent_ent->d.numeric = json_numeric_get(jval);
 
     err = do_index_trans_new(ctx);
     if (err)
@@ -2377,7 +2377,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
             goto err1;
         break;
     case TYPE_NUMERIC:
-        json_val_numeric_set(jval, nval2);
+        json_numeric_set(jval, nval2);
         print_verbose(f, "Numeric value: %" PRIu64 "\n", nval2);
         break;
     case TYPE_STRING:

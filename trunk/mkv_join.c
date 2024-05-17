@@ -102,7 +102,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
         return -EINVAL;
     if (json_value_get_type(e) != JSON_NUMBER_T)
         goto err;
-    start = json_val_numeric_get(e);
+    start = json_numeric_get(e);
     json_value_put(e);
 
     e = json_array_get_at(jval, 1);
@@ -110,7 +110,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
         return -EINVAL;
     if (json_value_get_type(e) != JSON_NUMBER_T)
         goto err;
-    end = json_val_numeric_get(e);
+    end = json_numeric_get(e);
     json_value_put(e);
 
     fprintf(stderr, "xref_marker: [%" PRIu64 ", %" PRIu64 "]\n", start, end);
