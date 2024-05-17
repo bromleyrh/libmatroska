@@ -441,7 +441,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
     uint64_t off;
     uint64_t hdrsz, sz;
 
-    res = json_val_object_get_elem_by_key(jval, L"trackno", &elem);
+    res = json_object_get(jval, L"trackno", &elem);
     if (res != 0)
         return res == -EINVAL ? 1 : res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -451,7 +451,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Track number: %" PRIu64 "\n", ctx->trackno);
 
-    res = json_val_object_get_elem_by_key(jval, L"hdr_len", &elem);
+    res = json_object_get(jval, L"hdr_len", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -461,7 +461,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Header length: %" PRIu64 " byte%s\n", PL(hdrsz));
 
-    res = json_val_object_get_elem_by_key(jval, L"data_offset", &elem);
+    res = json_object_get(jval, L"data_offset", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -483,7 +483,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Data offset: %" PRIu64 " byte%s\n", PL(off));
 
-    res = json_val_object_get_elem_by_key(jval, L"data_len", &elem);
+    res = json_object_get(jval, L"data_len", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -493,7 +493,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Data length: %" PRIu64 " byte%s\n", PL(sz));
 
-    res = json_val_object_get_elem_by_key(jval, L"keyframe", &elem);
+    res = json_object_get(jval, L"keyframe", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_BOOLEAN_T)
@@ -503,7 +503,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Keyframe: %d\n", ctx->keyframe);
 
-    res = json_val_object_get_elem_by_key(jval, L"ts", &elem);
+    res = json_object_get(jval, L"ts", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -803,7 +803,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
     json_kv_pair_t elem;
     uint64_t off, sz;
 
-    res = json_val_object_get_elem_by_key(jval, L"trackno", &elem);
+    res = json_object_get(jval, L"trackno", &elem);
     if (res != 0)
         return res == -EINVAL ? 0 : res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -813,7 +813,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Track number: %d\n", res);
 
-    res = json_val_object_get_elem_by_key(jval, L"hdr_len", &elem);
+    res = json_object_get(jval, L"hdr_len", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -823,7 +823,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Header length: %" PRIu64 " byte%s\n", PL(sz));
 
-    res = json_val_object_get_elem_by_key(jval, L"data_offset", &elem);
+    res = json_object_get(jval, L"data_offset", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -845,7 +845,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Data offset: %" PRIu64 " byte%s\n", PL(off));
 
-    res = json_val_object_get_elem_by_key(jval, L"data_len", &elem);
+    res = json_object_get(jval, L"data_len", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -855,7 +855,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Data length: %" PRIu64 " byte%s\n", PL(sz));
 
-    res = json_val_object_get_elem_by_key(jval, L"keyframe", &elem);
+    res = json_object_get(jval, L"keyframe", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_BOOLEAN_T)
@@ -865,7 +865,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
 
     fprintf(stderr, "Keyframe: %d\n", res);
 
-    res = json_val_object_get_elem_by_key(jval, L"ts", &elem);
+    res = json_object_get(jval, L"ts", &elem);
     if (res != 0)
         return res;
     if (json_value_get_type(elem.value) != JSON_NUMBER_T)
@@ -1030,13 +1030,13 @@ write_mkv(int infd, struct ctx *ctx)
 
         continued = 1;
 
-        n = json_val_object_get_num_elem(e);
+        n = json_object_get_size(e);
 
         for (j = 0; j < n; j++) {
             mbstate_t s;
             size_t idx;
 
-            res = json_val_object_get_elem_by_idx(e, j, &elem);
+            res = json_object_get_at(e, j, &elem);
             if (res != 0)
                 goto err6;
 
@@ -1133,7 +1133,7 @@ write_mkv(int infd, struct ctx *ctx)
             mdata = NULL;
 
         if (!block) {
-            res = json_val_object_get_elem_by_key(e, L"hdr_len", &obje);
+            res = json_object_get(e, L"hdr_len", &obje);
             if (res != 0)
                 goto err8;
             if (json_value_get_type(obje.value) != JSON_NUMBER_T) {
@@ -1143,7 +1143,7 @@ write_mkv(int infd, struct ctx *ctx)
             json_value_put(obje.value);
 
             if (etype != ETYPE_MASTER) {
-                res = json_val_object_get_elem_by_key(e, L"data_len", &obje);
+                res = json_object_get(e, L"data_len", &obje);
                 if (res == 0) {
                     if (json_value_get_type(obje.value) != JSON_NUMBER_T) {
                         res = -EILSEQ;
@@ -1304,13 +1304,13 @@ separate_data(int infd, struct ctx *ctx)
 
         continued = 1;
 
-        n = json_val_object_get_num_elem(e);
+        n = json_object_get_size(e);
 
         for (j = 0; j < n; j++) {
             mbstate_t s;
             size_t idx;
 
-            res = json_val_object_get_elem_by_idx(e, j, &elem);
+            res = json_object_get_at(e, j, &elem);
             if (res != 0)
                 goto err5;
 
@@ -1370,7 +1370,7 @@ separate_data(int infd, struct ctx *ctx)
             if (res != 0)
                 goto err6;
         } else {
-            res = json_val_object_get_elem_by_key(e, L"hdr_len", &elem);
+            res = json_object_get(e, L"hdr_len", &elem);
             if (res != 0)
                 goto err6;
             if (json_value_get_type(elem.value) != JSON_NUMBER_T) {
@@ -1379,7 +1379,7 @@ separate_data(int infd, struct ctx *ctx)
             }
             json_value_put(elem.value);
 
-            res = json_val_object_get_elem_by_key(e, L"data_len", &elem);
+            res = json_object_get(e, L"data_len", &elem);
             if (res == 0) {
                 if (json_value_get_type(elem.value) != JSON_NUMBER_T) {
                     res = -EILSEQ;

@@ -1370,7 +1370,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
         goto err4;
     }
 
-    err = json_val_object_insert_elem(ret, &elem);
+    err = json_object_insert(ret, &elem);
     if (err) {
         err = ERR_TAG(-err);
         goto err3;
@@ -1405,11 +1405,11 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
     struct index_obj_ent e;
     uint64_t id;
 
-    n = json_val_object_get_num_elem(jval);
+    n = json_object_get_size(jval);
     if (n == 0)
         return 0;
 
-    res = json_val_object_get_elem_by_idx(jval, 0, &elm);
+    res = json_object_get_at(jval, 0, &elm);
     json_value_put(elem.value);
     if (res != 0)
         return res;
@@ -1473,7 +1473,7 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         mbstate_t s;
         size_t n;
 
-        res = json_val_object_get_elem_by_idx(jval, i, &elm);
+        res = json_object_get_at(jval, i, &elm);
         if (res != 0)
             return ERR_TAG(res == -EADDRNOTAVAIL ? EIO : -res);
 
@@ -1590,7 +1590,7 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
     for (;;) {
         json_kv_pair_t tmpe;
 
-        res = json_val_object_get_elem_by_key(jval, filtered_keys[i], &tmpe);
+        res = json_object_get(jval, filtered_keys[i], &tmpe);
         if (res != -EINVAL) {
             if (res != 0)
                 return res;
@@ -2423,7 +2423,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
             }
             elem.key = str;
             elem.value = jval;
-            res = json_val_object_insert_elem(parent_jval, &elem);
+            res = json_object_insert(parent_jval, &elem);
             if (res != 0)
                 goto err2;
             break;
@@ -2713,7 +2713,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     elem.key = key;
     elem.value = jval;
-    err = json_val_object_insert_elem(new_jval, &elem);
+    err = json_object_insert(new_jval, &elem);
     if (err)
         goto err6;
     json_value_put(jval);

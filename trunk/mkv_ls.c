@@ -712,7 +712,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
     elem.key = key;
 
-    res = json_val_object_insert_elem(jval, &elem);
+    res = json_object_insert(jval, &elem);
     if (res != 0)
         goto err4;
     key = NULL;
@@ -735,7 +735,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         elem.key = key;
 
-        res = json_val_object_insert_elem(jval, &elem);
+        res = json_object_insert(jval, &elem);
         if (res != 0)
             goto err4;
 
@@ -757,7 +757,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
             elem.key = key;
 
-            res = json_val_object_insert_elem(jval, &elem);
+            res = json_object_insert(jval, &elem);
             if (res != 0)
                 goto err4;
             key = NULL;
@@ -839,7 +839,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
             goto err1;
         elem.key = key;
 
-        err = json_val_object_insert_elem(jval, &elem);
+        err = json_object_insert(jval, &elem);
         json_value_put(elem.value);
         if (err)
             goto err2;
@@ -864,7 +864,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(jval, &elem);
+    err = json_object_insert(jval, &elem);
     json_value_put(elem.value);
     if (err)
         goto err2;
@@ -879,7 +879,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(jval, &elem);
+    err = json_object_insert(jval, &elem);
     json_value_put(elem.value);
     if (err)
         goto err2;
@@ -894,7 +894,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(jval, &elem);
+    err = json_object_insert(jval, &elem);
     json_value_put(elem.value);
     if (err)
         goto err2;
@@ -909,7 +909,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(jval, &elem);
+    err = json_object_insert(jval, &elem);
     json_value_put(elem.value);
     if (err)
         goto err2;
@@ -924,7 +924,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(jval, &elem);
+    err = json_object_insert(jval, &elem);
     json_value_put(elem.value);
     if (err)
         goto err2;
@@ -962,7 +962,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     elem.key = key;
 
-    err = json_val_object_insert_elem(jval, &elem);
+    err = json_object_insert(jval, &elem);
     json_value_put(elem.value);
     if (err)
         goto err2;
