@@ -498,7 +498,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_BOOLEAN_T)
         return -EILSEQ;
-    ctx->keyframe = json_val_boolean_get(elem.value);
+    ctx->keyframe = json_boolean_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Keyframe: %d\n", ctx->keyframe);
@@ -860,7 +860,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
         return res;
     if (json_value_get_type(elem.value) != JSON_BOOLEAN_T)
         return -EILSEQ;
-    res = json_val_boolean_get(elem.value);
+    res = json_boolean_get(elem.value);
     json_value_put(elem.value);
 
     fprintf(stderr, "Keyframe: %d\n", res);

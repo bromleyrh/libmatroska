@@ -1552,7 +1552,7 @@ index_boolean_value(struct index_ctx *ctx, struct entry *parent_ent,
         return err;
 
     parent_ent->d.subtype = TYPE_BOOLEAN;
-    parent_ent->d.numeric = val = json_val_boolean_get(jval);
+    parent_ent->d.numeric = val = json_boolean_get(jval);
     err = do_index_insert(ctx, &parent_ent->k, &parent_ent->d,
                           sizeof(parent_ent->d));
     if (err)
@@ -2361,7 +2361,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
         print_verbose(f, "Null value\n");
         break;
     case TYPE_BOOLEAN:
-        json_val_boolean_set(jval, nval2);
+        json_boolean_set(jval, nval2);
         print_verbose(f, "Boolean value: %d\n", nval2 != 0);
         break;
     case TYPE_OBJECT:

@@ -832,7 +832,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         elem.value = json_value_init(JSON_BOOLEAN_T);
         if (elem.value == NULL)
             return -ENOMEM;
-        json_val_boolean_set(elem.value, 1);
+        json_boolean_set(elem.value, 1);
 
         key = wcsdup(L"continued");
         if (key == NULL)
@@ -887,7 +887,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.value = json_value_init(JSON_BOOLEAN_T);
     if (elem.value == NULL)
         return -ENOMEM;
-    json_val_boolean_set(elem.value, keyframe);
+    json_boolean_set(elem.value, keyframe);
 
     key = wcsdup(L"keyframe");
     if (key == NULL)
