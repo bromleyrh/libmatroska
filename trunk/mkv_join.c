@@ -94,13 +94,13 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     size_t i;
     uint64_t end, start;
 
-    if (json_val_get_type(jval) != JSON_ARRAY_T)
+    if (json_value_get_type(jval) != JSON_ARRAY_T)
         return -EINVAL;
 
     e = json_val_array_get_elem(jval, 0);
     if (e == NULL)
         return -EINVAL;
-    if (json_val_get_type(e) != JSON_NUMBER_T)
+    if (json_value_get_type(e) != JSON_NUMBER_T)
         goto err;
     start = json_val_numeric_get(e);
     json_value_put(e);
@@ -108,7 +108,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     e = json_val_array_get_elem(jval, 1);
     if (e == NULL)
         return -EINVAL;
-    if (json_val_get_type(e) != JSON_NUMBER_T)
+    if (json_value_get_type(e) != JSON_NUMBER_T)
         goto err;
     end = json_val_numeric_get(e);
     json_value_put(e);
@@ -155,8 +155,8 @@ process_docs(json_value_t out, json_value_t *in)
     json_value_t jval;
     size_t i, n;
 
-    if (json_val_get_type(in[0]) != JSON_ARRAY_T
-        || json_val_get_type(in[1]) != JSON_ARRAY_T)
+    if (json_value_get_type(in[0]) != JSON_ARRAY_T
+        || json_value_get_type(in[1]) != JSON_ARRAY_T)
         return -EINVAL;
 
     n = json_val_array_get_num_elem(in[1]);
@@ -166,7 +166,7 @@ process_docs(json_value_t out, json_value_t *in)
         if (jval == NULL)
             return ERR_TAG(EIO);
 
-        if (json_val_get_type(jval) == JSON_OBJECT_T) {
+        if (json_value_get_type(jval) == JSON_OBJECT_T) {
             res = handle_object(out, in[0], jval);
             if (res != 0) {
                 if (res != 1)

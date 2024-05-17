@@ -1820,7 +1820,7 @@ index_value(struct index_ctx *ctx, struct entry *parent_ent, json_value_t jval,
         [JSON_STRING_T]     = &index_string_value
     };
 
-    type = json_val_get_type(jval);
+    type = json_value_get_type(jval);
     if (type == JSON_TYPE_NONE)
         return ERR_TAG(EIO);
 
