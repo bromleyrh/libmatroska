@@ -1327,7 +1327,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
     json_value_t e, ret;
     wchar_t *key;
 
-    ret = json_val_new(JSON_OBJECT_T);
+    ret = json_value_init(JSON_OBJECT_T);
     if (ret == NULL)
         return ERR_TAG(ENOMEM);
 
@@ -1338,13 +1338,13 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
     }
     elem.key = key;
 
-    elem.value = json_val_new(JSON_ARRAY_T);
+    elem.value = json_value_init(JSON_ARRAY_T);
     if (elem.value == NULL) {
         err = ERR_TAG(ENOMEM);
         goto err2;
     }
 
-    e = json_val_new(JSON_NUMBER_T);
+    e = json_value_init(JSON_NUMBER_T);
     if (e == NULL) {
         err = ERR_TAG(ENOMEM);
         goto err3;
@@ -1358,7 +1358,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
 
     estart = e;
 
-    e = json_val_new(JSON_NUMBER_T);
+    e = json_value_init(JSON_NUMBER_T);
     if (e == NULL) {
         err = ERR_TAG(ENOMEM);
         goto err3;
@@ -2339,7 +2339,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     print_verbose(f, "%sContainer ID: %" PRIu64 "\n", tabs(wctx->level),
                   parent_id);
 
-    jval = json_val_new(types[subtype]);
+    jval = json_value_init(types[subtype]);
     if (jval == NULL)
         return ERR_TAG(ENOMEM);
 
@@ -2688,7 +2688,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     errmsg = "Error generating index";
 
-    new_jval = json_val_new(JSON_OBJECT_T);
+    new_jval = json_value_init(JSON_OBJECT_T);
     if (new_jval == NULL) {
         err = -ENOMEM;
         goto err5;
