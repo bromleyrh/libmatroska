@@ -233,7 +233,7 @@ main(int argc, char **argv)
 
     json_val_free(out);
 
-    json_end();
+    json_deinit();
 
     return EXIT_SUCCESS;
 
@@ -243,7 +243,7 @@ err3:
 err2:
     json_val_free(out);
 err1:
-    json_end();
+    json_deinit();
     return EXIT_FAILURE;
 }
 

@@ -1168,7 +1168,7 @@ cvt_mkv(int infd, struct ctx *ctx)
 
     json_val_free(jval);
 
-    json_end();
+    json_deinit();
 
     return 0;
 
@@ -1177,7 +1177,7 @@ err4:
 err3:
     json_val_free(jval);
 err2:
-    json_end();
+    json_deinit();
 err1:
     if (res > 0)
         res = matroska_print_err(stderr, res);

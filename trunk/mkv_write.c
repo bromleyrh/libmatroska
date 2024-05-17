@@ -1182,7 +1182,7 @@ write_mkv(int infd, struct ctx *ctx)
 
     json_val_free(jval);
 
-    json_end();
+    json_deinit();
 
     fclose(f);
 
@@ -1204,7 +1204,7 @@ err5:
 err4:
     json_val_free(jval);
 err3:
-    json_end();
+    json_deinit();
 err2:
     fclose(f);
 err1:
@@ -1397,7 +1397,7 @@ separate_data(int infd, struct ctx *ctx)
 
     json_val_free(jval);
 
-    json_end();
+    json_deinit();
 
     fclose(f);
 
@@ -1412,7 +1412,7 @@ err5:
 err4:
     json_val_free(jval);
 err3:
-    json_end();
+    json_deinit();
 err2:
     fclose(f);
 err1:

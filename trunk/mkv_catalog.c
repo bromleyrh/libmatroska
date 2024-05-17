@@ -2729,7 +2729,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     json_val_free(jval);
 
-    json_end();
+    json_deinit();
 
     fclose(f);
 
@@ -2744,7 +2744,7 @@ err5:
 err4:
     json_val_free(jval);
 err3:
-    json_end();
+    json_deinit();
 err2:
     fclose(f);
 err1:
@@ -2823,7 +2823,7 @@ output_json(const char *index_pathname, const char *filename, int outfd,
             goto err3;
     }
 
-    json_end();
+    json_deinit();
 
     if (fclose(f) == EOF) {
         err = MINUS_ERRNO;
@@ -2835,7 +2835,7 @@ output_json(const char *index_pathname, const char *filename, int outfd,
 err4:
     do_index_close(ctx);
 err3:
-    json_end();
+    json_deinit();
 err2:
     fclose(f);
 err1:
