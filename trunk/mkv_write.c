@@ -860,7 +860,7 @@ process_block_data(json_val_t jval, struct ctx *ctx)
         return res;
     if (json_val_get_type(elem.value) != JSON_TYPE_BOOLEAN)
         return -EILSEQ;
-    res = json_val_numeric_get(elem.value);
+    res = json_val_boolean_get(elem.value);
     json_val_free(elem.value);
 
     fprintf(stderr, "Keyframe: %d\n", res);
