@@ -706,26 +706,26 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         goto err2;
     }
 
-    res = (*fn)(&elem.value, val, len, value);
+    res = (*fn)(&elem.v, val, len, value);
     if (res != 0)
         goto err3;
 
-    elem.key = key;
+    elem.k = key;
 
     res = json_object_insert(jval, &elem);
     if (res != 0)
         goto err4;
     key = NULL;
 
-    json_value_put(elem.value);
+    json_value_put(elem.v);
 
     if (!block) {
-        elem.value = json_value_init(JSON_NUMBER_T);
-        if (elem.value == NULL) {
+        elem.v = json_value_init(JSON_NUMBER_T);
+        if (elem.v == NULL) {
             res = -ENOMEM;
             goto err3;
         }
-        json_numeric_set(elem.value, hdrlen);
+        json_numeric_set(elem.v, hdrlen);
 
         key = wcsdup(L"hdr_len");
         if (key == NULL) {
@@ -733,21 +733,21 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             goto err4;
         }
 
-        elem.key = key;
+        elem.k = key;
 
         res = json_object_insert(jval, &elem);
         if (res != 0)
             goto err4;
 
-        json_value_put(elem.value);
+        json_value_put(elem.v);
 
         if (data->etype != ETYPE_MASTER) {
-            elem.value = json_value_init(JSON_NUMBER_T);
-            if (elem.value == NULL) {
+            elem.v = json_value_init(JSON_NUMBER_T);
+            if (elem.v == NULL) {
                 res = -ENOMEM;
                 goto err3;
             }
-            json_numeric_set(elem.value, len);
+            json_numeric_set(elem.v, len);
 
             key = wcsdup(L"data_len");
             if (key == NULL) {
@@ -755,14 +755,14 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
                 goto err4;
             }
 
-            elem.key = key;
+            elem.k = key;
 
             res = json_object_insert(jval, &elem);
             if (res != 0)
                 goto err4;
             key = NULL;
 
-            json_value_put(elem.value);
+            json_value_put(elem.v);
         }
     }
 
@@ -786,7 +786,7 @@ end1:
     return 0;
 
 err4:
-    json_value_put(elem.value);
+    json_value_put(elem.v);
 err3:
     json_value_put(jval);
 err2:
@@ -829,18 +829,18 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         if (err)
             return err;
 
-        elem.value = json_value_init(JSON_BOOLEAN_T);
-        if (elem.value == NULL)
+        elem.v = json_value_init(JSON_BOOLEAN_T);
+        if (elem.v == NULL)
             return -ENOMEM;
-        json_boolean_set(elem.value, 1);
+        json_boolean_set(elem.v, 1);
 
         key = wcsdup(L"continued");
         if (key == NULL)
             goto err1;
-        elem.key = key;
+        elem.k = key;
 
         err = json_object_insert(jval, &elem);
-        json_value_put(elem.value);
+        json_value_put(elem.v);
         if (err)
             goto err2;
     } else
@@ -854,78 +854,78 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     }
     ctxp->remlen = framelen;
 
-    elem.value = json_value_init(JSON_NUMBER_T);
-    if (elem.value == NULL)
+    elem.v = json_value_init(JSON_NUMBER_T);
+    if (elem.v == NULL)
         return -ENOMEM;
-    json_numeric_set(elem.value, trackno);
+    json_numeric_set(elem.v, trackno);
 
     key = wcsdup(L"trackno");
     if (key == NULL)
         goto err1;
-    elem.key = key;
+    elem.k = key;
 
     err = json_object_insert(jval, &elem);
-    json_value_put(elem.value);
+    json_value_put(elem.v);
     if (err)
         goto err2;
 
-    elem.value = json_value_init(JSON_NUMBER_T);
-    if (elem.value == NULL)
+    elem.v = json_value_init(JSON_NUMBER_T);
+    if (elem.v == NULL)
         return -ENOMEM;
-    json_numeric_set(elem.value, ts);
+    json_numeric_set(elem.v, ts);
 
     key = wcsdup(L"ts");
     if (key == NULL)
         goto err1;
-    elem.key = key;
+    elem.k = key;
 
     err = json_object_insert(jval, &elem);
-    json_value_put(elem.value);
+    json_value_put(elem.v);
     if (err)
         goto err2;
 
-    elem.value = json_value_init(JSON_BOOLEAN_T);
-    if (elem.value == NULL)
+    elem.v = json_value_init(JSON_BOOLEAN_T);
+    if (elem.v == NULL)
         return -ENOMEM;
-    json_boolean_set(elem.value, keyframe);
+    json_boolean_set(elem.v, keyframe);
 
     key = wcsdup(L"keyframe");
     if (key == NULL)
         goto err1;
-    elem.key = key;
+    elem.k = key;
 
     err = json_object_insert(jval, &elem);
-    json_value_put(elem.value);
+    json_value_put(elem.v);
     if (err)
         goto err2;
 
-    elem.value = json_value_init(JSON_NUMBER_T);
-    if (elem.value == NULL)
+    elem.v = json_value_init(JSON_NUMBER_T);
+    if (elem.v == NULL)
         return -ENOMEM;
-    json_numeric_set(elem.value, ctxp->off);
+    json_numeric_set(elem.v, ctxp->off);
 
     key = wcsdup(L"data_offset");
     if (key == NULL)
         goto err1;
-    elem.key = key;
+    elem.k = key;
 
     err = json_object_insert(jval, &elem);
-    json_value_put(elem.value);
+    json_value_put(elem.v);
     if (err)
         goto err2;
 
-    elem.value = json_value_init(JSON_NUMBER_T);
-    if (elem.value == NULL)
+    elem.v = json_value_init(JSON_NUMBER_T);
+    if (elem.v == NULL)
         return -ENOMEM;
-    json_numeric_set(elem.value, hdrlen);
+    json_numeric_set(elem.v, hdrlen);
 
     key = wcsdup(L"hdr_len");
     if (key == NULL)
         goto err1;
-    elem.key = key;
+    elem.k = key;
 
     err = json_object_insert(jval, &elem);
-    json_value_put(elem.value);
+    json_value_put(elem.v);
     if (err)
         goto err2;
 
@@ -952,18 +952,18 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         }
     }
 
-    elem.value = json_value_init(JSON_NUMBER_T);
-    if (elem.value == NULL)
+    elem.v = json_value_init(JSON_NUMBER_T);
+    if (elem.v == NULL)
         return -ENOMEM;
-    json_numeric_set(elem.value, framelen);
+    json_numeric_set(elem.v, framelen);
 
     key = wcsdup(L"data_len");
     if (key == NULL)
         goto err1;
-    elem.key = key;
+    elem.k = key;
 
     err = json_object_insert(jval, &elem);
-    json_value_put(elem.value);
+    json_value_put(elem.v);
     if (err)
         goto err2;
 
@@ -1044,7 +1044,7 @@ err2:
     return err;
 
 err1:
-    json_value_put(elem.value);
+    json_value_put(elem.v);
     return -ENOMEM;
 }
 

@@ -146,7 +146,7 @@ handle_object(json_value_t out, json_value_t alt_in, json_value_t jv)
     if (res != 0)
         return res;
 
-    return handle_xref_marker(out, alt_in, elem.value);
+    return handle_xref_marker(out, alt_in, elem.v);
 }
 
 static int

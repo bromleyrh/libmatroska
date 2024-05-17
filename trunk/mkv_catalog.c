@@ -1336,10 +1336,10 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
         err = ERR_TAG(errno);
         goto err1;
     }
-    elem.key = key;
+    elem.k = key;
 
-    elem.value = json_value_init(JSON_ARRAY_T);
-    if (elem.value == NULL) {
+    elem.v = json_value_init(JSON_ARRAY_T);
+    if (elem.v == NULL) {
         err = ERR_TAG(ENOMEM);
         goto err2;
     }
@@ -1350,7 +1350,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
         goto err3;
     }
 
-    err = json_array_push(elem.value, e);
+    err = json_array_push(elem.v, e);
     if (err) {
         err = ERR_TAG(-err);
         goto err4;
@@ -1364,7 +1364,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
         goto err3;
     }
 
-    err = json_array_push(elem.value, e);
+    err = json_array_push(elem.v, e);
     if (err) {
         err = ERR_TAG(-err);
         goto err4;
@@ -1384,7 +1384,7 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
 err4:
     json_value_put(e);
 err3:
-    json_value_put(elem.value);
+    json_value_put(elem.v);
 err2:
     free(key);
 err1:
@@ -1410,7 +1410,7 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         return 0;
 
     res = json_object_get_at(jval, 0, &elm);
-    json_value_put(elem.value);
+    json_value_put(elem.v);
     if (res != 0)
         return res;
 
@@ -1477,7 +1477,7 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         if (res != 0)
             return ERR_TAG(res == -EADDRNOTAVAIL ? EIO : -res);
 
-        src = elm.key;
+        src = elm.k;
         n = wcsrtombs((char *)ent.k.string, &src, sizeof(ent.k.string),
                       memset(&s, 0, sizeof(s)));
         if (n == (size_t)-1)
@@ -1485,11 +1485,11 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         if (src != NULL)
             return ERR_TAG(ENAMETOOLONG);
 
-        fprintf(stderr, "%s%ls: ", elem ? "" : tabs(level), elm.key);
+        fprintf(stderr, "%s%ls: ", elem ? "" : tabs(level), elm.k);
 
-        res = index_value(ctx, &ent, elm.value, level, 1, filter_state,
+        res = index_value(ctx, &ent, elm.v, level, 1, filter_state,
                           output_state);
-        json_value_put(elm.value);
+        json_value_put(elm.v);
         if (res != 0)
             return res;
     }
@@ -2421,8 +2421,8 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
                 res = ERR_TAG(errno);
                 goto err2;
             }
-            elem.key = str;
-            elem.value = jval;
+            elm.k = str;
+            elm.v = jval;
             res = json_object_insert(parent_jval, &elem);
             if (res != 0)
                 goto err2;
@@ -2712,8 +2712,8 @@ index_json(int infd, const char *index_pathname, const char *filename)
         goto err7;
     }
 
-    elem.key = key;
-    elem.value = jval;
+    elem.k = key;
+    elem.v = jval;
     err = json_object_insert(new_jval, &elem);
     if (err)
         goto err6;
