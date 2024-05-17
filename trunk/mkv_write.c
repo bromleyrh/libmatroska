@@ -862,9 +862,9 @@ process_block_data(json_value_t jv, struct ctx *ctx)
         return res == -EINVAL ? 0 : res;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err;
+        goto err1;
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        goto err2;
     res = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -875,9 +875,9 @@ process_block_data(json_value_t jv, struct ctx *ctx)
         return res;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err;
+        goto err1;
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        goto err2;
     sz = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -888,9 +888,9 @@ process_block_data(json_value_t jv, struct ctx *ctx)
         return res;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err;
+        goto err1;
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        goto err2;
     off = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -913,9 +913,9 @@ process_block_data(json_value_t jv, struct ctx *ctx)
         return res;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err;
+        goto err1;
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        goto err2;
     sz = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -936,9 +936,9 @@ process_block_data(json_value_t jv, struct ctx *ctx)
         return res;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err;
+        goto err1;
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        goto err2;
     res = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -949,7 +949,9 @@ process_block_data(json_value_t jv, struct ctx *ctx)
 
     return 0;
 
-err:
+err2:
+    res = -EILSEQ;
+err1:
     json_value_put(elm.v);
     return res;
 }
