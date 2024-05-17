@@ -1327,9 +1327,9 @@ create_xref_marker(json_value_t *jv, struct filter_state *state)
     json_value_t e, ret;
     wchar_t *k;
 
-    ret = json_value_init(JSON_OBJECT_T);
-    if (ret == NULL)
-        return ERR_TAG(ENOMEM);
+    err = json_value_init(&ret, JSON_OBJECT_T);
+    if (err)
+        return ERR_TAG(err);
 
     k = wcsdup(L"xref_marker");
     if (k == NULL) {
@@ -1338,15 +1338,15 @@ create_xref_marker(json_value_t *jv, struct filter_state *state)
     }
     elm.k = k;
 
-    elm.v = json_value_init(JSON_ARRAY_T);
-    if (elm.v == NULL) {
-        err = ERR_TAG(ENOMEM);
+    err = json_value_init(&elm.v, JSON_ARRAY_T);
+    if (err) {
+        err = ERR_TAG(-err);
         goto err2;
     }
 
-    e = json_value_init(JSON_NUMBER_T);
-    if (e == NULL) {
-        err = ERR_TAG(ENOMEM);
+    err = json_value_init(&e, JSON_NUMBER_T);
+    if (err) {
+        err = ERR_TAG(-err);
         goto err3;
     }
 
@@ -1358,9 +1358,9 @@ create_xref_marker(json_value_t *jv, struct filter_state *state)
 
     estart = e;
 
-    e = json_value_init(JSON_NUMBER_T);
-    if (e == NULL) {
-        err = ERR_TAG(ENOMEM);
+    err = json_value_init(&e, JSON_NUMBER_T);
+    if (err) {
+        err = ERR_TAG(-err);
         goto err3;
     }
 
@@ -2338,9 +2338,9 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     print_verbose(f, "%sContainer ID: %" PRIu64 "\n", tabs(wctx->level),
                   parent_id);
 
-    jv = json_value_init(types[subtype]);
-    if (jv == NULL)
-        return ERR_TAG(ENOMEM);
+    res = json_value_init(&jv, types[subtype]);
+    if (res != 0)
+        return ERR_TAG(-res);
 
     ++wctx->level;
     print_verbose(f, "%s", tabs(wctx->level));
@@ -2688,11 +2688,9 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     errmsg = "Error generating index";
 
-    new_jv = json_value_init(JSON_OBJECT_T);
-    if (new_jv == NULL) {
-        err = -ENOMEM;
+    err = json_value_init(&new_jv, JSON_OBJECT_T);
+    if (err)
         goto err5;
-    }
 
     len = strlen(filename) + 1;
     if (oallocarray(&k, len) == NULL) {

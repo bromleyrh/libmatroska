@@ -208,8 +208,7 @@ main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    out = json_value_init(JSON_ARRAY_T);
-    if (out == NULL)
+    if (json_value_init(&out, JSON_ARRAY_T) != 0)
         goto err1;
 
     for (i = 0; i < 2; i = j) {
