@@ -103,7 +103,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     if (json_val_get_type(e) != JSON_NUMBER_T)
         goto err;
     start = json_val_numeric_get(e);
-    json_val_free(e);
+    json_value_put(e);
 
     e = json_val_array_get_elem(jval, 1);
     if (e == NULL)
@@ -111,7 +111,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     if (json_val_get_type(e) != JSON_NUMBER_T)
         goto err;
     end = json_val_numeric_get(e);
-    json_val_free(e);
+    json_value_put(e);
 
     fprintf(stderr, "xref_marker: [%" PRIu64 ", %" PRIu64 "]\n", start, end);
 
@@ -121,7 +121,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
             return -EINVAL;
 
         err = json_val_array_insert_elem(out, e);
-        json_val_free(e);
+        json_value_put(e);
         if (err)
             return err;
     }
@@ -129,7 +129,7 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     return 1;
 
 err:
-    json_val_free(e);
+    json_value_put(e);
     return -EINVAL;
 }
 
@@ -171,7 +171,7 @@ process_docs(json_value_t out, json_value_t *in)
             if (res != 0) {
                 if (res != 1)
                     goto err;
-                json_val_free(jval);
+                json_value_put(jval);
                 continue;
             }
         }
@@ -180,13 +180,13 @@ process_docs(json_value_t out, json_value_t *in)
         if (res != 0)
             goto err;
 
-        json_val_free(jval);
+        json_value_put(jval);
     }
 
     return 0;
 
 err:
-    json_val_free(jval);
+    json_value_put(jval);
     return res;
 }
 
@@ -223,7 +223,7 @@ main(int argc, char **argv)
         goto err3;
 
     for (i = 0; i < 2; i++)
-        json_val_free(in[i]);
+        json_value_put(in[i]);
 
     err = json_write_text(out, &json_write_cb, stdout, NULL, NULL, 1);
     if (err) {
@@ -231,7 +231,7 @@ main(int argc, char **argv)
         goto err2;
     }
 
-    json_val_free(out);
+    json_value_put(out);
 
     json_deinit();
 
@@ -239,9 +239,9 @@ main(int argc, char **argv)
 
 err3:
     for (j = 0; j < i; j++)
-        json_val_free(in[j]);
+        json_value_put(in[j]);
 err2:
-    json_val_free(out);
+    json_value_put(out);
 err1:
     json_deinit();
     return EXIT_FAILURE;

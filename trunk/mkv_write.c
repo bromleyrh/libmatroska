@@ -447,7 +447,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     ctx->trackno = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Track number: %" PRIu64 "\n", ctx->trackno);
 
@@ -457,7 +457,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     hdrsz = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Header length: %" PRIu64 " byte%s\n", PL(hdrsz));
 
@@ -467,7 +467,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     off = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     if (ctx->lastoff >= 0) {
         size_t disp = off - ctx->lastoff;
@@ -489,7 +489,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     sz = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Data length: %" PRIu64 " byte%s\n", PL(sz));
 
@@ -499,7 +499,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_BOOLEAN_T)
         return -EILSEQ;
     ctx->keyframe = json_val_boolean_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Keyframe: %d\n", ctx->keyframe);
 
@@ -509,7 +509,7 @@ cvt_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     ctx->ts = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Timestamp: %" PRIi16 "\n", ctx->ts);
 
@@ -809,7 +809,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     res = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Track number: %d\n", res);
 
@@ -819,7 +819,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     sz = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Header length: %" PRIu64 " byte%s\n", PL(sz));
 
@@ -829,7 +829,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     off = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     if (ctx->lastoff >= 0) {
         size_t disp = off - ctx->lastoff;
@@ -851,7 +851,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     sz = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Data length: %" PRIu64 " byte%s\n", PL(sz));
 
@@ -861,7 +861,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_BOOLEAN_T)
         return -EILSEQ;
     res = json_val_boolean_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Keyframe: %d\n", res);
 
@@ -871,7 +871,7 @@ process_block_data(json_value_t jval, struct ctx *ctx)
     if (json_val_get_type(elem.value) != JSON_NUMBER_T)
         return -EILSEQ;
     res = json_val_numeric_get(elem.value);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     fprintf(stderr, "Timestamp: %d\n", res);
 
@@ -1015,7 +1015,7 @@ write_mkv(int infd, struct ctx *ctx)
         case JSON_OBJECT_T:
             break;
         case JSON_NULL_T:
-            json_val_free(e);
+            json_value_put(e);
             if (header) {
                 header = 0;
                 continue;
@@ -1059,7 +1059,7 @@ write_mkv(int infd, struct ctx *ctx)
 
             free(buf);
             buf = NULL;
-            json_val_free(elem.value);
+            json_value_put(elem.value);
             elem.value = NULL;
         }
 
@@ -1140,7 +1140,7 @@ write_mkv(int infd, struct ctx *ctx)
                 res = -EILSEQ;
                 goto err9;
             }
-            json_val_free(obje.value);
+            json_value_put(obje.value);
 
             if (etype != ETYPE_MASTER) {
                 res = json_val_object_get_elem_by_key(e, L"data_len", &obje);
@@ -1149,7 +1149,7 @@ write_mkv(int infd, struct ctx *ctx)
                         res = -EILSEQ;
                         goto err9;
                     }
-                    json_val_free(obje.value);
+                    json_value_put(obje.value);
                 } else if (res != -EINVAL)
                     goto err8;
             }
@@ -1170,9 +1170,9 @@ write_mkv(int infd, struct ctx *ctx)
         free(buf);
         buf = NULL;
         if (!continued)
-            json_val_free(elem.value);
+            json_value_put(elem.value);
 
-        json_val_free(e);
+        json_value_put(e);
     }
 
     res = matroska_close(hdl);
@@ -1180,7 +1180,7 @@ write_mkv(int infd, struct ctx *ctx)
     if (res != 0)
         goto err4;
 
-    json_val_free(jval);
+    json_value_put(jval);
 
     json_deinit();
 
@@ -1189,20 +1189,20 @@ write_mkv(int infd, struct ctx *ctx)
     return 0;
 
 err9:
-    json_val_free(obje.value);
+    json_value_put(obje.value);
 err8:
     free(mdata);
 err7:
     if (elem.value != NULL)
-        json_val_free(elem.value);
+        json_value_put(elem.value);
     free(buf);
 err6:
-    json_val_free(e);
+    json_value_put(e);
 err5:
     matroska_close(hdl);
     ctx->cb.fd = -1;
 err4:
-    json_val_free(jval);
+    json_value_put(jval);
 err3:
     json_deinit();
 err2:
@@ -1291,7 +1291,7 @@ separate_data(int infd, struct ctx *ctx)
         case JSON_OBJECT_T:
             break;
         case JSON_NULL_T:
-            json_val_free(e);
+            json_value_put(e);
             if (header) {
                 header = 0;
                 continue;
@@ -1317,7 +1317,7 @@ separate_data(int infd, struct ctx *ctx)
             if (awcstombs(&buf, elem.key, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
                 res = MINUS_ERRNO;
-                json_val_free(elem.value);
+                json_value_put(elem.value);
                 goto err5;
             }
 
@@ -1333,7 +1333,7 @@ separate_data(int infd, struct ctx *ctx)
             }
 
             free(buf);
-            json_val_free(elem.value);
+            json_value_put(elem.value);
         }
 
         if (continued) {
@@ -1377,7 +1377,7 @@ separate_data(int infd, struct ctx *ctx)
                 res = -EILSEQ;
                 goto err7;
             }
-            json_val_free(elem.value);
+            json_value_put(elem.value);
 
             res = json_val_object_get_elem_by_key(e, L"data_len", &elem);
             if (res == 0) {
@@ -1385,17 +1385,17 @@ separate_data(int infd, struct ctx *ctx)
                     res = -EILSEQ;
                     goto err7;
                 }
-                json_val_free(elem.value);
+                json_value_put(elem.value);
             } else if (res != -EINVAL)
                 goto err6;
         }
 
         free(buf);
 
-        json_val_free(e);
+        json_value_put(e);
     }
 
-    json_val_free(jval);
+    json_value_put(jval);
 
     json_deinit();
 
@@ -1404,13 +1404,13 @@ separate_data(int infd, struct ctx *ctx)
     return 0;
 
 err7:
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 err6:
     free(buf);
 err5:
-    json_val_free(e);
+    json_value_put(e);
 err4:
-    json_val_free(jval);
+    json_value_put(jval);
 err3:
     json_deinit();
 err2:

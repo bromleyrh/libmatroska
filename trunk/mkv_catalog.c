@@ -1382,13 +1382,13 @@ create_xref_marker(json_value_t *jval, struct filter_state *state)
     return 0;
 
 err4:
-    json_val_free(e);
+    json_value_put(e);
 err3:
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 err2:
     free(key);
 err1:
-    json_val_free(ret);
+    json_value_put(ret);
     return err;
 }
 
@@ -1410,7 +1410,7 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         return 0;
 
     res = json_val_object_get_elem_by_idx(jval, 0, &elm);
-    json_val_free(elm.value);
+    json_value_put(elem.value);
     if (res != 0)
         return res;
 
@@ -1489,7 +1489,7 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
 
         res = index_value(ctx, &ent, elm.value, level, 1, filter_state,
                           output_state);
-        json_val_free(elm.value);
+        json_value_put(elm.value);
         if (res != 0)
             return res;
     }
@@ -1688,7 +1688,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
             filter_state->end = i - 1;
 
         res = index_value(ctx, &ent, val, level, 1, filter_state, output_state);
-        json_val_free(val);
+        json_value_put(val);
         switch (res) {
         case 0:
             nelem = ent.k.numeric + 1;
@@ -2442,7 +2442,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
 err2:
     free(str);
 err1:
-    json_val_free(jval);
+    json_value_put(jval);
     return res;
 }
 
@@ -2716,7 +2716,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     err = json_val_object_insert_elem(new_jval, &elem);
     if (err)
         goto err6;
-    json_val_free(jval);
+    json_value_put(jval);
     jval = new_jval;
 
     filter_state.state = 0;
@@ -2727,7 +2727,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     err = do_index_close(ctx);
 
-    json_val_free(jval);
+    json_value_put(jval);
 
     json_deinit();
 
@@ -2738,11 +2738,11 @@ index_json(int infd, const char *index_pathname, const char *filename)
 err7:
     free(key);
 err6:
-    json_val_free(new_jval);
+    json_value_put(new_jval);
 err5:
     do_index_close(ctx);
 err4:
-    json_val_free(jval);
+    json_value_put(jval);
 err3:
     json_deinit();
 err2:

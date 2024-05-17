@@ -369,7 +369,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
 
     err = json_val_string_set(ret, str);
     if (err)
-        json_val_free(ret);
+        json_value_put(ret);
     else
         *dst = ret;
 
@@ -595,7 +595,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             return -ENOMEM;
 
         res = json_val_array_insert_elem(ctxp->cb.jval, jval);
-        json_val_free(jval);
+        json_value_put(jval);
         if (res != 0)
             return res;
     }
@@ -650,7 +650,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     }
 
     if (new_val && ctxp->cb.elem != NULL) {
-        json_val_free(ctxp->cb.elem);
+        json_value_put(ctxp->cb.elem);
         ctxp->cb.elem = NULL;
     }
 
@@ -717,7 +717,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         goto err4;
     key = NULL;
 
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 
     if (!block) {
         elem.value = json_value_init(JSON_NUMBER_T);
@@ -739,7 +739,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         if (res != 0)
             goto err4;
 
-        json_val_free(elem.value);
+        json_value_put(elem.value);
 
         if (data->etype != ETYPE_MASTER) {
             elem.value = json_value_init(JSON_NUMBER_T);
@@ -762,7 +762,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
                 goto err4;
             key = NULL;
 
-            json_val_free(elem.value);
+            json_value_put(elem.value);
         }
     }
 
@@ -773,7 +773,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     if (new_val && block)
         ctxp->cb.elem = jval;
     else
-        json_val_free(jval);
+        json_value_put(jval);
 
 end2:
     if (new_val && !block) {
@@ -786,9 +786,9 @@ end1:
     return 0;
 
 err4:
-    json_val_free(elem.value);
+    json_value_put(elem.value);
 err3:
-    json_val_free(jval);
+    json_value_put(jval);
 err2:
     free(key);
 err1:
@@ -840,7 +840,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         elem.key = key;
 
         err = json_val_object_insert_elem(jval, &elem);
-        json_val_free(elem.value);
+        json_value_put(elem.value);
         if (err)
             goto err2;
     } else
@@ -865,7 +865,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.key = key;
 
     err = json_val_object_insert_elem(jval, &elem);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
     if (err)
         goto err2;
 
@@ -880,7 +880,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.key = key;
 
     err = json_val_object_insert_elem(jval, &elem);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
     if (err)
         goto err2;
 
@@ -895,7 +895,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.key = key;
 
     err = json_val_object_insert_elem(jval, &elem);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
     if (err)
         goto err2;
 
@@ -910,7 +910,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.key = key;
 
     err = json_val_object_insert_elem(jval, &elem);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
     if (err)
         goto err2;
 
@@ -925,7 +925,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.key = key;
 
     err = json_val_object_insert_elem(jval, &elem);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
     if (err)
         goto err2;
 
@@ -963,7 +963,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     elem.key = key;
 
     err = json_val_object_insert_elem(jval, &elem);
-    json_val_free(elem.value);
+    json_value_put(elem.value);
     if (err)
         goto err2;
 
@@ -972,7 +972,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         ctxp->totlogbytes += num_logical_bytes;
 
     ctxp->cb.elem = NULL;
-    json_val_free(jval);
+    json_value_put(jval);
 
 end:
 
@@ -1044,7 +1044,7 @@ err2:
     return err;
 
 err1:
-    json_val_free(elem.value);
+    json_value_put(elem.value);
     return -ENOMEM;
 }
 
@@ -1139,7 +1139,7 @@ cvt_mkv(int infd, struct ctx *ctx)
     res = matroska_read(NULL, hdl,
                         MATROSKA_READ_FLAG_HEADER | MATROSKA_READ_FLAG_MASTER);
     if (ctx->cb.elem != NULL)
-        json_val_free(ctx->cb.elem);
+        json_value_put(ctx->cb.elem);
     free(ctx->data);
     if (res != 0 && res != 1) {
         errmsg = "Error dumping file";
@@ -1166,7 +1166,7 @@ cvt_mkv(int infd, struct ctx *ctx)
         goto err2;
     }
 
-    json_val_free(jval);
+    json_value_put(jval);
 
     json_deinit();
 
@@ -1175,7 +1175,7 @@ cvt_mkv(int infd, struct ctx *ctx)
 err4:
     matroska_close(hdl);
 err3:
-    json_val_free(jval);
+    json_value_put(jval);
 err2:
     json_deinit();
 err1:
