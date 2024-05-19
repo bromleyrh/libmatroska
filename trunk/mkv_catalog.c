@@ -1329,7 +1329,7 @@ create_xref_marker(json_value_t *jv, struct filter_state *state)
 
     err = json_value_init(&ret, JSON_OBJECT_T);
     if (err)
-        return ERR_TAG(err);
+        return ERR_TAG(-err);
 
     k = wcsdup(L"xref_marker");
     if (k == NULL) {
