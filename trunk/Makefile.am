@@ -165,6 +165,7 @@ vint_test_DEPENDENCIES = libmatroska.la
 TESTS = element_test vint_test
 
 include scripts/Makefile.am
+include third_party/Makefile.am
 
 install-exec-hook:
 	if [ `uname` = Darwin ]; then \
