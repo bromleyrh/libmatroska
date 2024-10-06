@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <wchar.h>
 
-#include <sys/param.h>
 #include <sys/types.h>
 
 enum op {
