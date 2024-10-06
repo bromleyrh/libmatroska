@@ -37,7 +37,7 @@ struct walk_info {
 #define DEBUG if (1)
 #endif
 
-#define MAGIC_VALID(strct, type) ((strct)->magic == type ## _MAGIC)
+#define MAGIC_VALID(strct, type) ((strct)->magic == type##_MAGIC)
 
 #define TREE_VALID(rt) MAGIC_VALID(rt, RADIX_TREE)
 #define NODE_VALID(node) MAGIC_VALID(node, RADIX_TREE_NODE)
