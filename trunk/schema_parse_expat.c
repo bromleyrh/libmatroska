@@ -2,6 +2,8 @@
  * schema_parse.c
  */
 
+#include "common.h"
+
 #include <expat.h>
 
 #include <errno.h>
@@ -13,8 +15,6 @@
 #ifdef XML_UNICODE_WCHAR_T
 #include <wchar.h>
 #endif
-
-#include <sys/param.h>
 
 #ifdef XML_LARGE_SIZE
 #define PRI_XML_LINENO "llu"

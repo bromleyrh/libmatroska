@@ -29,8 +29,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <sys/param.h>
-
 enum op {
     PROCESS_SCHEMA = 1,
     DUMP_PATHS,
