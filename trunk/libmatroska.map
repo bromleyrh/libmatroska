@@ -69,4 +69,4 @@ LIBMATROSKA_91 {
     global:
         matroska_read_body;
         matroska_read_header;
-};
+} LIBMATROSKALITE_67;
