@@ -5,25 +5,17 @@
 #ifndef _UTIL_H
 #define _UTIL_H
 
-#include "config.h"
-
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
 
-#ifdef HAVE_FLS
-#include <strings.h>
-#endif
-
 #define UINT64_BIT (sizeof(uint64_t) * CHAR_BIT)
 
 #define power_of_2(x) ((~((x) - 1) & (x)) == (x))
 
-#ifndef HAVE_FLS
-int fls(int i);
+int _fls(int i);
 
-#endif
 int al64(const char *a, long int *l);
 
 int strerror_rp(int errnum, char *strerrbuf, size_t buflen);

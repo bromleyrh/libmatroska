@@ -63,9 +63,8 @@ strerror_lr(int errnum, char *strerrbuf, size_t buflen, locale_t loc)
 #endif
 }
 
-#ifndef HAVE_FLS
 int
-fls(int i)
+_fls(int i)
 {
     int pos;
     unsigned val;
@@ -97,8 +96,6 @@ fls(int i)
 
     return pos;
 }
-
-#endif
 
 #define BITS_PER_CHAR 6
 

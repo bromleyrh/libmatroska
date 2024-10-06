@@ -316,7 +316,7 @@ EXPORTED int
 u64_to_eid(uint64_t x, char *y, size_t *bufsz, int flags)
 {
     if (flags & FLAG_HAVE_MARKER)
-        x &= ~(UINT64_C(1) << (fls(x) - 1));
+        x &= ~(UINT64_C(1) << (_fls(x) - 1));
 
     return u64_to_vint(x, y, bufsz);
 }
