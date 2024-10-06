@@ -67,7 +67,7 @@ static int do_insert(struct radix_tree *, struct radix_tree_node *,
 static int do_search(struct radix_tree *, struct radix_tree_node *,
                      const char *, void *);
 
-static int concat_labels(const char *, const char *, const char **);
+static int concat_labels(const char *, const char *, char **);
 
 static int do_delete(struct radix_tree *, struct radix_tree_node *,
                      const char *);
@@ -334,7 +334,7 @@ do_search(struct radix_tree *rt, struct radix_tree_node *node, const char *str,
 }
 
 static int
-concat_labels(const char *label1, const char *label2, const char **newlabel)
+concat_labels(const char *label1, const char *label2, char **newlabel)
 {
     char *ret;
 
@@ -402,8 +402,7 @@ do_delete(struct radix_tree *rt, struct radix_tree_node *node, const char *str)
         if (child == NULL)
             abort();
 
-        ret = concat_labels(node->label, child->label,
-                            (const char **)&newlabel);
+        ret = concat_labels(node->label, child->label, &newlabel);
         if (ret != 0)
             return ret;
 
