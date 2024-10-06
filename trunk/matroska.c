@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <sys/param.h>
 #include <sys/types.h>
 
 #define LIST_BLOCK_HDR_FIELDS() \
