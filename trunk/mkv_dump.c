@@ -113,7 +113,7 @@ parse_elem_spec(const char *elemno, const char *path, struct avl_tree *ecb)
         goto err1;
     }
 
-    e.elemno = strtoull(elemno + 1, NULL, 10);
+    e.elemno = strtoumax(elemno + 1, NULL, 10);
 
     err = avl_tree_insert(ecb, &e);
     if (err)
