@@ -187,7 +187,7 @@ hash_str(const void *str, size_t len)
         }
     }
 
-    return ret == 0 ? ~(unsigned)0 : ret;
+    return ret == 0 ? ~0u : ret;
 }
 
 #undef UNSIGNED_BIT
