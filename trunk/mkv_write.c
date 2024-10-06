@@ -647,6 +647,7 @@ cvt_string_to_date(matroska_metadata_t *dst, size_t *len, json_value_t obj,
     int64_t s;
     size_t slen;
     struct tm rtm = REFERENCE_TIME, tm;
+    time_t utc_tm;
 
     (void)len;
     (void)obj;
@@ -669,7 +670,11 @@ cvt_string_to_date(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     free(str);
 
-    dst->integer = (timegm(&tm) - mktime(&rtm)) * TIME_GRAN + s;
+    utc_tm = _timegm(&tm);
+    if (utc_tm == (time_t)-1)
+        return -ENOMEM;
+
+    dst->integer = (utc_tm - mktime(&rtm)) * TIME_GRAN + s;
 
     return 0;
 

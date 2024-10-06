@@ -13,11 +13,17 @@
 #include <locale.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef __APPLE__
 #include <xlocale.h>
 #endif
+
+#define TZ_ENV "TZ"
+
+#define TZ_ENV_VAL_UTC "UTC"
 
 static int get_locale(locale_t *);
 
@@ -148,6 +154,48 @@ al64(const char *a, long int *l)
 }
 
 #undef BITS_PER_CHAR
+
+/*
+ * Note: In this emulation of timegm(), the TZ environment variable may not be
+ * restored to its original value on error from unsetenv() or setenv(). It is
+ * therefore necessary for the caller to check for a return value of (time_t)-1
+ * from _timegm() and take an appropriate action in this case.
+ */
+time_t
+_timegm(struct tm *timeptr)
+{
+    char *tz;
+    int old_errno;
+    int tmp;
+    int utc_env;
+    time_t ret;
+
+    tz = getenv(TZ_ENV);
+    utc_env = tz != NULL && strcmp(tz, TZ_ENV_VAL_UTC) == 0;
+
+    if (!utc_env) {
+        old_errno = errno;
+        tmp = setenv(TZ_ENV, TZ_ENV_VAL_UTC, 1);
+        errno = old_errno;
+        if (tmp == -1)
+            goto err;
+    }
+
+    ret = mktime(timeptr);
+
+    if (!utc_env) {
+        old_errno = errno;
+        tmp = tz == NULL ? unsetenv(TZ_ENV) : setenv(TZ_ENV, tz, 1);
+        errno = old_errno;
+        if (tmp == -1)
+            goto err;
+    }
+
+    return ret;
+
+err:
+    return (time_t)-1;
+}
 
 int
 strerror_rp(int errnum, char *strerrbuf, size_t buflen)

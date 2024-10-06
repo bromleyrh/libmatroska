@@ -115,7 +115,7 @@ mkv_ls_LDADD = $(matroska_link) $(matroska_link_dep) \
 mkv_ls_LDFLAGS = -rpath @abs_top_builddir@/.libs
 mkv_ls_DEPENDENCIES = libmatroska.la
 
-mkv_write_SOURCES = mkv_write.c strptime.c
+mkv_write_SOURCES = mkv_write.c strptime.c util.c
 mkv_write_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@ \
 	@libutil_cppflags@
 mkv_write_CFLAGS = $(AM_CFLAGS)
