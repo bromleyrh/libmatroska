@@ -858,7 +858,9 @@ libmatroska_read_packet(struct AVFormatContext *s, AVPacket *pkt)
     ptr = ctx->st_data->data;
     sctx = ptr;
 
-    if (sctx[pkt->stream_index].comp_algo == 0) {
+    if (sctx[pkt->stream_index].comp_algo == 0
+        && ctx->s->streams[pkt->stream_index]->codecpar->codec_type
+           == AVMEDIA_TYPE_SUBTITLE) {
         size_t remlen;
         struct zlib_ctx zctx;
 

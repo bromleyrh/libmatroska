@@ -154,10 +154,10 @@ index cebd5e0c67..371b605760 100644
  extern const AVOutputFormat ff_microdvd_muxer;
 diff --git a/libavformat/libmatroska.c b/libavformat/libmatroska.c
 new file mode 100644
-index 0000000000..c4803016c7
+index 0000000000..94d6bc6d44
 --- /dev/null
 +++ b/libavformat/libmatroska.c
-@@ -0,0 +1,911 @@
+@@ -0,0 +1,913 @@
 +/*
 + * libmatroska.c
 + */
@@ -1018,7 +1018,9 @@ index 0000000000..c4803016c7
 +    ptr = ctx->st_data->data;
 +    sctx = ptr;
 +
-+    if (sctx[pkt->stream_index].comp_algo == 0) {
++    if (sctx[pkt->stream_index].comp_algo == 0
++        && ctx->s->streams[pkt->stream_index]->codecpar->codec_type
++           == AVMEDIA_TYPE_SUBTITLE) {
 +        size_t remlen;
 +        struct zlib_ctx zctx;
 +
