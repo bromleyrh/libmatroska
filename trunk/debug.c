@@ -56,7 +56,7 @@ static int err_info_walk_cb(const void *, void *);
 static int init_err_data(struct err_data *);
 
 #ifdef HAVE_ADDR2LINE
-static int xlat_addr2line_bt(FILE *, const char *, const char *, int);
+static int xlat_addr2line_bt(FILE *, const char *, const char *, unsigned);
 
 #endif
 
@@ -107,7 +107,7 @@ init_err_data(struct err_data *err_data)
 
 #ifdef HAVE_ADDR2LINE
 static int
-xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, int reloff)
+xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
 {
     char *str1, *str2;
     FILE *inf, *outf;
@@ -405,7 +405,7 @@ err_print(FILE *f, int *err)
     for (i = 1; i < info->len; i++) {
 #ifdef HAVE_ADDR2LINE
         char buf[PATH_MAX];
-        int off, reloff;
+        unsigned off, reloff;
 
         if (sscanf(info->bt[i], "%" STR(PATH_MAX) "[^(](+0x%x) [0x%x]",
                    buf, &reloff, &off)
