@@ -148,6 +148,10 @@ libmatroska_la_LDFLAGS = -version-info @lm_cur@:@lm_rev@:@lm_age@ \
 
 check_PROGRAMS = element_test vint_test
 
+LOG_DRIVER = ./test_wrapper.sh
+
+TESTS_ENVIRONMENT = BUILDDIR=@abs_top_builddir@; export BUILDDIR;
+
 element_test_SOURCES = element_test.c
 element_test_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
 element_test_CFLAGS = $(AM_CFLAGS)
@@ -166,6 +170,14 @@ TESTS = element_test vint_test
 
 include scripts/Makefile.am
 include third_party/Makefile.am
+
+.PHONY: check-exec check-noexec
+
+check-exec:
+	TESTS_SKIP=0 $(MAKE) check
+
+check-noexec:
+	TESTS_SKIP=1 $(MAKE) check
 
 install-exec-hook:
 	if [ `uname` = Darwin ]; then \
