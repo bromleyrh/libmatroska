@@ -145,11 +145,11 @@ AS_IF(
 )
 lt=libtool
 sed_edit_expr="s/postlink_cmds=\"\"/postlink_cmds=\"$postlink_cmds\"/"
-sed -e "$sed_edit_expr" $lt | cat > ${lt}.new \
+sed -e "$sed_edit_expr" $lt | cat >${lt}.new \
     && mv -f ${lt}.new $lt \
     && chmod +x $lt
 
-cat <<- EOF
+cat <<-EOF
 
 $PACKAGE_NAME configuration
 
