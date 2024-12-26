@@ -52,6 +52,7 @@ struct elem_stack_ent {
     const struct elem_data  *data;
     size_t                  hdrlen;
     uint64_t                elen;
+    uint64_t                anonlen;
     uint64_t                totlen;
     unsigned                segment;
     int                     include_anon;
@@ -773,7 +774,7 @@ push_master(struct elem_stack *stk, const struct elem_data *data,
     }
 
     ent->data = data;
-    ent->hdrlen = ent->totlen = 0;
+    ent->hdrlen = ent->anonlen = ent->totlen = 0;
     ent->segment = segment;
     ent->include_anon = data->etype == ETYPE_MASTER;
     ent->buf = buf;
@@ -836,6 +837,7 @@ update_master_size(struct elem_stack *stk, uint64_t sz)
         ent = stk->stk[idx];
 
         if (ent->include_anon == 1) {
+            ent->anonlen = sz;
             ent->totlen += sz;
             ent->include_anon = -1;
             break;
@@ -870,10 +872,17 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
     for (;;) {
         tmp = ent->totlen - ent->hdrlen;
         if (ent->elen != EDATASZ_UNKNOWN && tmp != ent->elen) {
-            fprintf(stderr, "Synchronization error: master element size"
-                            " %" PRIu64 " byte%s (%+" PRIi64 " byte%s)\n",
-                    PL(tmp), PL((int64_t)tmp - (int64_t)ent->elen));
-            abort();
+            ent->include_anon = 0;
+            update_master_size(stk, ent->anonlen);
+            tmp -= ent->anonlen;
+            ent->totlen -= ent->anonlen;
+            ent->anonlen = 0;
+            if (tmp != ent->elen) {
+                fprintf(stderr, "Synchronization error: master element size"
+                                " %" PRIu64 " byte%s (%+" PRIi64 " byte%s)\n",
+                        PL(tmp), PL((int64_t)tmp - (int64_t)ent->elen));
+                abort();
+            }
         }
         fprintf(stderr, "Master element %s has size %" PRIu64 " byte%s\n",
                 ent->data->val, PL(tmp));
