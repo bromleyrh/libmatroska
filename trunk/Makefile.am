@@ -9,7 +9,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = include
 
 EXTRA_DIST = bootstrap build-aux libmatroska.map libmatroska.pc.in lsmkv \
-	pipefail schema_parse_cached schemas .version
+	pipefail schema_parse_cached schemas test_wrapper.sh .version
 
 build_date = "$(shell date)"
 build_vers = "$(shell git rev-parse HEAD)"
