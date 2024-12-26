@@ -157,8 +157,8 @@ static int buf_list_flush(struct buf_list *, struct ebml_hdl *);
 
 static int resize_master_elem(struct buf *, int64_t *);
 
-static int push_master(struct elem_stack *, const struct elem_data *,
-                       unsigned, struct buf *, ebml_master_cb_t *,
+static int push_master(struct elem_stack *, const struct elem_data *, uint64_t,
+                       struct buf *, ebml_master_cb_t *,
                        ebml_master_free_cb_t *, void *, void *);
 static int release_master(struct elem_stack_ent *);
 static void update_master_size(struct elem_stack *, uint64_t);
@@ -738,8 +738,8 @@ resize_master_elem(struct buf *buf, int64_t *adj)
 }
 
 static int
-push_master(struct elem_stack *stk, const struct elem_data *data,
-            unsigned segment, struct buf *buf, ebml_master_cb_t *master_cb,
+push_master(struct elem_stack *stk, const struct elem_data *data, uint64_t eid,
+            struct buf *buf, ebml_master_cb_t *master_cb,
             ebml_master_free_cb_t *master_free_cb, void *mdata, void *mctx)
 {
     int err;
@@ -775,7 +775,7 @@ push_master(struct elem_stack *stk, const struct elem_data *data,
 
     ent->data = data;
     ent->hdrlen = ent->anonlen = ent->totlen = 0;
-    ent->segment = segment;
+    ent->segment = eid == SEGMENT_ELEMENT_ID;
     ent->include_anon = data->etype == ETYPE_MASTER;
     ent->buf = buf;
     ent->master_cb = master_cb;
@@ -1343,8 +1343,8 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
                                                    f, hdl);
             } else {
                 if (!anon) {
-                    res = push_master(stk, data, eid == SEGMENT_ELEMENT_ID,
-                                      NULL, NULL, NULL, NULL, NULL);
+                    res = push_master(stk, data, eid, NULL, NULL, NULL, NULL,
+                                      NULL);
                     if (res != 0)
                         return res;
                 }
@@ -1486,8 +1486,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
 
         if (etype == ETYPE_MASTER) {
             if (!anon) {
-                res = push_master(stk, data, eid == SEGMENT_ELEMENT_ID, NULL,
-                                  NULL, NULL, NULL, NULL);
+                res = push_master(stk, data, eid, NULL, NULL, NULL, NULL, NULL);
                 if (res != 0)
                     return res;
             }
@@ -1677,7 +1676,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
     const struct elem_data *data, *parent;
     edata_t d;
     enum etype etype;
-    int anon, segment;
+    int anon;
     int res;
     long tmp;
     semantic_action_t *act;
@@ -1752,8 +1751,6 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
     if (res != 0 && res != 1)
         return ERR_TAG(-res);
 
-    segment = eid == SEGMENT_ELEMENT_ID;
-
     /* output EBML element length */
 
     buflen = sizeof(hdl->buf) - hlen;
@@ -1765,7 +1762,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
         if (res != 0)
             return res;
         val->len += binhlen;
-    } else if (segment)
+    } else if (eid == SEGMENT_ELEMENT_ID)
         val->len = (size_t)-1;
 
     res = output_edatasz(hdl->si, &buflen, val, etype, &elen);
@@ -1797,8 +1794,8 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
 
     if (etype == ETYPE_MASTER) {
         if (!anon) {
-            res = push_master(stk, data, segment, buf, master_cb,
-                              master_free_cb, mdata, mctx);
+            res = push_master(stk, data, eid, buf, master_cb, master_free_cb,
+                              mdata, mctx);
             if (res != 0)
                 return res;
         }
