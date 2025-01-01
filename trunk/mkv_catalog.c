@@ -89,12 +89,10 @@ enum index_obj_type {
 };
 
 struct index_key {
-    uint32_t type;
-    uint64_t id;
-    union {
-        uint64_t    numeric;
-        uint8_t     string[STRING_MAX+1];
-    };
+    uint32_t    type;
+    uint64_t    id;
+    uint64_t    numeric;
+    uint8_t     string[STRING_MAX+1];
 } __attribute__((packed));
 
 #define FMT_VERSION 1
