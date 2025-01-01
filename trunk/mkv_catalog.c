@@ -3150,7 +3150,7 @@ update_index(struct index_ctx *ctx, const char *pathname, FILE *f,
             else if (d->subtype == TYPE_NUMERIC)
                 fprintf(stderr, "%" PRIu64, d->numeric);
             else
-                fprintf(stderr, "%s", d->string);
+                fprintf(stderr, "%s", (char *)d->string);
             fputc('\n', stderr);
         } else
             fprintf(stderr, "Type: %c\n", typedescs[d->subtype].typechar);
@@ -3246,7 +3246,7 @@ search_index(struct index_ctx *ctx, const char *pathname, FILE *f,
             else if (d->subtype == TYPE_NUMERIC)
                 fprintf(f, "%" PRIu64, d->numeric);
             else
-                fprintf(f, "%s", d->string);
+                fprintf(f, "%s", (char *)d->string);
             fputc('\n', f);
         } else
             fprintf(f, "Type: %c\n", typedescs[d->subtype].typechar);
