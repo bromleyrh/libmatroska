@@ -117,11 +117,9 @@ struct index_obj_ent {
 } __attribute__((packed));
 
 struct index_obj_ent_data {
-    uint64_t subtype;
-    union {
-        uint64_t    numeric;
-        uint8_t     string[STRING_MAX+1];
-    };
+    uint64_t    subtype;
+    uint64_t    numeric;
+    uint8_t     string[STRING_MAX+1];
 } __attribute__((packed));
 
 #define FREE_ID_RANGE_SZ 2048
