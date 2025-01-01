@@ -9,7 +9,8 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = include
 
 EXTRA_DIST = bootstrap build-aux libmatroska.map libmatroska.pc.in lsmkv \
-	pipefail schema_parse_cached schemas test_wrapper.sh .version
+	mkv_catalog_obj.idl pipefail schema_parse_cached schemas test_wrapper.sh \
+	.version
 
 build_date = "$(shell date)"
 build_vers = "$(shell git rev-parse HEAD)"
@@ -43,9 +44,11 @@ $(pkgconfig_DATA): config.status
 noinst_HEADERS = common.h debug.h ebml.h element.h parser.h parser_defs.h \
 	radix_tree.h util.h vint.h zlib_stream.h
 
-BUILT_SOURCES = ebml_schema.h matroska_schema.h matroska_semantics.h version.c
+BUILT_SOURCES = ebml_schema.h matroska_schema.h matroska_semantics.h \
+	mkv_catalog_obj.h version.c
 
-CLEANFILES = ebml_schema.h matroska_schema.h matroska_semantics.h version.c
+CLEANFILES = ebml_schema.h matroska_schema.h matroska_semantics.h \
+	mkv_catalog_obj.h version.c
 
 build_date_str = "build_date=$(build_date)"
 build_vers_str = "build_git_commit_id=$(build_vers)"
@@ -66,6 +69,9 @@ matroska_semantics.h: schema_parse $(ebml_semantics_schema_dep) \
 	schemas/matroska_semantics.m4
 	./schema_parse_cached schemas/matroska_semantics.m4 \
 		$(ebml_semantics_schema) matroska_semantics $@
+
+mkv_catalog_obj.h: mkv_catalog_obj.idl
+	idlc <$^ >$@
 
 version.c:
 	echo "const char build_date[] = \"$(build_date_str)\";" >|$@

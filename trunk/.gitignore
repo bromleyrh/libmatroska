@@ -26,6 +26,8 @@ matroska_schema.h
 
 matroska_semantics.h
 
+mkv_catalog_obj.h
+
 version.c
 
 /schema_parse

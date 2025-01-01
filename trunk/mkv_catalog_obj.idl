@@ -1,0 +1,20 @@
+/*
+ * mkv_catalog_obj.idl
+ */
+
+#ifndef _MKV_CATALOG_OBJ_H
+#define _MKV_CATALOG_OBJ_H
+
+#include <stdint.h>
+
+#define STRING_MAX 255
+
+PACKED_STRUCT(`index_key',
+    `uint32_t', `type',    `1',
+    `uint64_t', `id',      `1',
+    `uint64_t', `numeric', `1',
+    `uint8_t',  `string',  `STRING_MAX + 1')
+
+#endif
+
+/* vi: set expandtab sw=4 ts=4: */

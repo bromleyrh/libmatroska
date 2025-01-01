@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "debug.h"
+#include "mkv_catalog_obj.h"
 #include "util.h"
 
 #include <json.h>
@@ -14,6 +15,7 @@
 
 #include <dbm_high_level.h>
 #include <malloc_ext.h>
+#include <packing.h>
 #include <strings_ext.h>
 
 #include <files/acc_ctl.h>
@@ -58,8 +60,6 @@ struct config_ctx {
 
 #define ROOT_ID 1
 
-#define STRING_MAX 255
-
 struct index_key_ctx {
     void    *last_key;
     int     last_key_valid;
@@ -87,13 +87,6 @@ enum index_obj_type {
     TYPE_EXTERNAL_STRING,   /* look up by {id, string key} */
     TYPE_FREE_ID            /* look up by id */
 };
-
-struct index_key {
-    uint32_t    type;
-    uint64_t    id;
-    uint64_t    numeric;
-    uint8_t     string[STRING_MAX+1];
-} __attribute__((packed));
 
 #define FMT_VERSION 1
 
@@ -649,6 +642,7 @@ index_key_cmp(const void *k1, const void *k2, void *key_ctx)
     const struct index_key *key1 = k1;
     const struct index_key *key2 = k2;
     int cmp;
+    uint32_t type;
 
     if (key_ctx != NULL) {
         struct index_key_ctx *ctx = key_ctx;
@@ -657,20 +651,25 @@ index_key_cmp(const void *k1, const void *k2, void *key_ctx)
         ctx->last_key_valid = 1;
     }
 
-    cmp = uint64_cmp(key1->type, key2->type);
-    if (cmp != 0 || key1->type == TYPE_HEADER)
+    type = unpack_u32(index_key, key1, type);
+
+    cmp = uint64_cmp(type, unpack_u32(index_key, key2, type));
+    if (cmp != 0 || type == TYPE_HEADER)
         return cmp;
 
-    cmp = uint64_cmp(key1->id, key2->id);
+    cmp = uint64_cmp(unpack_u64(index_key, key1, id),
+                     unpack_u64(index_key, key2, id));
     if (cmp != 0)
         return cmp;
 
-    switch (key1->type) {
+    switch (type) {
     case TYPE_EXTERNAL_NUMERIC:
-        cmp = uint64_cmp(key1->numeric, key2->numeric);
+        cmp = uint64_cmp(unpack_u64(index_key, key1, numeric),
+                         unpack_u64(index_key, key2, numeric));
         break;
     case TYPE_EXTERNAL_STRING:
-        cmp = strcmp((const char *)key1->string, (const char *)key2->string);
+        cmp = strcmp(packed_memb_addr(index_key, key1, string),
+                     packed_memb_addr(index_key, key2, string));
         /* fallthrough */
     case TYPE_INTERNAL:
     case TYPE_FREE_ID:
@@ -1112,14 +1111,14 @@ open_or_create(struct index_ctx **ctx, const char *pathname)
         if (err)
             goto err2;
 
-        k.type = TYPE_HEADER;
+        pack_u32(index_key, &k, type, TYPE_HEADER);
         hdr.version = FMT_VERSION;
         err = do_index_insert(ret, &k, &hdr, sizeof(hdr));
         if (err)
             goto err3;
 
-        k.type = TYPE_FREE_ID;
-        k.id = ROOT_ID;
+        pack_u32(index_key, &k, type, TYPE_FREE_ID);
+        pack_u64(index_key, &k, id, ROOT_ID);
         memset(freeid.used_id, 0, sizeof(freeid.used_id));
         freeid.flags = FREE_ID_LAST_USED;
         err = do_index_insert(ret, &k, &freeid, sizeof(freeid));
@@ -1214,14 +1213,15 @@ get_id(struct index_ctx *ctx, uint64_t *id)
     struct index_iter *iter = NULL;
     struct index_key k;
     struct index_obj_free_id freeid;
+    uint64_t k_id;
     uint64_t ret;
 
     res = do_index_iter_new(&iter, ctx);
     if (res != 0)
         return res;
 
-    k.type = TYPE_FREE_ID;
-    k.id = 0;
+    pack_u32(index_key, &k, type, TYPE_FREE_ID);
+    pack_u64(index_key, &k, id, 0);
     res = do_index_iter_search(iter, &k);
     if (res != 0 && res != 1) {
         do_index_iter_free(iter);
@@ -1237,33 +1237,36 @@ get_id(struct index_ctx *ctx, uint64_t *id)
         }
         return res;
     }
-    if (k.type != TYPE_FREE_ID)
+    if (unpack_u32(index_key, &k, type) != TYPE_FREE_ID)
         return ERR_TAG(ENOSPC);
 
-    ret = free_id_find(freeid.used_id, k.id);
+    k_id = unpack_u64(index_key, &k, id);
+
+    ret = free_id_find(freeid.used_id, k_id);
     if (ret == 0) {
         if (!(freeid.flags & FREE_ID_LAST_USED))
             return ERR_TAG(EILSEQ);
-        if (ULONG_MAX - k.id < FREE_ID_RANGE_SZ)
+        if (ULONG_MAX - k_id < FREE_ID_RANGE_SZ)
             return ERR_TAG(ENOSPC);
 
         res = do_index_delete(ctx, &k);
         if (res != 0)
             return res;
 
-        k.id += FREE_ID_RANGE_SZ;
+        k_id += FREE_ID_RANGE_SZ;
+        pack_u64(index_key, &k, id, k_id);
         memset(freeid.used_id, 0, sizeof(freeid.used_id));
-        used_id_set(freeid.used_id, k.id, k.id, 1);
+        used_id_set(freeid.used_id, k_id, k_id, 1);
         freeid.flags = FREE_ID_LAST_USED;
         res = do_index_insert(ctx, &k, &freeid, sizeof(freeid));
         if (res != 0)
             return res;
 
-        *id = k.id;
+        *id = k_id;
         return 0;
     }
 
-    used_id_set(freeid.used_id, k.id, ret, 1);
+    used_id_set(freeid.used_id, k_id, ret, 1);
     res = memcchr(freeid.used_id, 0xff, sizeof(freeid.used_id)) == NULL
           && !(freeid.flags & FREE_ID_LAST_USED)
           ? do_index_delete(ctx, &k)
@@ -1414,8 +1417,8 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         return res;
 
     if (parent_ent == NULL) {
-        k.type = TYPE_INTERNAL;
-        k.id = ROOT_ID;
+        pack_u32(index_key, &k, type, TYPE_INTERNAL);
+        pack_u64(index_key, &k, id, ROOT_ID);
         res = do_index_look_up(ctx, &k, &k, NULL, NULL);
         if (res != 1) {
             if (res != 0)
@@ -1429,13 +1432,13 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
                 goto err;
             }
 
-            k.type = TYPE_INTERNAL;
-            k.id = id;
+            pack_u32(index_key, &k, type, TYPE_INTERNAL);
+            pack_u64(index_key, &k, id, id);
             res = do_index_insert(ctx, &k, NULL, 0);
             if (res != 0)
                 goto err;
         } else
-            id = k.id;
+            id = unpack_u32(index_key, &k, id);
     } else {
         res = do_index_look_up(ctx, &parent_ent->k, &k, &e, NULL);
         if (res != 1) {
@@ -1460,8 +1463,8 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
     if (res != 0)
         goto err;
 
-    ent.k.type = TYPE_EXTERNAL_STRING;
-    ent.k.id = id;
+    pack_u32(index_key, &ent.k, type, TYPE_EXTERNAL_STRING);
+    pack_u64(index_key, &ent.k, id, id);
 
     for (i = 0; i < n; i++) {
         const wchar_t *src;
@@ -1473,7 +1476,8 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
             return ERR_TAG(res == -EADDRNOTAVAIL ? EIO : -res);
 
         src = elm.k;
-        n = wcsrtombs((char *)ent.k.string, &src, sizeof(ent.k.string),
+        n = wcsrtombs(packed_memb_addr(index_key, &ent.k, string), &src,
+                      packed_memb_size(index_key, string),
                       memset(&s, 0, sizeof(s)));
         if (n == (size_t)-1)
             return ERR_TAG(errno);
@@ -1608,7 +1612,8 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
                                   elem, filter_state, output_state);
         if (res != 0)
             return res;
-        ++parent_ent->k.numeric;
+        pack_u64(index_key, &parent_ent->k, numeric,
+                 unpack_u64(index_key, &parent_ent->k, numeric) + 1);
         filter_state->state = 0;
     }
 
@@ -1660,8 +1665,8 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
     if (res != 0)
         goto err;
 
-    ent.k.type = TYPE_EXTERNAL_NUMERIC;
-    ent.k.id = id;
+    pack_u32(index_key, &ent.k, type, TYPE_EXTERNAL_NUMERIC);
+    pack_u64(index_key, &ent.k, id, id);
 
     init_output_state = output_state;
     nelem = 0;
@@ -1673,7 +1678,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
         if (res != 0)
             return ERR_TAG(-res);
 
-        ent.k.numeric = nelem;
+        pack_u64(index_key, &ent.k, numeric, nelem);
 
         if (output_state == 0)
             fprintf(stderr, "%s[%d]: ", elem ? "" : tabs(level), nelem);
@@ -1686,7 +1691,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
         json_value_put(v);
         switch (res) {
         case 0:
-            nelem = ent.k.numeric + 1;
+            nelem = unpack_u64(index_key, &ent.k, numeric) + 1;
             output_state = init_output_state;
             break;
         case 1:
@@ -1862,20 +1867,21 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
         goto end3;
     }
 
-    k.id = ROOT_ID;
-    k.type = TYPE_EXTERNAL_STRING;
+    pack_u64(index_key, &k, id, ROOT_ID);
+    pack_u32(index_key, &k, type, TYPE_EXTERNAL_STRING);
 
     for (;;) {
         size_t datasize;
 
         nextelem = strtok_unescape(NULL, INDEX_PATH_SEP, "\\", &saveptr);
         if (prefix && nextelem == NULL) {
-            if (k.type == TYPE_EXTERNAL_NUMERIC) {
+            if (unpack_u32(index_key, &k, type) == TYPE_EXTERNAL_NUMERIC) {
                 res = 0;
                 goto end1;
             }
-            if (strlcpy((char *)k.string, elem, sizeof(k.string))
-                >= sizeof(k.string)) {
+            if (strlcpy(packed_memb_addr(index_key, &k, string), elem,
+                        packed_memb_size(index_key, string))
+                >= packed_memb_size(index_key, string)) {
                 res = ERR_TAG(ENAMETOOLONG);
                 goto err1;
             }
@@ -1889,12 +1895,14 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
             goto end1;
         }
 
-        fprintf(stderr, "Looking up {%" PRIu64 ", %s}\n", k.id, elem);
+        fprintf(stderr, "Looking up {%" PRIu64 ", %s}\n",
+                unpack_u64(index_key, &k, id), elem);
 
-        if (k.type == TYPE_EXTERNAL_NUMERIC)
-            k.numeric = strtoumax(elem, NULL, 10);
-        else if (strlcpy((char *)k.string, elem, sizeof(k.string))
-                 >= sizeof(k.string)) {
+        if (unpack_u32(index_key, &k, type) == TYPE_EXTERNAL_NUMERIC)
+            pack_u64(index_key, &k, numeric, strtoumax(elem, NULL, 10));
+        else if (strlcpy(packed_memb_addr(index_key, &k, string), elem,
+                         packed_memb_size(index_key, string))
+                 >= packed_memb_size(index_key, string)) {
             res = ERR_TAG(ENAMETOOLONG);
             goto err2;
         }
@@ -1927,9 +1935,10 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
             goto end1;
         }
 
-        k.type = ent.e.subtype == TYPE_ARRAY
-                 ? TYPE_EXTERNAL_NUMERIC : TYPE_EXTERNAL_STRING;
-        k.id = ent.e.id;
+        pack_u32(index_key, &k, type,
+                 ent.e.subtype == TYPE_ARRAY
+                 ? TYPE_EXTERNAL_NUMERIC : TYPE_EXTERNAL_STRING);
+        pack_u64(index_key, &k, id, ent.e.id);
     }
 
 end3:
@@ -1976,19 +1985,22 @@ path_list_possible(struct index_ctx *ctx, const struct index_key *key, FILE *f)
     if (res < 0)
         goto end;
 
-    keylen = strlen((const char *)key->string);
+    keylen = strlen(packed_memb_addr(index_key, key, string));
     ret = 0;
     for (;;) {
+        char *s;
+
         res = do_index_iter_get(iter, &k, NULL, NULL);
         if (res != 0)
             goto end;
 
-        if (strncmp((const char *)key->string, (const char *)k.string, keylen)
-            != 0)
+        s = packed_memb_addr(index_key, &k, string);
+
+        if (strncmp(packed_memb_addr(index_key, key, string), s, keylen) != 0)
             break;
         ret = 1;
 
-        res = fprintf(f, "%s\n", (char *)k.string);
+        res = fprintf(f, "%s\n", s);
         if (res < 0) {
             res = -EIO;
             goto end;
@@ -2026,13 +2038,14 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
         return res;
 
     if (type == TYPE_OBJECT) {
-        k.type = typ = TYPE_EXTERNAL_STRING;
-        k.string[0] = '\0';
+        typ = TYPE_EXTERNAL_STRING;
+        ((char *)packed_memb_addr(index_key, &k, string))[0] = '\0';
     } else {
-        k.type = typ = TYPE_EXTERNAL_NUMERIC;
-        k.numeric = 0;
+        typ = TYPE_EXTERNAL_NUMERIC;
+        pack_u64(index_key, &k, numeric, 0);
     }
-    k.id = id;
+    pack_u32(index_key, &k, type, typ);
+    pack_u64(index_key, &k, id, id);
     res = do_index_iter_search(iter, &k);
     if (res != 0 && res != 1) {
         do_index_iter_free(iter);
@@ -2059,7 +2072,8 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
             }
             goto err;
         }
-        if (k.type != typ || k.id != parent_id)
+        if (unpack_u32(index_key, &k, type) != typ
+            || unpack_u64(index_key, &k, id) != parent_id)
             break;
 
         res = do_index_iter_get(iter, &k, &ent, &datasize);
@@ -2070,16 +2084,17 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
             }
             goto err;
         }
-        if (k.type != typ || k.id != parent_id) {
+        if (unpack_u32(index_key, &k, type) != typ
+            || unpack_u64(index_key, &k, id) != parent_id) {
             res = ERR_TAG(EIO);
             goto err;
         }
 
         if (type == TYPE_OBJECT) {
             nval1 = 0;
-            sval1 = (const char *)k.string;
+            sval1 = packed_memb_addr(index_key, &k, string);
         } else {
-            nval1 = k.numeric;
+            nval1 = unpack_u64(index_key, &k, numeric);
             sval1 = NULL;
         }
 
@@ -2247,6 +2262,7 @@ delete_from_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     int res;
     struct index_key k;
     struct walk_index_ctx *wctx = ctx;
+    uint32_t typ;
 
     f = wctx->f;
 
@@ -2294,16 +2310,18 @@ delete_from_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     switch (type) {
     case TYPE_OBJECT:
     case TYPE_STRING:
-        k.type = TYPE_EXTERNAL_STRING;
-        strlcpy((char *)k.string, type == TYPE_OBJECT ? sval1 : sval2,
-                sizeof(k.string));
+        typ = TYPE_EXTERNAL_STRING;
+        strlcpy(packed_memb_addr(index_key, &k, string),
+                type == TYPE_OBJECT ? sval1 : sval2,
+                packed_memb_size(index_key, string));
         break;
     default:
-        k.type = TYPE_EXTERNAL_NUMERIC;
-        k.numeric = type == TYPE_ARRAY ? nval1 : nval2;
+        typ = TYPE_EXTERNAL_NUMERIC;
+        pack_u64(index_key, &k, numeric, type == TYPE_ARRAY ? nval1 : nval2);
         break;
     }
-    k.id = parent_id;
+    pack_u32(index_key, &k, type, typ);
+    pack_u64(index_key, &k, id, parent_id);
 
     return do_index_delete(wctx->ctx, &k);
 }
@@ -2518,6 +2536,7 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
     FILE *f = ctx;
     mbstate_t s;
     struct attr_output_args args;
+    uint32_t type;
     uint64_t subtype;
     union {
         const struct index_obj_header   *hdr;
@@ -2534,9 +2553,11 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
         [TYPE_FREE_ID]          = ""
     };
 
-    if (k->type >= ARRAY_SIZE(typemap))
+    type = unpack_u32(index_key, k, type);
+
+    if (type >= ARRAY_SIZE(typemap))
         return ERR_TAG(EILSEQ);
-    str = typemap[k->type];
+    str = typemap[type];
     if (str == NULL)
         return ERR_TAG(EILSEQ);
     if (str[0] == '\0')
@@ -2547,19 +2568,22 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
     args.f = f;
     args.fwidth = FWIDTH;
 
-    if (k->type != TYPE_HEADER)
-        print_attr(&args, "%" PRIu64, "Container ID", k->id);
+    if (type != TYPE_HEADER) {
+        print_attr(&args, "%" PRIu64, "Container ID",
+                   unpack_u64(index_key, k, id));
+    }
 
-    switch (k->type) {
+    switch (type) {
     case TYPE_HEADER:
         obj.hdr = data;
         print_attr(&args, "%" PRIu64, "Version", obj.hdr->version);
         goto end;
     case TYPE_EXTERNAL_NUMERIC:
-        print_attr(&args, "%" PRIu64, "Index", k->numeric);
+        print_attr(&args, "%" PRIu64, "Index",
+                   unpack_u64(index_key, k, numeric));
         break;
     case TYPE_EXTERNAL_STRING:
-        str = (const char *)k->string;
+        str = packed_memb_addr(index_key, k, string);
         if (mbsrtowcs(wcs, &str, ARRAY_SIZE(wcs), memset(&s, 0, sizeof(s)))
             == (size_t)-1)
             return ERR_TAG(errno);
@@ -3066,13 +3090,13 @@ delete_from_index(struct index_ctx *ctx, const char *pathname, FILE *f,
 
     if (id != 0) {
         subtype = e.e.subtype;
-        if (k->type == TYPE_EXTERNAL_STRING) {
+        if (unpack_u32(index_key, k, type) == TYPE_EXTERNAL_STRING) {
             type = TYPE_OBJECT;
             nval1 = 0;
-            sval1 = (const char *)k->string;
+            sval1 = packed_memb_addr(index_key, k, string);
         } else {
             type = TYPE_ARRAY;
-            nval1 = k->numeric;
+            nval1 = unpack_u64(index_key, k, numeric);
             sval1 = NULL;
         }
         nval2 = 0;
@@ -3081,7 +3105,7 @@ delete_from_index(struct index_ctx *ctx, const char *pathname, FILE *f,
         struct index_obj_ent_data *d = &e.d;
 
         type = subtype = d->subtype;
-        nval1 = k->numeric;
+        nval1 = unpack_u64(index_key, k, numeric);
         sval1 = NULL;
         if (subtype == TYPE_BOOLEAN || subtype == TYPE_NUMERIC) {
             nval2 = d->numeric;
@@ -3101,8 +3125,8 @@ delete_from_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     walkctx.f = stderr;
     walkctx.ctx = ctx;
     walkctx.level = 0;
-    res = delete_from_index_cb(type, k->id, subtype, id, nval1, nval2, sval1,
-                               sval2, &walkctx);
+    res = delete_from_index_cb(type, unpack_u64(index_key, k, id), subtype, id,
+                               nval1, nval2, sval1, sval2, &walkctx);
     if (res != 0) {
         if (!ctx->trans)
             goto err2;
