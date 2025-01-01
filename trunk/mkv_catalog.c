@@ -1992,7 +1992,7 @@ path_list_possible(struct index_ctx *ctx, const struct index_key *key, FILE *f)
             break;
         ret = 1;
 
-        res = fprintf(f, "%s\n", (const char *)k.string);
+        res = fprintf(f, "%s\n", (char *)k.string);
         if (res < 0) {
             res = -EIO;
             goto end;
