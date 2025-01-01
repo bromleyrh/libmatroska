@@ -5,6 +5,8 @@
 #ifndef _MKV_CATALOG_OBJ_H
 #define _MKV_CATALOG_OBJ_H
 
+#include "util.h"
+
 #include <limits.h>
 #include <stdint.h>
 
@@ -30,6 +32,14 @@ PACKED_STRUCT(`index_obj_ent_data',
     `uint64_t', `subtype', `1',
     `uint64_t', `numeric', `1',
     `uint8_t',  `string',  `STRING_MAX + 1')
+
+#define FREE_ID_RANGE_SZ 2048
+
+#define FREE_ID_LAST_USED 1 /* values in all following ranges are free */
+
+PACKED_STRUCT(`index_obj_free_id',
+    `uint64_t', `used_id', `FREE_ID_RANGE_SZ / UINT64_BIT',
+    `uint8_t',  `flags',   `1')
 
 #endif
 

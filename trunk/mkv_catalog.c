@@ -97,15 +97,6 @@ enum index_obj_subtype {
     TYPE_STRING
 };
 
-#define FREE_ID_RANGE_SZ 2048
-
-#define FREE_ID_LAST_USED 1 /* values in all following ranges are free */
-
-struct index_obj_free_id {
-    uint64_t    used_id[FREE_ID_RANGE_SZ/UINT64_BIT];
-    uint8_t     flags;
-} __attribute__((packed));
-
 struct entry {
     struct index_key k;
     union {
@@ -1101,8 +1092,9 @@ open_or_create(struct index_ctx **ctx, const char *pathname)
 
         pack_u32(index_key, &k, type, TYPE_FREE_ID);
         pack_u64(index_key, &k, id, ROOT_ID);
-        memset(freeid.used_id, 0, sizeof(freeid.used_id));
-        freeid.flags = FREE_ID_LAST_USED;
+        memset(packed_memb_addr(index_obj_free_id, &freeid, used_id), 0,
+               packed_memb_size(index_obj_free_id, used_id));
+        pack_u8(index_obj_free_id, &freeid, flags, FREE_ID_LAST_USED);
         err = do_index_insert(ret, &k, &freeid, sizeof(freeid));
         if (err)
             goto err3;
@@ -1195,6 +1187,7 @@ get_id(struct index_ctx *ctx, uint64_t *id)
     struct index_iter *iter = NULL;
     struct index_key k;
     struct index_obj_free_id freeid;
+    uint64_t *freeid_used_id;
     uint64_t k_id;
     uint64_t ret;
 
@@ -1223,10 +1216,12 @@ get_id(struct index_ctx *ctx, uint64_t *id)
         return ERR_TAG(ENOSPC);
 
     k_id = unpack_u64(index_key, &k, id);
+    freeid_used_id = (uint64_t *)packed_memb_addr(index_obj_free_id, &freeid,
+                                                  used_id);
 
-    ret = free_id_find(freeid.used_id, k_id);
+    ret = free_id_find(freeid_used_id, k_id);
     if (ret == 0) {
-        if (!(freeid.flags & FREE_ID_LAST_USED))
+        if (!(unpack_u8(index_obj_free_id, &freeid, flags) & FREE_ID_LAST_USED))
             return ERR_TAG(EILSEQ);
         if (ULONG_MAX - k_id < FREE_ID_RANGE_SZ)
             return ERR_TAG(ENOSPC);
@@ -1237,9 +1232,9 @@ get_id(struct index_ctx *ctx, uint64_t *id)
 
         k_id += FREE_ID_RANGE_SZ;
         pack_u64(index_key, &k, id, k_id);
-        memset(freeid.used_id, 0, sizeof(freeid.used_id));
-        used_id_set(freeid.used_id, k_id, k_id, 1);
-        freeid.flags = FREE_ID_LAST_USED;
+        memset(freeid_used_id, 0, packed_memb_size(index_obj_free_id, used_id));
+        used_id_set(freeid_used_id, k_id, k_id, 1);
+        pack_u8(index_obj_free_id, &freeid, flags, FREE_ID_LAST_USED);
         res = do_index_insert(ctx, &k, &freeid, sizeof(freeid));
         if (res != 0)
             return res;
@@ -1248,9 +1243,10 @@ get_id(struct index_ctx *ctx, uint64_t *id)
         return 0;
     }
 
-    used_id_set(freeid.used_id, k_id, ret, 1);
-    res = memcchr(freeid.used_id, 0xff, sizeof(freeid.used_id)) == NULL
-          && !(freeid.flags & FREE_ID_LAST_USED)
+    used_id_set(freeid_used_id, k_id, ret, 1);
+    res = memcchr(freeid_used_id, 0xff,
+                  packed_memb_size(index_obj_free_id, used_id)) == NULL
+          && !(unpack_u8(index_obj_free_id, &freeid, flags) & FREE_ID_LAST_USED)
           ? do_index_delete(ctx, &k)
           : do_index_replace(ctx, &k, &freeid, sizeof(freeid));
     if (res != 0)
