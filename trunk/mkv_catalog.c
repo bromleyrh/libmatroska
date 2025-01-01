@@ -97,12 +97,6 @@ enum index_obj_subtype {
     TYPE_STRING
 };
 
-struct index_obj_ent_data {
-    uint64_t    subtype;
-    uint64_t    numeric;
-    uint8_t     string[STRING_MAX+1];
-} __attribute__((packed));
-
 #define FREE_ID_RANGE_SZ 2048
 
 #define FREE_ID_LAST_USED 1 /* values in all following ranges are free */
@@ -1503,8 +1497,8 @@ index_null_value(struct index_ctx *ctx, struct entry *parent_ent,
     if (err)
         return err;
 
-    parent_ent->d.subtype = TYPE_NULL;
-    parent_ent->d.numeric = 0;
+    pack_u64(index_obj_ent_data, &parent_ent->d, subtype, TYPE_NULL);
+    pack_u64(index_obj_ent_data, &parent_ent->d, numeric, 0);
     err = do_index_insert(ctx, &parent_ent->k, &parent_ent->d,
                           sizeof(parent_ent->d));
     if (err)
@@ -1538,8 +1532,10 @@ index_boolean_value(struct index_ctx *ctx, struct entry *parent_ent,
     if (err)
         return err;
 
-    parent_ent->d.subtype = TYPE_BOOLEAN;
-    parent_ent->d.numeric = val = json_boolean_get(jv);
+    val = json_boolean_get(jv);
+
+    pack_u64(index_obj_ent_data, &parent_ent->d, subtype, TYPE_BOOLEAN);
+    pack_u64(index_obj_ent_data, &parent_ent->d, numeric, val);
     err = do_index_insert(ctx, &parent_ent->k, &parent_ent->d,
                           sizeof(parent_ent->d));
     if (err)
@@ -1706,17 +1702,20 @@ index_number_value(struct index_ctx *ctx, struct entry *parent_ent,
                    struct filter_state *filter_state, int output_state)
 {
     int err;
+    uint64_t val;
 
     (void)filter_state;
     (void)output_state;
 
-    parent_ent->d.numeric = json_numeric_get(jv);
+    val = json_numeric_get(jv);
+
+    pack_u64(index_obj_ent_data, &parent_ent->d, numeric, val);
 
     err = do_index_trans_new(ctx);
     if (err)
         return err;
 
-    parent_ent->d.subtype = TYPE_NUMERIC;
+    pack_u64(index_obj_ent_data, &parent_ent->d, subtype, TYPE_NUMERIC);
     err = do_index_insert(ctx, &parent_ent->k, &parent_ent->d,
                           sizeof(parent_ent->d));
     if (err)
@@ -1726,8 +1725,7 @@ index_number_value(struct index_ctx *ctx, struct entry *parent_ent,
     if (err)
         goto err;
 
-    fprintf(stderr, "%s%" PRIu64 "\n", elem ? "" : tabs(level),
-            parent_ent->d.numeric);
+    fprintf(stderr, "%s%" PRIu64 "\n", elem ? "" : tabs(level), val);
 
     return 0;
 
@@ -1755,8 +1753,9 @@ index_string_value(struct index_ctx *ctx, struct entry *parent_ent,
         return ERR_TAG(-err);
 
     src = str;
-    n = wcsrtombs((char *)parent_ent->d.string, &src,
-                  sizeof(parent_ent->d.string), memset(&s, 0, sizeof(s)));
+    n = wcsrtombs(packed_memb_addr(index_obj_ent_data, &parent_ent->d, string),
+                  &src, packed_memb_size(index_obj_ent_data, string),
+                  memset(&s, 0, sizeof(s)));
     if (n == (size_t)-1) {
         err = ERR_TAG(errno);
         goto err1;
@@ -1766,7 +1765,7 @@ index_string_value(struct index_ctx *ctx, struct entry *parent_ent,
     if (err)
         goto err1;
 
-    parent_ent->d.subtype = TYPE_STRING;
+    pack_u64(index_obj_ent_data, &parent_ent->d, subtype, TYPE_STRING);
     err = do_index_insert(ctx, &parent_ent->k, &parent_ent->d,
                           sizeof(parent_ent->d));
     if (err)
@@ -1938,7 +1937,7 @@ end3:
 
             subtype = unpack_u32(index_obj_ent, &ent.e, subtype);
             memset(&ent.d, 0, sizeof(ent.d));
-            ent.d.subtype = subtype;
+            pack_u64(index_obj_ent_data, &ent.d, subtype, subtype);
         }
         e->k = k;
         e->d = ent.d;
@@ -2094,14 +2093,14 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
             sval2 = NULL;
             break;
         case sizeof(struct index_obj_ent_data):
-            subtype = ent.d.subtype;
+            subtype = unpack_u64(index_obj_ent_data, &ent.d, subtype);
             id = 0;
             if (subtype == TYPE_BOOLEAN || subtype == TYPE_NUMERIC) {
-                nval2 = ent.d.numeric;
+                nval2 = unpack_u64(index_obj_ent_data, &ent.d, numeric);
                 sval2 = NULL;
             } else {
                 nval2 = 0;
-                sval2 = (const char *)ent.d.string;
+                sval2 = packed_memb_addr(index_obj_ent_data, &ent.d, string);
             }
             break;
         default:
@@ -2607,7 +2606,8 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
     switch (subtype) {
     case TYPE_BOOLEAN:
         print_attr(&args, "%s", "Value",
-                   obj.ent_data->numeric == 0 ? "false" : "true");
+                   unpack_u64(index_obj_ent_data, obj.ent_data, numeric) == 0
+                   ? "false" : "true");
         break;
     case TYPE_OBJECT:
     case TYPE_ARRAY:
@@ -2615,10 +2615,11 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
                    unpack_u64(index_obj_ent, obj.ent, id));
         break;
     case TYPE_NUMERIC:
-        print_attr(&args, "%" PRIu64, "Value", obj.ent_data->numeric);
+        print_attr(&args, "%" PRIu64, "Value",
+                   unpack_u64(index_obj_ent_data, obj.ent_data, numeric));
         break;
     case TYPE_STRING:
-        str = (const char *)obj.ent_data->string;
+        str = packed_memb_addr(index_obj_ent_data, obj.ent_data, string);
         if (mbsrtowcs(wcs, &str, ARRAY_SIZE(wcs), memset(&s, 0, sizeof(s)))
             == (size_t)-1)
             return ERR_TAG(errno);
@@ -3094,15 +3095,15 @@ delete_from_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     } else {
         struct index_obj_ent_data *d = &e.d;
 
-        type = subtype = d->subtype;
+        type = subtype = unpack_u64(index_obj_ent_data, d, subtype);
         nval1 = unpack_u64(index_key, k, numeric);
         sval1 = NULL;
         if (subtype == TYPE_BOOLEAN || subtype == TYPE_NUMERIC) {
-            nval2 = d->numeric;
+            nval2 = unpack_u64(index_obj_ent_data, d, numeric);
             sval2 = NULL;
         } else {
             nval2 = 0;
-            sval2 = (const char *)d->string;
+            sval2 = packed_memb_addr(index_obj_ent_data, d, string);
         }
     }
 
@@ -3148,22 +3149,29 @@ update_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     ssize_t ret;
     struct entry e;
     struct index_obj_ent_data *d;
+    uint64_t subtype;
 
     res = path_look_up(ctx, pathname, NULL, &e, 0, NULL);
     if (res == 1) {
         d = &e.d;
-        if (d->subtype == TYPE_BOOLEAN || d->subtype == TYPE_NUMERIC
-            || d->subtype == TYPE_STRING) {
+        subtype = unpack_u64(index_obj_ent_data, d, subtype);
+        if (subtype == TYPE_BOOLEAN || subtype == TYPE_NUMERIC
+            || subtype == TYPE_STRING) {
             fputs("Old value: ", stderr);
-            if (d->subtype == TYPE_BOOLEAN)
-                fprintf(stderr, "%d", d->numeric != 0);
-            else if (d->subtype == TYPE_NUMERIC)
-                fprintf(stderr, "%" PRIu64, d->numeric);
-            else
-                fprintf(stderr, "%s", (char *)d->string);
+            if (subtype == TYPE_BOOLEAN) {
+                fprintf(stderr, "%d",
+                        unpack_u64(index_obj_ent_data, d, numeric) != 0);
+            } else if (subtype == TYPE_NUMERIC) {
+                fprintf(stderr, "%" PRIu64,
+                        unpack_u64(index_obj_ent_data, d, numeric));
+            } else {
+                fprintf(stderr, "%s",
+                        (char *)packed_memb_addr(index_obj_ent_data, d,
+                                                 string));
+            }
             fputc('\n', stderr);
         } else
-            fprintf(stderr, "Type: %c\n", typedescs[d->subtype].typechar);
+            fprintf(stderr, "Type: %c\n", typedescs[subtype].typechar);
     } else {
         if (res != 0)
             goto err;
@@ -3183,23 +3191,27 @@ update_index(struct index_ctx *ctx, const char *pathname, FILE *f,
         return 0;
     }
 
-    if (d->subtype == TYPE_BOOLEAN)
-        d->numeric = strtoumax(line, NULL, 10) != 0;
-    else if (d->subtype == TYPE_NUMERIC)
-        d->numeric = strtoumax(line, NULL, 10);
-    else if (d->subtype == TYPE_STRING) {
+    if (subtype == TYPE_BOOLEAN)
+        pack_u64(index_obj_ent_data, d, numeric,
+                 strtoumax(line, NULL, 10) != 0);
+    else if (subtype == TYPE_NUMERIC)
+        pack_u64(index_obj_ent_data, d, numeric, strtoumax(line, NULL, 10));
+    else if (subtype == TYPE_STRING) {
+        char *s;
         size_t len;
 
-        len = strlcpy((char *)d->string, line, sizeof(d->string));
-        if (len >= sizeof(d->string)) {
+        s = packed_memb_addr(index_obj_ent_data, d, string);
+
+        len = strlcpy(s, line, packed_memb_size(index_obj_ent_data, string));
+        if (len >= packed_memb_size(index_obj_ent_data, string)) {
             res = -ENAMETOOLONG;
             free(line);
             goto err;
         }
         if (len > 0) {
             --len;
-            if (d->string[len] == '\n')
-                d->string[len] = '\0';
+            if (s[len] == '\n')
+                s[len] = '\0';
         }
     }
 
@@ -3229,7 +3241,8 @@ list_index_entries(struct index_ctx *ctx, const char *pathname, FILE *f,
         } else
             *errmsg = "Error looking up in index";
     } else {
-        res = get_ents(ctx, e.d.subtype, id, 0, &list_index_entries_cb, f);
+        res = get_ents(ctx, unpack_u64(index_obj_ent_data, &e.d, subtype), id,
+                       0, &list_index_entries_cb, f);
         if (res != 0)
             *errmsg = "Error reading index";
     }
@@ -3247,19 +3260,27 @@ search_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     res = path_look_up(ctx, pathname, NULL, &e, 0, NULL);
     if (res == 1) {
         struct index_obj_ent_data *d = &e.d;
+        uint64_t subtype;
 
-        if (d->subtype == TYPE_BOOLEAN || d->subtype == TYPE_NUMERIC
-            || d->subtype == TYPE_STRING) {
+        subtype = unpack_u64(index_obj_ent_data, d, subtype);
+
+        if (subtype == TYPE_BOOLEAN || subtype == TYPE_NUMERIC
+            || subtype == TYPE_STRING) {
             fputs("Value: ", f);
-            if (d->subtype == TYPE_BOOLEAN)
-                fprintf(f, "%d", d->numeric != 0);
-            else if (d->subtype == TYPE_NUMERIC)
-                fprintf(f, "%" PRIu64, d->numeric);
-            else
-                fprintf(f, "%s", (char *)d->string);
+            if (subtype == TYPE_BOOLEAN) {
+                fprintf(f, "%d",
+                        unpack_u64(index_obj_ent_data, d, numeric) != 0);
+            } else if (subtype == TYPE_NUMERIC) {
+                fprintf(f, "%" PRIu64,
+                        unpack_u64(index_obj_ent_data, d, numeric));
+            } else {
+                fprintf(f, "%s",
+                        (char *)packed_memb_addr(index_obj_ent_data, d,
+                                                 string));
+            }
             fputc('\n', f);
         } else
-            fprintf(f, "Type: %c\n", typedescs[d->subtype].typechar);
+            fprintf(f, "Type: %c\n", typedescs[subtype].typechar);
         if (ferror(f)) {
             res = -EIO;
             goto err;

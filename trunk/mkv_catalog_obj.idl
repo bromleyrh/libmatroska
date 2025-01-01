@@ -5,6 +5,7 @@
 #ifndef _MKV_CATALOG_OBJ_H
 #define _MKV_CATALOG_OBJ_H
 
+#include <limits.h>
 #include <stdint.h>
 
 #define STRING_MAX 255
@@ -24,6 +25,11 @@ PACKED_STRUCT(`index_obj_header',
 PACKED_STRUCT(`index_obj_ent',
     `uint32_t', `subtype', `1',
     `uint64_t', `id',      `1')
+
+PACKED_STRUCT(`index_obj_ent_data',
+    `uint64_t', `subtype', `1',
+    `uint64_t', `numeric', `1',
+    `uint8_t',  `string',  `STRING_MAX + 1')
 
 #endif
 
