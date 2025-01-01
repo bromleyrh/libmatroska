@@ -21,6 +21,10 @@ PACKED_STRUCT(`index_obj_header',
     `uint64_t', `version',  `1',
     `uint8_t',  `reserved', `120')
 
+PACKED_STRUCT(`index_obj_ent',
+    `uint32_t', `subtype', `1',
+    `uint64_t', `id',      `1')
+
 #endif
 
 /* vi: set expandtab sw=4 ts=4: */

@@ -97,11 +97,6 @@ enum index_obj_subtype {
     TYPE_STRING
 };
 
-struct index_obj_ent {
-    uint32_t subtype;
-    uint64_t id;
-} __attribute__((packed));
-
 struct index_obj_ent_data {
     uint64_t    subtype;
     uint64_t    numeric;
@@ -1442,14 +1437,14 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
             if (res != 0)
                 goto err;
 
-            parent_ent->e.subtype = TYPE_OBJECT;
-            parent_ent->e.id = id;
+            pack_u32(index_obj_ent, &parent_ent->e, subtype, TYPE_OBJECT);
+            pack_u64(index_obj_ent, &parent_ent->e, id, id);
             res = do_index_insert(ctx, &parent_ent->k, &parent_ent->e,
                                   sizeof(parent_ent->e));
             if (res != 0)
                 goto err;
         } else
-            id = e.id;
+            id = unpack_u64(index_obj_ent, &e, id);
     }
 
     res = do_index_trans_commit(ctx);
@@ -1645,14 +1640,14 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
         if (res != 0)
             goto err;
 
-        parent_ent->e.subtype = TYPE_ARRAY;
-        parent_ent->e.id = id;
+        pack_u32(index_obj_ent, &parent_ent->e, subtype, TYPE_ARRAY);
+        pack_u64(index_obj_ent, &parent_ent->e, id, id);
         res = do_index_insert(ctx, &parent_ent->k, &parent_ent->e,
                               sizeof(parent_ent->e));
         if (res != 0)
             goto err;
     } else
-        id = e.id;
+        id = unpack_u64(index_obj_ent, &e, id);
 
     res = do_index_trans_commit(ctx);
     if (res != 0)
@@ -1854,8 +1849,8 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
     if (elem == NULL) {
         nextelem = NULL;
         terminal = 0;
-        ent.e.subtype = TYPE_OBJECT;
-        ent.e.id = ROOT_ID;
+        pack_u32(index_obj_ent, &ent.e, subtype, TYPE_OBJECT);
+        pack_u64(index_obj_ent, &ent.e, id, ROOT_ID);
         res = 1;
         goto end3;
     }
@@ -1929,19 +1924,19 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
         }
 
         pack_u32(index_key, &k, type,
-                 ent.e.subtype == TYPE_ARRAY
+                 unpack_u32(index_obj_ent, &ent.e, subtype) == TYPE_ARRAY
                  ? TYPE_EXTERNAL_NUMERIC : TYPE_EXTERNAL_STRING);
-        pack_u64(index_key, &k, id, ent.e.id);
+        pack_u64(index_key, &k, id, unpack_u64(index_obj_ent, &ent.e, id));
     }
 
 end3:
     if (id != NULL)
-        *id = terminal ? 0 : ent.e.id;
+        *id = terminal ? 0 : unpack_u64(index_obj_ent, &ent.e, id);
     if (e != NULL) {
         if (!terminal) {
             uint32_t subtype;
 
-            subtype = ent.e.subtype;
+            subtype = unpack_u32(index_obj_ent, &ent.e, subtype);
             memset(&ent.d, 0, sizeof(ent.d));
             ent.d.subtype = subtype;
         }
@@ -2093,8 +2088,8 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
 
         switch (datasize) {
         case sizeof(struct index_obj_ent):
-            subtype = ent.e.subtype;
-            id = ent.e.id;
+            subtype = unpack_u32(index_obj_ent, &ent.e, subtype);
+            id = unpack_u64(index_obj_ent, &ent.e, id);
             nval2 = 0;
             sval2 = NULL;
             break;
@@ -2592,11 +2587,11 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
     switch (datasize) {
     case sizeof(struct index_obj_ent):
         obj.ent = data;
-        subtype = obj.ent->subtype;
+        subtype = unpack_u32(index_obj_ent, obj.ent, subtype);
         break;
     case sizeof(struct index_obj_ent_data):
         obj.ent_data = data;
-        subtype = obj.ent->subtype;
+        subtype = unpack_u32(index_obj_ent, obj.ent, subtype);
         break;
     default:
         return ERR_TAG(EILSEQ);
@@ -2616,7 +2611,8 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
         break;
     case TYPE_OBJECT:
     case TYPE_ARRAY:
-        print_attr(&args, "%" PRIu64, "ID", obj.ent->id);
+        print_attr(&args, "%" PRIu64, "ID",
+                   unpack_u64(index_obj_ent, obj.ent, id));
         break;
     case TYPE_NUMERIC:
         print_attr(&args, "%" PRIu64, "Value", obj.ent_data->numeric);
@@ -3083,7 +3079,7 @@ delete_from_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     k = &e.k;
 
     if (id != 0) {
-        subtype = e.e.subtype;
+        subtype = unpack_u32(index_obj_ent, &e.e, subtype);
         if (unpack_u32(index_key, k, type) == TYPE_EXTERNAL_STRING) {
             type = TYPE_OBJECT;
             nval1 = 0;
