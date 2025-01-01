@@ -15,6 +15,12 @@ PACKED_STRUCT(`index_key',
     `uint64_t', `numeric', `1',
     `uint8_t',  `string',  `STRING_MAX + 1')
 
+#define FMT_VERSION 1
+
+PACKED_STRUCT(`index_obj_header',
+    `uint64_t', `version',  `1',
+    `uint8_t',  `reserved', `120')
+
 #endif
 
 /* vi: set expandtab sw=4 ts=4: */

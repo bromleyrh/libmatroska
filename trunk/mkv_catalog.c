@@ -88,13 +88,6 @@ enum index_obj_type {
     TYPE_FREE_ID            /* look up by id */
 };
 
-#define FMT_VERSION 1
-
-struct index_obj_header {
-    uint64_t    version;
-    uint8_t     reserved[120];
-} __attribute__((packed));
-
 enum index_obj_subtype {
     TYPE_NULL = 1,
     TYPE_BOOLEAN,
@@ -1112,7 +1105,7 @@ open_or_create(struct index_ctx **ctx, const char *pathname)
             goto err2;
 
         pack_u32(index_key, &k, type, TYPE_HEADER);
-        hdr.version = FMT_VERSION;
+        pack_u64(index_obj_header, &hdr, version, FMT_VERSION);
         err = do_index_insert(ret, &k, &hdr, sizeof(hdr));
         if (err)
             goto err3;
@@ -2576,7 +2569,8 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
     switch (type) {
     case TYPE_HEADER:
         obj.hdr = data;
-        print_attr(&args, "%" PRIu64, "Version", obj.hdr->version);
+        print_attr(&args, "%" PRIu64, "Version",
+                   unpack_u64(index_obj_header, obj.hdr, version));
         goto end;
     case TYPE_EXTERNAL_NUMERIC:
         print_attr(&args, "%" PRIu64, "Index",
