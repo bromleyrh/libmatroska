@@ -765,14 +765,6 @@ push_master(struct elem_stack *stk, const struct elem_data *data, uint64_t eid,
         stk->sz = newsz;
     }
 
-    if (len > 0) {
-        struct elem_stack_ent *tmp;
-
-        tmp = stk->stk[len-1];
-        if (tmp->include_anon == -1)
-            tmp->include_anon = 1;
-    }
-
     ent->data = data;
     ent->hdrlen = ent->anonlen = ent->totlen = 0;
     ent->segment = eid == SEGMENT_ELEMENT_ID;
@@ -839,7 +831,6 @@ update_master_size(struct elem_stack *stk, uint64_t sz)
         if (ent->include_anon == 1) {
             ent->anonlen += sz;
             ent->totlen += sz;
-            ent->include_anon = -1;
             break;
         }
 
