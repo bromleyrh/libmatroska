@@ -837,7 +837,7 @@ update_master_size(struct elem_stack *stk, uint64_t sz)
         ent = stk->stk[idx];
 
         if (ent->include_anon == 1) {
-            ent->anonlen = sz;
+            ent->anonlen += sz;
             ent->totlen += sz;
             ent->include_anon = -1;
             break;
