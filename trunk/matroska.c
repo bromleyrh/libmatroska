@@ -177,8 +177,8 @@ print_handler(FILE *f, const char *func, const char *val)
 static int
 track_data_cmp(const void *k1, const void *k2, void *ctx)
 {
-    const struct track_data *tdata1 = *(const struct track_data *const *)k1;
-    const struct track_data *tdata2 = *(const struct track_data *const *)k2;
+    const struct track_data *tdata1 = *(struct track_data *const *)k1;
+    const struct track_data *tdata2 = *(struct track_data *const *)k2;
 
     (void)ctx;
 
