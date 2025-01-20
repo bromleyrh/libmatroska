@@ -25,7 +25,7 @@ std_cppflags = -D_XOPEN_SOURCE=700
 std_cflags = @std_flags@
 
 AM_CPPFLAGS = $(defines) $(std_cppflags)
-AM_CFLAGS = $(std_cflags) -pipe -Wall -Wextra @warnings@
+AM_CFLAGS = $(std_cflags) -pipe -Wall -Wextra @warnings@ @strict_aliasing@
 
 if DEBUG
 AM_CPPFLAGS += $(debug_cppflags_debug)

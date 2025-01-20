@@ -44,7 +44,7 @@ AC_PROG_RANLIB
 AX_CHECK_COMPILE_FLAG([-std=c11], [std_flags="-std=c11"], [std_flags=])
 AC_SUBST([std_flags])
 
-warnings=
+warnings="-Wstrict-aliasing"
 
 AX_CHECK_COMPILE_FLAG(
     [-Werror -Wgnu-include-next -Wnewline-eof -Wnullability-extension],
@@ -85,6 +85,12 @@ AC_ARG_ENABLE([debugging],
                esac],
               [debug=false])
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+
+AX_CHECK_COMPILE_FLAG([-Werror -fstrict-aliasing],
+    [strict_aliasing="-fstrict-aliasing"],
+    [strict_aliasing=]
+)
+AC_SUBST([strict_aliasing])
 
 AC_CHECK_FUNCS_ONCE([strerror_l])
 
