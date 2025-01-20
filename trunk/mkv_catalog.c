@@ -1862,8 +1862,8 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
                 res = 0;
                 goto end1;
             }
-            if (strlcpy(packed_memb_addr(index_key, &k, string), elem,
-                        packed_memb_size(index_key, string))
+            if (_strlcpy(packed_memb_addr(index_key, &k, string), elem,
+                         packed_memb_size(index_key, string))
                 >= packed_memb_size(index_key, string)) {
                 res = ERR_TAG(ENAMETOOLONG);
                 goto err1;
@@ -1883,8 +1883,8 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
 
         if (unpack_u32(index_key, &k, type) == TYPE_EXTERNAL_NUMERIC)
             pack_u64(index_key, &k, numeric, strtoumax(elem, NULL, 10));
-        else if (strlcpy(packed_memb_addr(index_key, &k, string), elem,
-                         packed_memb_size(index_key, string))
+        else if (_strlcpy(packed_memb_addr(index_key, &k, string), elem,
+                          packed_memb_size(index_key, string))
                  >= packed_memb_size(index_key, string)) {
             res = ERR_TAG(ENAMETOOLONG);
             goto err2;
@@ -2294,9 +2294,9 @@ delete_from_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     case TYPE_OBJECT:
     case TYPE_STRING:
         typ = TYPE_EXTERNAL_STRING;
-        strlcpy(packed_memb_addr(index_key, &k, string),
-                type == TYPE_OBJECT ? sval1 : sval2,
-                packed_memb_size(index_key, string));
+        _strlcpy(packed_memb_addr(index_key, &k, string),
+                 type == TYPE_OBJECT ? sval1 : sval2,
+                 packed_memb_size(index_key, string));
         break;
     default:
         typ = TYPE_EXTERNAL_NUMERIC;
@@ -3198,7 +3198,7 @@ update_index(struct index_ctx *ctx, const char *pathname, FILE *f,
 
         s = packed_memb_addr(index_obj_ent_data, d, string);
 
-        len = strlcpy(s, line, packed_memb_size(index_obj_ent_data, string));
+        len = _strlcpy(s, line, packed_memb_size(index_obj_ent_data, string));
         if (len >= packed_memb_size(index_obj_ent_data, string)) {
             res = -ENAMETOOLONG;
             free(line);
