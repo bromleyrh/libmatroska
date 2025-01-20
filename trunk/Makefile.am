@@ -21,12 +21,17 @@ debug_cflags_debug = -ggdb3 -O0
 debug_cppflags_ndebug =
 debug_cflags_ndebug = -O2
 
+std_cflags = @std_flags@
+
+AM_CPPFLAGS = $(defines)
+AM_CFLAGS = $(std_cflags) -pipe -Wall -Wextra
+
 if DEBUG
-AM_CPPFLAGS = $(defines) $(debug_cppflags_debug)
-AM_CFLAGS = $(debug_cflags_debug) -pipe -Wall -Wextra
+AM_CPPFLAGS += $(debug_cppflags_debug)
+AM_CFLAGS += $(debug_cflags_debug)
 else
-AM_CPPFLAGS = $(defines) $(debug_cppflags_ndebug)
-AM_CFLAGS = $(debug_cflags_ndebug) -pipe -Wall -Wextra
+AM_CPPFLAGS += $(debug_cppflags_ndebug)
+AM_CFLAGS += $(debug_cflags_ndebug)
 endif
 
 if APPLE

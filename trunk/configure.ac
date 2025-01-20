@@ -41,6 +41,9 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_RANLIB
 
+AX_CHECK_COMPILE_FLAG([-std=c11], [std_flags="-std=c11"], [std_flags=])
+AC_SUBST([std_flags])
+
 AC_CHECK_PROGS([pkgcfg], [pkg-config pkgconf])
 
 AX_LD_VERSION_SCRIPT
