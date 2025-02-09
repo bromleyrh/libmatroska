@@ -1319,6 +1319,9 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         if (!anon)
             return_from_master(stk, parent, NULL, NULL);
 
+        if (stk->len > 0)
+            stk->stk[stk->len-1]->anonlen = 0;
+
         if (flags & EBML_READ_FLAG_HEADER) {
             if (f != NULL && fputc('\t', f) == EOF)
                 return ERR_TAG(EIO);
@@ -1472,6 +1475,9 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
 
         if (!anon)
             return_from_master(stk, parent, NULL, NULL);
+
+        if (stk->len > 0)
+            stk->stk[stk->len-1]->anonlen = 0;
 
         sz = hdl->di - hdl->si;
 
@@ -1775,6 +1781,9 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
         if (res != 0)
             return res;
     }
+
+    if (stk->len > 0)
+        stk->stk[stk->len-1]->anonlen = 0;
 
     res = buf_list_insert(&hdl->buf_list, hdl->buf, hlen - buflen, hdl->si,
                           buflen, elen, etype == ETYPE_MASTER ? 0 : elen,
