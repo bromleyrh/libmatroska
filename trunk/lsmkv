@@ -6,4 +6,4 @@
 	else
 		mkv_dump <"$1"
 	fi
-} | column -s "$(printf "\t")" -t
+} | column -s $'\t' -t
