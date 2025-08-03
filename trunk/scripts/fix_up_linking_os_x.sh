@@ -1,10 +1,10 @@
 #!/bin/sh
 
-get_cur_libmatroska_path()
+get_cur_lib_path()
 {
 	otool -L "$1" | sed -n \
 		-e '1d' \
-		-e 's/libmatroska/libmatroska/; t found' \
+		-e "s/$2/$2/; t found" \
 		-e 'b' \
 		-e ':found' \
 		-e 's/^[[:space:]]*//' \
@@ -26,7 +26,7 @@ set -- "element_test" "mkv_cat" "mkv_dump" "mkv_ls" "mkv_write" "vint_test"
 
 for i; do
 	if [ "$file" = "$i" ]; then
-		curpath=$(get_cur_libmatroska_path "$file")
+		curpath=$(get_cur_lib_path "$file" "libmatroska")
 		test -z "$curpath" && exit 0
 		replace_path "$curpath" "$lib" "$file"
 		exit $?
