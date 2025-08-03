@@ -17,7 +17,7 @@ do_configure()
 	touch "$dummy_file"
 }
 
-set -e
+set -eu
 
 # import Autoconf cache file path variable
 cache_file=/dev/null
