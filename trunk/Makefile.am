@@ -165,7 +165,7 @@ include tests/Makefile.am
 include third_party/Makefile.am
 
 install-exec-hook:
-	if unm=`uname` && test "$$unm" = Darwin; then \
+	if unm=`uname` && test "$$unm" = "Darwin"; then \
 		chmod -h 0755 "$(libdir)/libmatroska.$(sosuf)"; \
 	fi
 	@if ldc=`command -v ldconfig` && test -x "$$ldc"; then \

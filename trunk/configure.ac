@@ -112,7 +112,7 @@ AC_SUBST([libutil_cppflags])
 AC_SUBST([libutil_link_dep])
 
 AS_IF(
-    [test $platform = darwin],
+    [test $platform = "darwin"],
     [xcode_dir=/Applications/Xcode.app
      platforms_dir=$xcode_dir/Contents/Developer/Platforms/MacOSX.platform
      sdk_dir=$platforms_dir/Developer/SDKs/MacOSX.sdk
@@ -160,7 +160,7 @@ dnl reducing the needed time to run the commands
 dnl FIXME: Replace with wrapper script or utility
 postlink_cmds=:
 AS_IF(
-    [test $platform = darwin],
+    [test $platform = "darwin"],
     [libpath="$(pwd | sed -e 's#/#\\/#g')\/.libs\/libmatroska.dylib"
      postlink_cmds="${postlink_cmds}; scripts\/fix_up_linking_os_x.sh"
      postlink_cmds="$postlink_cmds @OUTPUT@ $libpath"]
