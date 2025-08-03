@@ -11,6 +11,8 @@ replace_path()
 	install_name_tool -change "$@"
 }
 
+set -e
+
 file=$1
 lib=$2
 
