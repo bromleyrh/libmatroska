@@ -24,8 +24,8 @@ lib=$2
 
 set -- "element_test" "mkv_cat" "mkv_dump" "mkv_ls" "mkv_write" "vint_test"
 
-for i; do
-	if [ "$file" = "$i" ]; then
+for f; do
+	if [ "$file" = "$f" ]; then
 		curpath=$(get_cur_lib_path "$file" "libmatroska")
 		test -z "$curpath" && exit 0
 		replace_path "$curpath" "$lib" "$file"
