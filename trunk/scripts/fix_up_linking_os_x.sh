@@ -22,15 +22,20 @@ set -eu
 file=$1
 lib=$2
 
-set -- "element_test" "mkv_cat" "mkv_dump" "mkv_ls" "mkv_write" "vint_test"
-
-for f; do
-	if [ "$file" = "$f" ]; then
+while read -r line; do
+	if [ "$file" = "$line" ]; then
 		curpath=$(get_cur_lib_path "$file" "libmatroska")
 		test -z "$curpath" && exit 0
 		replace_path "$curpath" "$lib" "$file"
 		exit $?
 	fi
-done
+done <<-'EOF'
+	element_test
+	mkv_cat
+	mkv_dump
+	mkv_ls
+	mkv_write
+	vint_test
+EOF
 
 # vi: set noexpandtab sw=4 ts=4:
