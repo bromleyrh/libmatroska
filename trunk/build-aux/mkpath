@@ -33,7 +33,7 @@ sub parse_cmdline {
         exit(1);
     }
 
-    if ((@ARGV > 1) and ($ARGV[0] eq "-m")) {
+    if (@ARGV > 1 and $ARGV[0] eq "-m") {
         $mode = oct($ARGV[1]);
         shift @ARGV;
         shift @ARGV;
