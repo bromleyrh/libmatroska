@@ -65,22 +65,22 @@ ebml_semantics_schema = @ebml_semantics_schema@
 ebml_semantics_schema_dep = @ebml_semantics_schema_dep@
 
 ebml_schema.h: schema_parse $(ebml_schema_dep) schemas/ebml.m4
-	./schema_parse_cached schemas/ebml.m4 $(ebml_schema) ebml $@
+	./schema_parse_cached schemas/ebml.m4 $(ebml_schema) ebml "$@"
 
 matroska_schema.h: schema_parse $(ebml_schema_dep) schemas/matroska.m4
-	./schema_parse_cached schemas/matroska.m4 $(ebml_schema) matroska $@
+	./schema_parse_cached schemas/matroska.m4 $(ebml_schema) matroska "$@"
 
 matroska_semantics.h: schema_parse $(ebml_semantics_schema_dep) \
 	schemas/matroska_semantics.m4
 	./schema_parse_cached schemas/matroska_semantics.m4 \
-		$(ebml_semantics_schema) matroska_semantics $@
+		$(ebml_semantics_schema) matroska_semantics "$@"
 
 mkv_catalog_obj.h: mkv_catalog_obj.idl
-	idlc <$^ >$@
+	idlc <"$^" >"$@"
 
 version.c:
-	echo "const char build_date[] = \"$(build_date_str)\";" >|$@
-	echo "const char build_git_commit_id[] = \"$(build_vers_str)\";" >>$@
+	echo "const char build_date[] = \"$(build_date_str)\";" >|"$@"
+	echo "const char build_git_commit_id[] = \"$(build_vers_str)\";" >>"$@"
 
 lib_LTLIBRARIES = libmatroska.la
 
