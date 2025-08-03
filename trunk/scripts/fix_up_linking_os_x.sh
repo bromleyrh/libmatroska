@@ -2,8 +2,14 @@
 
 get_cur_libmatroska_path()
 {
-	otool -L "$1" | tail -n +2 | grep libmatroska \
-		| sed 's/ (compatibility version .*, current version .*)$//' | cut -f 2-
+	otool -L "$1" | sed -n \
+		-e '1d' \
+		-e 's/libmatroska/libmatroska/; t found' \
+		-e 'b' \
+		-e ':found' \
+		-e 's/^[[:space:]]*//' \
+		-e 's/ (compatibility version .*, current version .*)$//' \
+		-e 'p'
 }
 
 replace_path()
