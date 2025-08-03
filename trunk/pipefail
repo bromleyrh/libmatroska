@@ -52,8 +52,7 @@ wait_for_errs()
 
 	i=0
 	while [ $i -lt $1 ]; do
-		! read -r line <"$2_$i" || test "$line" != "0" && ret=1
-		i=$((i+1))
+		! read -r line <"$2_$((i++))" || test "$line" != "0" && ret=1
 	done
 
 	exit $ret
@@ -61,10 +60,10 @@ wait_for_errs()
 
 add_cmd()
 {
-	mkfifo "${_pipe}_$_n"
+	f=${_pipe}_$((_n++))
+	mkfifo "$f"
 	cmds="${cmds:+"$cmds | "}"
-	cmds="${cmds}{ $1; ret="'$?'"; exec <&-; echo "'$ret'" >"${_pipe}_$_n"; }"
-	_n=$((_n+1))
+	cmds="${cmds}{ $1; ret="'$?'"; exec <&-; echo "'$ret'" >"$f"; }"
 }
 
 execute_cmds()
@@ -77,8 +76,7 @@ exit_handler()
 {
 	i=0
 	while [ $i -lt $_n ]; do
-		rm -f "${_pipe}_$i"
-		i=$((i+1))
+		rm -f "${_pipe}_$((i++))"
 	done
 }
 
