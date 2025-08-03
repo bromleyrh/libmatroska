@@ -52,9 +52,7 @@ wait_for_errs()
 
 	i=0
 	while [ $i -lt $1 ]; do
-		if ! read -r line <"$2_$i" || [ "$line" != "0" ]; then
-			ret=1
-		fi
+		! read -r line <"$2_$i" || test "$line" != "0" && ret=1
 		i=$((i+1))
 	done
 
