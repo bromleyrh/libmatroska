@@ -12,7 +12,7 @@ AC_DEFUN([AX_LD_VERSION_SCRIPT],
         ]
      )
      AM_CONDITIONAL([LD_VERSION_SCRIPT],
-         [test "x$ax_cv_ld_version_script" = "xyes"])
+         [test "$ax_cv_ld_version_script" = "yes"])
     ]
 )
 
