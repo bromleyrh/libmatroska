@@ -52,10 +52,8 @@ struct elem_stack_ent {
     const struct elem_data  *data;
     size_t                  hdrlen;
     uint64_t                elen;
-    uint64_t                anonlen;
     uint64_t                totlen;
     unsigned                segment;
-    int                     include_anon;
     struct buf              *buf;
     ebml_master_cb_t        *master_cb;
     ebml_master_free_cb_t   *master_free_cb;
@@ -75,6 +73,7 @@ struct ebml_hdl {
     const struct parser             *parser_doc;
     const struct semantic_processor *sproc;
     struct elem_stack               stk;
+    size_t                          anonlen;
     ebml_metadata_cb_t              *cb;
     char                            buf[4096];
     char                            *di;
@@ -161,7 +160,7 @@ static int push_master(struct elem_stack *, const struct elem_data *, uint64_t,
                        struct buf *, ebml_master_cb_t *,
                        ebml_master_free_cb_t *, void *, void *);
 static int release_master(struct elem_stack_ent *);
-static void update_master_size(struct elem_stack *, uint64_t);
+static void update_master_size(struct elem_stack *, size_t *, uint64_t);
 static int return_from_master(struct elem_stack *, const struct elem_data *,
                               struct buf_list *, struct ebml_hdl *);
 
@@ -766,9 +765,8 @@ push_master(struct elem_stack *stk, const struct elem_data *data, uint64_t eid,
     }
 
     ent->data = data;
-    ent->hdrlen = ent->anonlen = ent->totlen = 0;
+    ent->hdrlen = ent->totlen = 0;
     ent->segment = eid == SEGMENT_ELEMENT_ID;
-    ent->include_anon = data->etype == ETYPE_MASTER;
     ent->buf = buf;
     ent->master_cb = master_cb;
     ent->master_free_cb = master_free_cb;
@@ -813,31 +811,11 @@ release_master(struct elem_stack_ent *ent)
 }
 
 static void
-update_master_size(struct elem_stack *stk, uint64_t sz)
+update_master_size(struct elem_stack *stk, size_t *anonlen, uint64_t sz)
 {
-    size_t idx, len;
+    (void)stk;
 
-    len = stk->len;
-
-    if (len == 0)
-        return;
-    idx = len - 1;
-
-    for (;;) {
-        struct elem_stack_ent *ent;
-
-        ent = stk->stk[idx];
-
-        if (ent->include_anon == 1) {
-            ent->anonlen += sz;
-            ent->totlen += sz;
-            break;
-        }
-
-        if (idx == 0)
-            break;
-        --idx;
-    }
+    *anonlen += sz;
 }
 
 static int
@@ -863,17 +841,19 @@ return_from_master(struct elem_stack *stk, const struct elem_data *next_parent,
     for (;;) {
         tmp = ent->totlen - ent->hdrlen;
         if (ent->elen != EDATASZ_UNKNOWN && tmp != ent->elen) {
-            ent->include_anon = 0;
-            update_master_size(stk, ent->anonlen);
-            tmp -= ent->anonlen;
-            ent->totlen -= ent->anonlen;
-            ent->anonlen = 0;
-            if (tmp != ent->elen) {
+            int64_t anonlen;
+
+            anonlen = ent->elen - tmp;
+            if (anonlen < 0 || (uint64_t)anonlen > hdl->anonlen) {
                 fprintf(stderr, "Synchronization error: master element size"
-                                " %" PRIu64 " byte%s (%+" PRIi64 " byte%s)\n",
-                        PL(tmp), PL((int64_t)tmp - (int64_t)ent->elen));
+                                " %" PRIu64 " byte%s (%+" PRIi64 " byte%s)"
+                                "\n",
+                        PL(tmp), PL(-anonlen));
                 abort();
             }
+            tmp = ent->elen;
+            ent->totlen += anonlen;
+            hdl->anonlen -= anonlen;
         }
         fprintf(stderr, "Master element %s has size %" PRIu64 " byte%s\n",
                 ent->data->val, PL(tmp));
@@ -1317,10 +1297,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
         if (!anon)
-            return_from_master(stk, parent, NULL, NULL);
-
-        if (stk->len > 0)
-            stk->stk[stk->len-1]->anonlen = 0;
+            return_from_master(stk, parent, NULL, hdl);
 
         if (flags & EBML_READ_FLAG_HEADER) {
             if (f != NULL && fputc('\t', f) == EOF)
@@ -1367,13 +1344,13 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
                 }
                 ent->totlen += totlen;
             } else
-                update_master_size(stk, totlen);
+                update_master_size(stk, &hdl->anonlen, totlen);
         }
 
         ++n;
     }
 
-    return_from_master(stk, NULL, NULL, NULL);
+    return_from_master(stk, NULL, NULL, hdl);
 
     return 0;
 }
@@ -1474,10 +1451,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
         if (!anon)
-            return_from_master(stk, parent, NULL, NULL);
-
-        if (stk->len > 0)
-            stk->stk[stk->len-1]->anonlen = 0;
+            return_from_master(stk, parent, NULL, hdl);
 
         sz = hdl->di - hdl->si;
 
@@ -1536,7 +1510,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
                 }
                 ent->totlen += totlen;
             } else
-                update_master_size(stk, totlen);
+                update_master_size(stk, &hdl->anonlen, totlen);
         }
 
         ++hdl->n;
@@ -1550,7 +1524,12 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
     return 0;
 
 eof:
-    return_from_master(stk, NULL, NULL, NULL);
+    return_from_master(stk, NULL, NULL, hdl);
+    if (hdl->anonlen > 0) {
+        fputs("Synchronization error: unassociated anonymous element(s)\n",
+              stderr);
+        return ERR_TAG(EIO);
+    }
     if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
         && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
         return ERR_TAG(EIO);
@@ -1590,6 +1569,7 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
 
     ret->di = ret->si = ret->buf;
     ret->n = 1;
+    ret->anonlen = 0;
 
     ret->sproc_ctx = sproc_ctx;
     ret->metactx = ctx;
@@ -1782,9 +1762,6 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
             return res;
     }
 
-    if (stk->len > 0)
-        stk->stk[stk->len-1]->anonlen = 0;
-
     res = buf_list_insert(&hdl->buf_list, hdl->buf, hlen - buflen, hdl->si,
                           buflen, elen, etype == ETYPE_MASTER ? 0 : elen,
                           etype == ETYPE_MASTER);
@@ -1865,7 +1842,7 @@ end:
                 ent->totlen += hlen + binhlen;
             ent->totlen += buflen;
         } else
-            update_master_size(stk, buflen);
+            update_master_size(stk, &hdl->anonlen, buflen);
     } else {
         res = buf_list_flush(&hdl->buf_list, hdl);
         if (res != 0)
