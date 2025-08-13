@@ -1,3 +1,3 @@
-[submodule "trunk/third_party/FFmpeg"]
+[submodule "FFmpeg"]
 	path = trunk/third_party/FFmpeg
 	url = ssh://git@altssh.bitbucket.org:443/bromleyrh/ffmpeg.git
