@@ -50,11 +50,7 @@ version.c
 /mkv_write
 /zlib_cat
 
-/element_test
-/vint_test
-
 *.log
-*.trs
 
 .gdbinit
 .lldbinit

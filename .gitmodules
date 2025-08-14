@@ -1,3 +1,6 @@
 [submodule "FFmpeg"]
 	path = trunk/third_party/FFmpeg
 	url = ssh://git@altssh.bitbucket.org:443/bromleyrh/ffmpeg.git
+[submodule "tests"]
+	path = trunk/tests
+	url = ssh://git@altssh.bitbucket.org:443/bromleyrh/libmatroska-tests.git

@@ -9,8 +9,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = include
 
 EXTRA_DIST = bootstrap build-aux libmatroska.map libmatroska.pc.in lsmkv \
-	mkv_catalog_obj.idl pipefail schema_parse_cached schemas test_wrapper.sh \
-	.version
+	mkv_catalog_obj.idl pipefail schema_parse_cached schemas .version
 
 build_date = "$(shell date)"
 build_vers = "$(shell git rev-parse HEAD)"
@@ -158,38 +157,12 @@ libmatroska_la_CFLAGS = $(AM_CFLAGS)
 libmatroska_la_LDFLAGS = -version-info @lm_cur@:@lm_rev@:@lm_age@ \
 	$(version_script)
 
-check_PROGRAMS = element_test vint_test
-
-LOG_DRIVER = ./test_wrapper.sh
-
-TESTS_ENVIRONMENT = BUILDDIR=@abs_top_builddir@; export BUILDDIR;
-
-element_test_SOURCES = element_test.c
-element_test_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
-element_test_CFLAGS = $(AM_CFLAGS)
-element_test_LDADD = $(matroska_link) $(matroska_link_dep)
-element_test_LDFLAGS = -rpath @abs_top_builddir@/.libs
-element_test_DEPENDENCIES = libmatroska.la
-
-vint_test_SOURCES = vint_test.c
-vint_test_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude
-vint_test_CFLAGS = $(AM_CFLAGS)
-vint_test_LDADD = $(matroska_link) $(matroska_link_dep)
-vint_test_LDFLAGS = -rpath @abs_top_builddir@/.libs
-vint_test_DEPENDENCIES = libmatroska.la
-
-TESTS = element_test vint_test
+check_PROGRAMS =
+TESTS =
 
 include scripts/Makefile.am
+include tests/Makefile.am
 include third_party/Makefile.am
-
-.PHONY: check-exec check-noexec
-
-check-exec:
-	TESTS_SKIP=0 $(MAKE) check
-
-check-noexec:
-	TESTS_SKIP=1 $(MAKE) check
 
 install-exec-hook:
 	if [ `uname` = Darwin ]; then \
