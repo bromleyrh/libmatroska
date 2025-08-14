@@ -1305,14 +1305,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
 
             sz = di - si;
 
-            if (ETYPE_IS_FIXED_WIDTH(etype)) {
-                res = handle_fixed_width_value(&si, &di, sz, etype, val, elen,
-                                               hdrlen, NULL, 1, f, hdl);
-            } else if (etype != ETYPE_MASTER) {
-                res = handle_variable_length_value(NULL, &si, &di, 0, sz, etype,
-                                                   val, elen, hdrlen, NULL, 1,
-                                                   f, hdl);
-            } else {
+            if (etype == ETYPE_MASTER) {
                 if (!anon) {
                     res = push_master(stk, data, eid, NULL, NULL, NULL, NULL,
                                       NULL);
@@ -1322,10 +1315,22 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
                 if (flags & EBML_READ_FLAG_MASTER) {
                     res = invoke_user_cb(val, ETYPE_MASTER, NULL, NULL, 0, elen,
                                          hdrlen, 1, hdl);
+                    if (res != 0)
+                        return res;
                 }
+            } else {
+                if (ETYPE_IS_FIXED_WIDTH(etype)) {
+                    res = handle_fixed_width_value(&si, &di, sz, etype, val,
+                                                   elen, hdrlen, NULL, 1, f,
+                                                   hdl);
+                } else {
+                    res = handle_variable_length_value(NULL, &si, &di, 0, sz,
+                                                       etype, val, elen, hdrlen,
+                                                       NULL, 1, f, hdl);
+                }
+                if (res != 0)
+                    return res;
             }
-            if (res != 0)
-                return res;
         }
 
         if (f != NULL && fputc('\n', f) == EOF)
