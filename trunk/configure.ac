@@ -24,16 +24,16 @@ AM_INIT_AUTOMAKE([foreign no-define subdir-objects])
 AM_SILENT_RULES([yes])
 LT_INIT([disable-static])
 
-case $target_os in
-    *darwin*)
-        platform=darwin;;
-    *freebsd*)
-        platform=freebsd;;
-    *linux*)
-        platform=linux;;
-    *)
-        AC_MSG_ERROR([unsupported platform], [1]);;
-esac
+AS_CASE(
+    [$target_os],
+        [*darwin*],
+            [platform=darwin],
+        [*freebsd*],
+            [platform=freebsd],
+        [*linux*],
+            [platform=linux],
+        [AC_MSG_ERROR([unsupported platform], [1])]
+)
 AM_CONDITIONAL([APPLE], [test "x$platform" = "xdarwin"])
 AM_CONDITIONAL([FREEBSD], [test "x$platform" = "xfreebsd"])
 AM_CONDITIONAL([LINUX], [test "x$platform" = "xlinux"])
@@ -77,14 +77,15 @@ AC_SUBST([ebml_semantics_schema_dep])
 
 AC_ARG_ENABLE([debugging],
               [  --enable-debugging      enable debugging],
-              [case $enableval in
-                   yes)
-                       debug=true;;
-                   no)
-                       debug=false;;
-                   *)
-                       AC_MSG_ERROR([invalid "--enable-debugging" argument]);;
-               esac],
+              [AS_CASE(
+                  [$enableval],
+                      [yes],
+                          [debug=true],
+                      [no],
+                          [debug=false],
+                      [AC_MSG_ERROR([invalid "--enable-debugging" argument])]
+               )
+              ],
               [debug=false])
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
