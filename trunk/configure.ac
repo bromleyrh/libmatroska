@@ -77,7 +77,7 @@ AC_SUBST([ebml_semantics_schema_dep])
 
 AC_ARG_ENABLE([debugging],
               [  --enable-debugging      enable debugging],
-              [case "$enableval" in
+              [case $enableval in
                    yes)
                        debug=true;;
                    no)
