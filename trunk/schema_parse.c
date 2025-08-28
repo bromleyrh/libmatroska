@@ -111,13 +111,13 @@ syncf(FILE *f)
     int fd;
 
     if (fflush(f) == EOF)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     fd = fileno(f);
     while (fsync(fd) == -1) {
         if (errno != EINTR) {
             if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_ERRNO;
+                return MINUS_CERRNO;
             break;
         }
     }
@@ -150,7 +150,7 @@ ns_key_output(const void *k, void *ctx)
     sz = 16;
     dir_stk = malloc(sz * sizeof(*dir_stk));
     if (dir_stk == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     dir_stk[0] = key;
     len = 1;
@@ -162,7 +162,7 @@ ns_key_output(const void *k, void *ctx)
             sz *= 2;
             tmp = realloc(dir_stk, sz * sizeof(*tmp));
             if (tmp == NULL) {
-                err = MINUS_ERRNO;
+                err = MINUS_CERRNO;
                 goto err;
             }
             dir_stk = tmp;
@@ -231,7 +231,7 @@ ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
 
     k = malloc(sizeof(*k));
     if (k == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     k->addr = key->addr;
     k->name = key->name;
@@ -282,7 +282,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
 
     s = strdup(path);
     if (s == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     name = strtok_r(s, "/", &saveptr);
     if (name == NULL) {
@@ -328,7 +328,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
     if (res == 0) {
         k.name = strdup(k.name);
         if (k.name == NULL) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             goto err;
         }
         *retkey = k;
@@ -394,7 +394,7 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
 
     idnode = malloc(sizeof(*idnode));
     if (idnode == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     prop = xmlGetProp(node, (unsigned char *)"type");
     if (prop == NULL) {
@@ -471,7 +471,7 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
 
     k = malloc(sizeof(*k));
     if (k == NULL) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         goto err5;
     }
 
@@ -798,7 +798,7 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype,
         if (strcmp("ebml", doctype) != 0) {
             idnode = malloc(sizeof(*idnode));
             if (idnode == NULL) {
-                err = MINUS_ERRNO;
+                err = MINUS_CERRNO;
                 goto err1;
             }
 
@@ -809,7 +809,7 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype,
             k.name = strdup(strcmp("matroska_semantics", doctype) == 0
                             ? "EBMLSemantics" : "EBML");
             if (k.name == NULL) {
-                err = MINUS_ERRNO;
+                err = MINUS_CERRNO;
                 goto err3;
             }
             k.addr = NULL;
@@ -894,24 +894,24 @@ process_paths(int infd, int outfd)
 
     infd = dup(infd);
     if (infd == -1)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     inf = fdopen(infd, "r");
     if (inf == NULL) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         close(infd);
         return res;
     }
 
     outfd = dup(outfd);
     if (outfd == -1) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         goto err1;
     }
 
     outf = fdopen(outfd, "w");
     if (outf == NULL) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         close(outfd);
         goto err1;
     }
@@ -948,7 +948,7 @@ process_paths(int infd, int outfd)
 
         k = malloc(sizeof(*k));
         if (k == NULL) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             goto err4;
         }
 
@@ -973,7 +973,7 @@ process_paths(int infd, int outfd)
     if (res != 0)
         goto err2;
 
-    res = fclose(outf) == EOF ? MINUS_ERRNO : 0;
+    res = fclose(outf) == EOF ? MINUS_CERRNO : 0;
     fclose(inf);
 
     return res;

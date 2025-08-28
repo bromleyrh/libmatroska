@@ -5,6 +5,8 @@
 #define _FILE_OFFSET_BITS 64
 
 #include "common.h"
+#include "debug.h"
+#include "std_sys.h"
 #include "zlib_stream.h"
 
 #include <errno.h>
@@ -23,7 +25,7 @@ static int
 print_err(FILE *f, int errdes)
 {
     err_print(f, &errdes);
-    return errdes;
+    return errdes < ERRDES_MIN ? -sys_rmaperror(-errdes) : errdes;
 }
 
 static int
@@ -31,7 +33,7 @@ zlib_stream_cb(const void *buf, size_t len, void *ctx)
 {
     FILE *f = *(FILE **)ctx;
 
-    return fwrite(buf, 1, len, f) == len ? 0 : MINUS_ERRNO;
+    return fwrite(buf, 1, len, f) == len ? 0 : MINUS_CERRNO;
 }
 
 int

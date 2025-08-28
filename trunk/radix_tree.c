@@ -4,13 +4,13 @@
 
 #include "common.h"
 #include "radix_tree.h"
+#include "util.h"
 
 #include <dynamic_array.h>
 #include <malloc_ext.h>
 #include <strings_ext.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -91,7 +91,7 @@ check_nchildren(struct radix_tree_node *node)
             ++n;
     }
 
-    return (size_t)node->nchildren == n ? 0 : -EIO;
+    return (size_t)node->nchildren == n ? 0 : -E_IO;
 }
 
 static void
@@ -246,10 +246,10 @@ do_insert(struct radix_tree *rt, struct radix_tree_node *node, const char *str,
     for (;;) {
         DEBUG {
             if (!NODE_VALID(node))
-                return -EIO;
+                return -E_IO;
             if (check_nchildren(node) != 0) {
                 fputs("nchildren invalid\n", stderr);
-                return -EIO;
+                return -E_IO;
             }
         }
 
@@ -260,7 +260,7 @@ do_insert(struct radix_tree *rt, struct radix_tree_node *node, const char *str,
 
         idx = traverse_edge(&edge, &str);
         if (idx == -1)
-            return -EADDRINUSE;
+            return -E_ADDRINUSE;
 
         if (edge.label[idx] != '\0')
             goto branch;
@@ -308,10 +308,10 @@ do_search(struct radix_tree *rt, struct radix_tree_node *node, const char *str,
 
         DEBUG {
             if (!NODE_VALID(node))
-                return -EIO;
+                return -E_IO;
             if (check_nchildren(node) != 0) {
                 fputs("nchildren invalid\n", stderr);
-                return -EIO;
+                return -E_IO;
             }
         }
 
@@ -360,24 +360,24 @@ do_delete(struct radix_tree *rt, struct radix_tree_node *node, const char *str)
     for (;;) {
         DEBUG {
             if (!NODE_VALID(node))
-                return -EIO;
+                return -E_IO;
             if (check_nchildren(node) != 0) {
                 fputs("nchildren invalid\n", stderr);
-                return -EIO;
+                return -E_IO;
             }
         }
 
         digit = str[0];
 
         if (find_edge(node, digit, &edge) == -1)
-            return -EADDRNOTAVAIL;
+            return -E_ADDRNOTAVAIL;
 
         ret = traverse_edge(&edge, &str);
         if (ret == -1)
             break;
 
         if (edge.label[ret] != '\0')
-            return -EADDRNOTAVAIL;
+            return -E_ADDRNOTAVAIL;
 
         parent = node;
         parentidx = digit;
@@ -524,11 +524,11 @@ do_walk(struct radix_tree_node *node, radix_tree_walk_cb_t fn, void *ctx)
 
         DEBUG {
             if (!NODE_VALID(info->node))
-                return -EIO;
+                return -E_IO;
             ret = check_nchildren(info->node);
             if (ret != 0) {
                 fputs("nchildren invalid\n", stderr);
-                return -EIO;
+                return -E_IO;
             }
         }
 
@@ -602,11 +602,11 @@ do_serialize(struct radix_tree_node *node, radix_tree_sr_cb_t fn, void *ctx)
 
         DEBUG {
             if (!NODE_VALID(info->node))
-                return -EIO;
+                return -E_IO;
             ret = check_nchildren(info->node);
             if (ret != 0) {
                 fputs("nchildren invalid\n", stderr);
-                return -EIO;
+                return -E_IO;
             }
         }
 
@@ -661,7 +661,7 @@ radix_tree_new(struct radix_tree **rt, size_t val_size)
     struct radix_tree *ret;
 
     if (rt == NULL)
-        return -EINVAL;
+        return -E_INVAL;
 
     if (omalloc(&ret) == NULL)
         return MINUS_ERRNO;
@@ -686,7 +686,7 @@ int
 radix_tree_free(struct radix_tree *rt)
 {
     if (rt == NULL || !TREE_VALID(rt))
-        return -EINVAL;
+        return -E_INVAL;
 
     rt->magic = 0;
 
@@ -702,7 +702,7 @@ radix_tree_insert(struct radix_tree *rt, const char *str, const void *val)
     int err;
 
     if (rt == NULL || !TREE_VALID(rt) || str == NULL || val == NULL)
-        return -EINVAL;
+        return -E_INVAL;
 
     err = do_insert(rt, rt->root, str, val);
     if (err)
@@ -721,7 +721,7 @@ radix_tree_search(struct radix_tree *rt, const char *str, void *val)
     int ret;
 
     if (rt == NULL || !TREE_VALID(rt) || str == NULL || val == NULL)
-        return -EINVAL;
+        return -E_INVAL;
 
     ret = do_search(rt, rt->root, str, val);
 
@@ -741,7 +741,7 @@ radix_tree_delete(struct radix_tree *rt, const char *str)
     int err;
 
     if (rt == NULL || !TREE_VALID(rt) || str == NULL)
-        return -EINVAL;
+        return -E_INVAL;
 
     err = do_delete(rt, rt->root, str);
     if (err)
@@ -758,7 +758,7 @@ int
 radix_tree_walk(const struct radix_tree *rt, radix_tree_walk_cb_t fn, void *ctx)
 {
     if (rt == NULL || !TREE_VALID(rt) || fn == NULL)
-        return -EINVAL;
+        return -E_INVAL;
 
     return do_walk(rt->root, fn, ctx);
 }
@@ -768,7 +768,7 @@ radix_tree_serialize(const struct radix_tree *rt, radix_tree_sr_cb_t fn,
                      void *ctx)
 {
     if (rt == NULL || !TREE_VALID(rt) || fn == NULL)
-        return -EINVAL;
+        return -E_INVAL;
 
     return do_serialize(rt->root, fn, ctx);
 }
@@ -777,7 +777,7 @@ int
 radix_tree_stats(const struct radix_tree *rt, struct radix_tree_stats *stats)
 {
     if (rt == NULL || !TREE_VALID(rt))
-        return -EINVAL;
+        return -E_INVAL;
 
     if (stats != NULL) {
 #ifdef NDEBUG

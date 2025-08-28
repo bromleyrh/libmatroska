@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "debug.h"
+#include "util.h"
 #include "zlib_stream.h"
 
 #include <malloc_ext.h>
@@ -11,7 +12,6 @@
 #undef in
 #include <zlib.h>
 
-#include <errno.h>
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -36,17 +36,17 @@ xlat_zlib_err(int err)
         int         ret:31;
     } errmap[] = {
         ENTRY(Z_OK,             0),
-        ENTRY(Z_MEM_ERROR,      -ENOMEM),
-        ENTRY(Z_VERSION_ERROR,  -EPROTONOSUPPORT),
-        ENTRY(Z_STREAM_ERROR,   -EINVAL)
+        ENTRY(Z_MEM_ERROR,      -E_NOMEM),
+        ENTRY(Z_VERSION_ERROR,  -E_PROTONOSUPPORT),
+        ENTRY(Z_STREAM_ERROR,   -E_INVAL)
     };
     const struct ent *ent;
 
     if (err >= (int)ARRAY_SIZE(errmap))
-        return -EIO;
+        return -E_IO;
 
     ent = &errmap[-err];
-    return ent->valid ? ent->ret : -EIO;
+    return ent->valid ? ent->ret : -E_IO;
 }
 
 #undef ENTRY
@@ -58,7 +58,7 @@ zlib_stream_init(zlib_stream_hdl_t *hdl,
     struct zlib_stream *ret;
 
     if (omalloc(&ret) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     ret->s.next_in = NULL;
 
@@ -82,7 +82,7 @@ zlib_stream_destroy(zlib_stream_hdl_t hdl)
 
     free(hdl);
 
-    return ret == Z_OK ? 0 : ERR_TAG(EIO);
+    return ret == Z_OK ? 0 : ERR_TAG(E_IO);
 }
 
 int

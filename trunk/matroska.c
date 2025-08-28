@@ -8,6 +8,7 @@
 #include "debug.h"
 #include "ebml.h"
 #include "matroska.h"
+#include "std_sys.h"
 #include "vint.h"
 
 #include <avl_tree.h>
@@ -169,7 +170,7 @@ static int _matroska_read(FILE *, matroska_hdl_t, int,
 static int
 print_handler(FILE *f, const char *func, const char *val)
 {
-    return fprintf(f, "%s(): %s\n", func, val) < 0 ? -EIO : 0;
+    return fprintf(f, "%s(): %s\n", func, val) < 0 ? -E_IO : 0;
 }
 
 #endif
@@ -245,7 +246,7 @@ parse_xiph_lacing_header(const void *buf, size_t len, size_t totlen,
     }
 
     if (totframesz >= totlen) {
-        err = ERR_TAG(EILSEQ);
+        err = ERR_TAG(E_ILSEQ);
         goto err;
     }
 
@@ -362,7 +363,7 @@ parse_ebml_lacing_header(const void *buf, size_t len, size_t totlen,
     return 1;
 
 err2:
-    err = ERR_TAG(EILSEQ);
+    err = ERR_TAG(E_ILSEQ);
 err1:
     assert(err < 0);
     return err;
@@ -380,7 +381,7 @@ get_track_data(struct matroska_state *state, uint64_t trackno,
     ret = &k;
     res = avl_tree_search(state->track_data, &ret, &ret);
     if (res != 1)
-        return ERR_TAG(res == 0 ? EILSEQ : -res);
+        return ERR_TAG(res == 0 ? E_ILSEQ : sys_maperror(-res));
 
     *tdata = ret;
     return 0;
@@ -502,13 +503,13 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
     (void)bufhdl;
 
     if (etype != ETYPE_BINARY)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
 
     state = ctx;
 
     if (val != NULL) {
         if (state->data_len != 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         state->block_hdr = state->lacing_hdr = 0;
         PRINT_HANDLER_INFO(val);
         return 0;
@@ -524,7 +525,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
             fprintf(stderr, "Block data length mismatch: %zu byte%s vs. %zu "
                             "byte%s\n",
                     PL(state->data_len), PL(len));
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         }
         state->data_len = 0;
 
@@ -593,7 +594,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
     sz = MIN(state->hdr_sz, len);
 
     if (sz > sizeof(state->hdr_buf) - state->hdr_len)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
 
     if (sz > 0) {
         memcpy(state->hdr_buf + state->hdr_len, buf, sz);
@@ -620,7 +621,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
         if (ret != 0)
             return ret;
         if (datalen != state->hdr_len - BLOCK_HDR_FIXED_LEN)
-            return ERR_TAG(EILSEQ);
+            return ERR_TAG(E_ILSEQ);
 
         timestamp.bytes[0] = state->hdr_buf[datalen+1];
         timestamp.bytes[1] = state->hdr_buf[datalen];
@@ -628,7 +629,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
         flags = state->hdr_buf[datalen + BLOCK_HDR_TIMESTAMP_LEN];
 
         if ((flags & BLOCK_FLAG_RESERVED) != 0)
-            return ERR_TAG(EILSEQ);
+            return ERR_TAG(E_ILSEQ);
 
         state->lacing_type = flags & BLOCK_FLAG_LACING_MASK;
 
@@ -643,7 +644,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
             discardable = FLAG_VAL(flags, DISCARDABLE);
         else {
             if (tdata->keyframe != 0)
-                return ERR_TAG(EILSEQ);
+                return ERR_TAG(E_ILSEQ);
             discardable = -1;
         }
 
@@ -687,7 +688,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
 
         q = lldiv(totlen - 1, tdata->num_frames);
         if (q.rem != 0)
-            return ERR_TAG(EILSEQ);
+            return ERR_TAG(E_ILSEQ);
         tdata->frame_sz[0] = q.quot;
         tdata->frame_idx = 0;
 
@@ -718,7 +719,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
                                      * ETYPE_MAX_FIXED_WIDTH;
             state->lacing_hdr_buf = malloc(state->lacing_hdr_sz);
             if (state->lacing_hdr_buf == NULL)
-                return ERR_TAG(errno);
+                return ERR_TAG(en);
             state->lacing_hdr_len = 0;
 
             if (tdata->num_frame_sz < state->lacing_nframes) {
@@ -726,7 +727,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
                 size_t newsz = 2 * state->lacing_nframes;
 
                 if (oreallocarray(tdata->frame_sz, &tmp, newsz) == NULL)
-                    return ERR_TAG(errno);
+                    return ERR_TAG(en);
                 tdata->frame_sz = tmp;
                 tdata->num_frame_sz = newsz;
             }
@@ -813,7 +814,7 @@ block_input_handler(const char *val, enum etype etype, void **outbuf,
     (void)off;
 
     if (!simple)
-        return ERR_TAG(ENOSYS);
+        return ERR_TAG(E_NOSYS);
 
     err = (*state->cb.input_cb)(&trackno, NULL, &nbytes, NULL, NULL,
                                 state->ctx);
@@ -851,7 +852,7 @@ block_input_handler(const char *val, enum etype etype, void **outbuf,
     if (err)
         goto err;
     if ((size_t)nbytes != len) {
-        err = -EIO;
+        err = -E_IO;
         goto err;
     }
 
@@ -952,28 +953,28 @@ matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
         err = avl_tree_new(&state->track_data, sizeof(struct track_data *),
                            &track_data_cmp, 0, NULL, NULL, NULL);
         if (err)
-            return ERR_TAG(-err);
+            return ERR_TAG(sys_maperror(-err));
     }
 
     if (val == NULL) {
         if (etype != ETYPE_UINTEGER)
-            return ERR_TAG(EILSEQ);
+            return ERR_TAG(E_ILSEQ);
 
         if (ocalloc(&tdata, 1) == NULL)
-            return ERR_TAG(errno);
+            return ERR_TAG(en);
 
         tdata->trackno = edata->uinteger;
         tdata->compalg = CONTENT_COMP_ALGO_NONE;
 
         tdata->num_frame_sz = 8;
         if (oallocarray(&tdata->frame_sz, tdata->num_frame_sz) == NULL) {
-            err = ERR_TAG(errno);
+            err = ERR_TAG(en);
             goto err;
         }
 
         err = avl_tree_insert(state->track_data, &tdata);
         if (err) {
-            err = ERR_TAG(-err);
+            err = ERR_TAG(sys_maperror(-err));
             free(tdata->frame_sz);
             goto err;
         }
@@ -1041,7 +1042,7 @@ matroska_contentcompalgo_handler(const char *val, enum etype etype,
         return 0;
 
     if (etype != ETYPE_UINTEGER)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
 
     if (val == NULL) {
         struct track_data *tdata;
@@ -1089,7 +1090,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
         return 0;
 
     if (etype != ETYPE_BINARY)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
 
     state = ctx;
 
@@ -1101,7 +1102,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 
     if (buf == NULL) {
         if (tdata->num_stripped_bytes != length)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         return 0;
     }
 
@@ -1113,7 +1114,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
 
         stripped_bytes = realloc(tdata->stripped_bytes, num_stripped_bytes);
         if (stripped_bytes == NULL)
-            return ERR_TAG(errno);
+            return ERR_TAG(en);
         memcpy((char *)stripped_bytes + tdata->num_stripped_bytes, *buf,
                length);
 
@@ -1140,7 +1141,7 @@ matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
     void *argsp;
 
     if (ocalloc(&ret, 1) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     if (fns == NULL) {
         struct matroska_file_args *fileargsp = args;
@@ -1278,14 +1279,14 @@ matroska_error(struct matroska_error_info *info, int errdes, int flags)
 
     err_info_free(inf, freeall);
 
-    return info->errcode;
+    return -sys_rmaperror(-info->errcode);
 }
 
 int
 matroska_print_err(FILE *f, int errdes)
 {
     err_print(f, &errdes);
-    return errdes;
+    return errdes < ERRDES_MIN ? -sys_rmaperror(-errdes) : errdes;
 }
 
 /* vi: set expandtab sw=4 ts=4: */

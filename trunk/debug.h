@@ -7,6 +7,8 @@
 
 #include "config.h"
 
+#include "std_sys.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -15,6 +17,19 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+
+#ifndef GCC_PRAGMA
+#ifdef __GNUC__
+#define _GCC_PRAGMA(pragma) _Pragma(#pragma)
+#define GCC_PRAGMA(pragma) _GCC_PRAGMA(GCC pragma)
+#else
+#define GCC_PRAGMA(pragma)
+#endif
+#endif
+
+#define GCC_DIAGNOSTIC_PUSH() GCC_PRAGMA(diagnostic push)
+#define GCC_DIAGNOSTIC_POP() GCC_PRAGMA(diagnostic pop)
+#define GCC_DIAGNOSTIC_IGNORED(warn) _GCC_DIAGNOSTIC_IGNORED_##warn
 
 struct err_info_bt {
     int         errdes;
@@ -65,12 +80,19 @@ void trace_handler_##id(void);
 LIST_TRACE_HANDLERS(X)
 #undef X
 
+#ifndef en
+#define en sys_maperrn()
+#endif
+
 #ifndef NO_ASSERT_MACROS
 #ifndef ERRNO
 static _Thread_local int asserttmp;
 
-#define ERRNO (asserttmp = errno, assert(asserttmp > 0), asserttmp)
-#define MINUS_ERRNO (asserttmp = -errno, assert(asserttmp < 0), asserttmp)
+#define CERRNO (asserttmp = errno, assert(asserttmp > 0), asserttmp)
+#define MINUS_CERRNO (asserttmp = -errno, assert(asserttmp < 0), asserttmp)
+
+#define ERRNO (asserttmp = en, assert(asserttmp > 0), asserttmp)
+#define MINUS_ERRNO (asserttmp = -en, assert(asserttmp < 0), asserttmp)
 #endif
 
 #define ERR_TAG(errn) (asserttmp = err_tag_bt(-(errn)), assert(asserttmp > 0), \

@@ -310,7 +310,7 @@ enable_debugging_features()
     };
 
     if (setrlimit(RLIMIT_CORE, &rlim) == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         fprintf(stderr, "Couldn't set resource limit: %s\n", strerror(-err));
         return err;
     }
@@ -332,7 +332,7 @@ set_up_signal_handlers()
     struct sigaction sa = {.sa_handler = &pipe_handler};
 
     if (sigaction(SIGPIPE, &sa, NULL) == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         fprintf(stderr, "Couldn't set signal handler: %s\n", strerror(-err));
         return err;
     }
@@ -544,14 +544,14 @@ syncf(FILE *f)
     };
 
     if (fflush(f) == EOF)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     fd = fileno(f);
     while (fsync(fd) == -1) {
         if (errno != EINTR) {
             if (errno < 0 || errno >= (int)ARRAY_SIZE(fsync_na_errs)
                 || !fsync_na_errs[errno])
-                return MINUS_ERRNO;
+                return MINUS_CERRNO;
             break;
         }
     }
@@ -676,7 +676,7 @@ unescape_pathname(char **dst, const char *src, const char *escchars)
     sz = 16;
     ret = malloc(sz);
     if (ret == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
     len = 0;
 
     first = 1;
@@ -701,7 +701,7 @@ unescape_pathname(char **dst, const char *src, const char *escchars)
             sz *= 2;
             tmp = realloc(ret, sz);
             if (tmp == NULL) {
-                err = MINUS_ERRNO;
+                err = MINUS_CERRNO;
                 free(ret);
                 return err;
             }
@@ -2672,13 +2672,13 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     infd = dup(infd);
     if (infd == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         close(infd);
         goto err1;
     }
@@ -2714,14 +2714,14 @@ index_json(int infd, const char *index_pathname, const char *filename)
 
     len = strlen(filename) + 1;
     if (oallocarray(&k, len) == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err6;
     }
 
     src = filename;
     ret = mbsrtowcs(k, &src, len, memset(&s, 0, sizeof(s)));
     if (ret == (size_t)-1) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err7;
     }
     if (ret == len) {
@@ -2788,13 +2788,13 @@ output_json(const char *index_pathname, const char *filename, int outfd,
 
     outfd = dup(outfd);
     if (outfd == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         close(outfd);
         goto err1;
     }
@@ -2844,7 +2844,7 @@ output_json(const char *index_pathname, const char *filename, int outfd,
     json_deinit();
 
     if (fclose(f) == EOF) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
@@ -2889,13 +2889,13 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
 
     infd = dup(infd);
     if (infd == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         close(infd);
         goto err1;
     }
@@ -2924,7 +2924,7 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
             ret = getline(&line, &linecap, f);
             if (ret == -1) {
                 if (errno != 0) {
-                    err = MINUS_ERRNO;
+                    err = MINUS_CERRNO;
                     free(line);
                     goto err4;
                 }
@@ -3001,13 +3001,13 @@ output_index(const char *index_pathname, const char *pathname, int outfd,
 
     outfd = dup(outfd);
     if (outfd == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         close(outfd);
         goto err1;
     }
@@ -3041,7 +3041,7 @@ output_index(const char *index_pathname, const char *pathname, int outfd,
         goto err2;
 
     if (fclose(f) == EOF) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
@@ -3192,7 +3192,7 @@ update_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     ret = getline(&line, &linecap, f);
     if (ret == -1) {
         if (errno != 0) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             goto err;
         }
         return 0;

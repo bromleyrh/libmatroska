@@ -46,13 +46,13 @@ pkgconfig_DATA = libmatroska.pc
 
 $(pkgconfig_DATA): config.status
 
-noinst_HEADERS = common.h debug.h ebml.h element.h parser.h parser_defs.h \
-	radix_tree.h util.h vint.h zlib_stream.h
+noinst_HEADERS = common.h debug.h ebml.h element.h err.h parser.h \
+	parser_defs.h radix_tree.h std_sys.h util.h vint.h zlib_stream.h
 
-BUILT_SOURCES = ebml_schema.h matroska_schema.h matroska_semantics.h \
+BUILT_SOURCES = ebml_schema.h errtbl.h matroska_schema.h matroska_semantics.h \
 	mkv_catalog_obj.h version.c
 
-CLEANFILES = ebml_schema.h matroska_schema.h matroska_semantics.h \
+CLEANFILES = ebml_schema.h errtbl.h matroska_schema.h matroska_semantics.h \
 	mkv_catalog_obj.h version.c
 
 build_date_str = "build_date=$(build_date)"
@@ -63,6 +63,11 @@ ebml_schema_dep = @ebml_schema_dep@
 
 ebml_semantics_schema = @ebml_semantics_schema@
 ebml_semantics_schema_dep = @ebml_semantics_schema_dep@
+
+errtbl.h: errc
+	"./$^" >"$@"
+
+std_sys.c: errtbl.h
 
 ebml_schema.h: schema_parse $(ebml_schema_dep) schemas/ebml.m4
 	./schema_parse_cached schemas/ebml.m4 $(ebml_schema) ebml "$@"
@@ -103,7 +108,8 @@ mkv_cat_DEPENDENCIES = libmatroska.la
 mkv_catalog_SOURCES = debug.c mkv_catalog.c util.c
 mkv_catalog_CPPFLAGS = $(AM_CPPFLAGS) @libjson_cppflags@ @libutil_cppflags@
 mkv_catalog_CFLAGS = $(AM_CFLAGS)
-mkv_catalog_LDADD = @libjson_link_dep@ @libutil_link_dep@
+mkv_catalog_LDADD = libstdsys.a @libjson_link_dep@ @libutil_link_dep@
+mkv_catalog_DEPENDENCIES = libstdsys.a
 
 mkv_dump_SOURCES = mkv_dump.c
 mkv_dump_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libutil_cppflags@
@@ -116,7 +122,8 @@ mkv_dump_DEPENDENCIES = libmatroska.la
 mkv_join_SOURCES = debug.c mkv_join.c util.c
 mkv_join_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@
 mkv_join_CFLAGS = $(AM_CFLAGS)
-mkv_join_LDADD = @libjson_link_dep@
+mkv_join_LDADD = libstdsys.a @libjson_link_dep@
+mkv_join_DEPENDENCIES = libstdsys.a
 
 mkv_ls_SOURCES = mkv_ls.c
 mkv_ls_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@ @libutil_cppflags@
@@ -138,20 +145,32 @@ mkv_write_DEPENDENCIES = libmatroska.la
 zlib_cat_SOURCES = debug.c util.c zlib_cat.c zlib_stream.c
 zlib_cat_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @zlib_cppflags@
 zlib_cat_CFLAGS = $(AM_CFLAGS)
-zlib_cat_LDADD = @libutil_link_dep@ @zlib_link_dep@
+zlib_cat_LDADD = libstdsys.a @libutil_link_dep@ @zlib_link_dep@
+zlib_cat_DEPENDENCIES = libstdsys.a
 
 bin_SCRIPTS = lsmkv
 
-noinst_PROGRAMS = schema_parse
+noinst_LIBRARIES = libstdsys.a
+
+libstdsys_a_SOURCES = std_sys.c
+libstdsys_a_CPPFLAGS = $(AM_CPPFLAGS)
+libstdsys_a_CFLAGS = $(AM_CFLAGS)
+
+noinst_PROGRAMS = errc schema_parse
+
+errc_SOURCES = errc.c
+errc_CPPFLAGS = $(AM_CPPFLAGS)
+errc_CFLAGS = $(AM_CFLAGS)
 
 schema_parse_SOURCES = debug.c element.c radix_tree.c schema_parse.c util.c \
 	vint.c
 schema_parse_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @libxml2_cppflags@
 schema_parse_CFLAGS = $(AM_CFLAGS)
-schema_parse_LDADD = @libutil_link_dep@ @libxml2_link_dep@
+schema_parse_LDADD = libstdsys.a @libutil_link_dep@ @libxml2_link_dep@
+schema_parse_DEPENDENCIES = libstdsys.a
 
-libmatroska_la_SOURCES = debug.c ebml.c element.c matroska.c parser.c util.c \
-	vint.c zlib_stream.c
+libmatroska_la_SOURCES = debug.c ebml.c element.c matroska.c parser.c \
+	std_sys.c util.c vint.c zlib_stream.c
 libmatroska_la_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @zlib_cppflags@
 libmatroska_la_CFLAGS = $(AM_CFLAGS)
 libmatroska_la_LDFLAGS = -version-info @lm_cur@:@lm_rev@:@lm_age@ \

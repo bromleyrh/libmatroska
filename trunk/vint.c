@@ -11,7 +11,6 @@
 #undef NO_ASSERT_MACROS
 
 #include <assert.h>
-#include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stddef.h>
@@ -67,7 +66,7 @@ _u64_to_vint(uint64_t x, char *y, size_t bufsz)
     --i;
     b = (x & UINT64_C(0xff) << i * CHAR_BIT) >> i * CHAR_BIT;
     if (b >= m)
-        return -ERANGE;
+        return -E_RANGE;
     y[0] = m | b;
     --bufsz;
     while (i > 0) {
@@ -87,7 +86,7 @@ vint_to_u64(const char *x, uint64_t *y, size_t *sz)
 
     /* find VINT_MARKER */
     if (*x == 0)
-        return ERR_TAG(EINVAL);
+        return ERR_TAG(E_INVAL);
 
     if (sz == NULL && y == NULL)
         return 0;
@@ -135,18 +134,18 @@ u64_to_vint(uint64_t x, char *y, size_t *bufsz)
         bnd <<= CHAR_BIT;
     }
     if (*bufsz < len)
-        return ERR_TAG(EINVAL);
+        return ERR_TAG(E_INVAL);
 
     if (y == NULL)
         goto end;
 
     err = _u64_to_vint(x, y, len);
     if (err) {
-        if (err != -ERANGE)
+        if (err != -E_RANGE)
             return ERR_TAG(-err);
         ++len;
         if (*bufsz < len)
-            return ERR_TAG(EINVAL);
+            return ERR_TAG(E_INVAL);
         err = _u64_to_vint(x, y, len);
         if (err)
             return ERR_TAG(-err);

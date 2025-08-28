@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "debug.h"
+#include "std_sys.h"
 #include "util.h"
 
 #include <avl_tree.h>
@@ -39,6 +40,7 @@ struct err_info {
 struct err_info_walk_ctx {
     int     (*cb)(int, void *, void *);
     void    *ctx;
+    int     cb_err;
 };
 
 static _Thread_local struct err_data {
@@ -87,9 +89,14 @@ static int
 err_info_walk_cb(const void *keyval, void *ctx)
 {
     const struct err_info *info = keyval;
-    const struct err_info_walk_ctx *ectx = ctx;
+    int err;
+    struct err_info_walk_ctx *ectx = ctx;
 
-    return (*ectx->cb)(info->errcode, info->data, ectx->ctx);
+    err = (*ectx->cb)(info->errcode, info->data, ectx->ctx);
+    if (err)
+        ectx->cb_err = 1;
+
+    return err;
 }
 
 static int
@@ -99,7 +106,9 @@ init_err_data(struct err_data *err_data)
 
     err = avl_tree_new(&err_data->err_info, sizeof(struct err_info),
                        &err_info_cmp, 0, NULL, NULL, NULL);
-    if (!err)
+    if (err)
+        err = -sys_maperror(-err);
+    else
         err_data->curr_errdes = ERRDES_MIN;
 
     return err;
@@ -148,7 +157,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
     if (inf == NULL)
         goto err3;
     if (setvbuf(inf, NULL, _IOLBF, 0) == EOF) {
-        err = -ENOMEM;
+        err = -E_NOMEM;
         goto err2;
     }
     outf = fdopen(outpfd[0], "r");
@@ -156,7 +165,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
         goto err3;
 
     if (fprintf(inf, "%x\n", reloff) < 0) {
-        err = -EIO;
+        err = -E_IO;
         goto err2;
     }
 
@@ -164,7 +173,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
     len = 0;
     errno = 0;
     if (getline(&str1, &len, outf) == -1) {
-        err = errno == 0 ? -EIO : MINUS_ERRNO;
+        err = errno == 0 ? -E_IO : MINUS_ERRNO;
         goto err2;
     }
     len = strlen(str1);
@@ -178,7 +187,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
     len = 0;
     errno = 0;
     if (getline(&str2, &len, outf) == -1) {
-        err = errno == 0 ? -EIO : MINUS_ERRNO;
+        err = errno == 0 ? -E_IO : MINUS_ERRNO;
         free(str1);
         goto err2;
     }
@@ -193,7 +202,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
     free(str1);
     free(str2);
     if (res < 0) {
-        err = -EIO;
+        err = -E_IO;
         goto err2;
     }
 
@@ -242,7 +251,7 @@ err_tag(int errcode, void *data)
     struct err_info info;
 
     if (errcode >= ERRDES_MIN)
-        errcode = -EIO;
+        errcode = -E_IO;
 
     if (err_data.err_info == NULL) {
         if (init_err_data(&err_data) != 0)
@@ -305,12 +314,14 @@ err_clear(int errdes)
     struct err_info info;
 
     if (err_data.err_info == NULL)
-        return -ENOENT;
+        return -E_NOENT;
 
     info.errdes = errdes;
 
     err = avl_tree_delete(err_data.err_info, &info);
-    if (!err && errdes == err_data.curr_errdes - 1)
+    if (err)
+        err = -sys_maperror(-err);
+    else if (errdes == err_data.curr_errdes - 1)
         err_data.curr_errdes = errdes;
 
     return err;
@@ -320,13 +331,16 @@ int
 err_foreach(int (*cb)(int, void *, void *), void *ctx)
 {
     avl_tree_walk_ctx_t wctx = NULL;
+    int err;
     struct err_info_walk_ctx ectx;
 
     ectx.cb = cb;
     ectx.ctx = ctx;
+    ectx.cb_err = 0;
 
-    return avl_tree_walk(err_data.err_info, NULL, &err_info_walk_cb, &ectx,
-                         &wctx);
+    err = avl_tree_walk(err_data.err_info, NULL, &err_info_walk_cb, &ectx,
+                        &wctx);
+    return err && !ectx.cb_err ? -sys_maperror(-err) : err;
 }
 
 int
@@ -397,7 +411,7 @@ err_print(FILE *f, int *err)
     if (info == NULL)
         return 0;
 
-    ret = -EIO;
+    ret = -E_IO;
 
     if (fprintf(f, "Error at %s:%d\n", info->file, info->line) < 0)
         goto end;

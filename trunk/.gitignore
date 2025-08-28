@@ -21,6 +21,8 @@ Makefile.in
 *.stamp
 stamp-h1
 
+errtbl.h
+
 ebml_schema.h
 matroska_schema.h
 
@@ -30,6 +32,7 @@ mkv_catalog_obj.h
 
 version.c
 
+/errc
 /schema_parse
 
 .libs

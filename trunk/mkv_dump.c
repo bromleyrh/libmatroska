@@ -72,11 +72,11 @@ parse_track_spec(const char *trackno, const char *path, struct avl_tree *tcb)
 
     e.path = strdup(path);
     if (e.path == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     e.f = fopen(e.path, "w");
     if (e.f == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         fprintf(stderr, "Error opening %s: %s\n", e.path, strerror(-err));
         goto err1;
     }
@@ -104,11 +104,11 @@ parse_elem_spec(const char *elemno, const char *path, struct avl_tree *ecb)
 
     e.path = strdup(path);
     if (e.path == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     e.f = fopen(e.path, "w");
     if (e.f == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         fprintf(stderr, "Error opening %s: %s\n", e.path, strerror(-err));
         goto err1;
     }
@@ -186,7 +186,7 @@ syncfd(int fd)
     while (fsync(fd) == -1) {
         if (errno != EINTR) {
             if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_ERRNO;
+                return MINUS_CERRNO;
             break;
         }
     }
@@ -214,7 +214,7 @@ track_cb_free(const void *keyval, void *ctx)
     err = syncfd(fileno(tcb->f));
 
     if (fclose(tcb->f) == EOF)
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
 
     if (err) {
         fprintf(stderr, "Error closing %s: %s\n", tcb->path, strerror(-err));
@@ -246,7 +246,7 @@ elem_cb_free(const void *keyval, void *ctx)
     err = syncfd(fileno(ecb->f));
 
     if (fclose(ecb->f) == EOF)
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
 
     if (err) {
         fprintf(stderr, "Error closing %s: %s\n", ecb->path, strerror(-err));
@@ -312,7 +312,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         ret = fwrite(val->data, 1, val->len, e.f);
         if (ret != val->len) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             fprintf(stderr, "Error writing to %s: %s\n",
                     e.path, strerror(-res));
             return res;
@@ -361,7 +361,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
         ret = fwrite(buf, 1, len, e.f);
         if (ret != len) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             fprintf(stderr, "Error writing to %s: %s\n",
                     e.path, strerror(-res));
             return res;
@@ -399,7 +399,7 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         goto err2;
     }
     if (setvbuf(f, NULL, _IOLBF, 0) == EOF) {
@@ -420,7 +420,7 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
     }
 
     if (fclose(f) == EOF) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         errmsg = "Error closing output file";
         goto err2;
     }

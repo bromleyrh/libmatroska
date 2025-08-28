@@ -69,13 +69,13 @@ parse_track_spec(const char *trackno, const char *path, int fd,
     } else {
         e.path = strdup(path);
         if (e.path == NULL)
-            return MINUS_ERRNO;
+            return MINUS_CERRNO;
         e.fd = -1;
 
         e.f = fopen(e.path, "w");
     }
     if (e.f == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
         goto err1;
     }
@@ -142,7 +142,7 @@ syncfd(int fd)
     while (fsync(fd) == -1) {
         if (errno != EINTR) {
             if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_ERRNO;
+                return MINUS_CERRNO;
             break;
         }
     }
@@ -170,7 +170,7 @@ track_cb_free(const void *keyval, void *ctx)
     err = syncfd(fileno(tcb->f));
 
     if (fclose(tcb->f) == EOF)
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
 
     if (err) {
         fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
@@ -228,7 +228,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
         ret = fwrite(buf, 1, len, e.f);
         if (ret != len) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             fprintf(stderr, "Error writing to output file: %s\n",
                     strerror(-res));
             return res;

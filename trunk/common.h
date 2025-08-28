@@ -5,20 +5,26 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+#include "std_sys.h"
+
 #include <assert.h>
-#include <errno.h>
 
 #define EXPORTED __attribute__((__visibility__("default")))
+
+#define en sys_maperrn()
 
 #ifndef NO_ASSERT_MACROS
 static _Thread_local int asserttmp;
 
-#define ERRNO (asserttmp = errno, assert(asserttmp > 0), asserttmp)
-#define MINUS_ERRNO (asserttmp = -errno, assert(asserttmp < 0), asserttmp)
+#define CERRNO (asserttmp = errno, assert(asserttmp > 0), asserttmp)
+#define MINUS_CERRNO (asserttmp = -errno, assert(asserttmp < 0), asserttmp)
+
+#define ERRNO (asserttmp = en, assert(asserttmp > 0), asserttmp)
+#define MINUS_ERRNO (asserttmp = -en, assert(asserttmp < 0), asserttmp)
 #endif
 
-#define _STR(x) #x
-#define STR(x) _STR(x)
+#define STR_NO_EVAL(x) #x
+#define STR(x) STR_NO_EVAL(x)
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 

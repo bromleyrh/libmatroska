@@ -123,7 +123,7 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
     if (path1 != NULL) {
         cb->path = strdup(path1);
         if (cb->path == NULL)
-            return MINUS_ERRNO;
+            return MINUS_CERRNO;
         cb->fd = -1;
 
         cb->f = fopen(cb->path, "w");
@@ -134,14 +134,14 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->f = fdopen(cb->fd, "w");
     }
     if (cb->f == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
     if (path2 != NULL) {
         cb->datapath = strdup(path2);
         if (cb->datapath == NULL) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err2;
         }
         cb->datafd = -1;
@@ -154,14 +154,14 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->dataf = fdopen(cb->datafd, "w");
     }
     if (cb->dataf == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err3;
     }
 
     if (path3 != NULL) {
         cb->tracepath = strdup(path3);
         if (cb->tracepath == NULL) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err4;
         }
         cb->tracefd = -1;
@@ -179,7 +179,7 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         goto end;
     }
     if (cb->tracef == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err5;
     }
 
@@ -274,7 +274,7 @@ syncf(int fd)
     while (fsync(fd) == -1) {
         if (errno != EINTR) {
             if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_ERRNO;
+                return MINUS_CERRNO;
             break;
         }
     }
@@ -291,7 +291,7 @@ free_cb(struct cb *cb)
         err = syncf(fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
 
         if (err)
             fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
@@ -304,7 +304,7 @@ free_cb(struct cb *cb)
         err = tmp;
 
     if (fclose(cb->dataf) == EOF)
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
 
     if (err)
         fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
@@ -316,7 +316,7 @@ free_cb(struct cb *cb)
         err = tmp;
 
     if (fclose(cb->f) == EOF)
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
 
     if (err)
         fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
@@ -341,7 +341,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
     else {
         buf = malloc(len + 1);
         if (buf == NULL)
-            return MINUS_ERRNO;
+            return MINUS_CERRNO;
         memcpy(buf, data, len);
         buf[len] = '\0';
         data = buf;
@@ -349,7 +349,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
 
     str = malloc(len * sizeof(*str));
     if (str == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
@@ -359,7 +359,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
         src = data;
         if (mbsrtowcs(str, &src, len, memset(&s, 0, sizeof(s)))
             == (size_t)-1) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err2;
         }
         if (src == NULL)
@@ -367,7 +367,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
         len *= 2;
         tmp = realloc(str, len * sizeof(*tmp));
         if (tmp == NULL) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err2;
         }
         str = tmp;
@@ -539,7 +539,7 @@ cvt_binary_to_string(json_value_t *dst, matroska_metadata_t *src, size_t len,
 
     str = malloc(slen);
     if (str == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     i = 0;
     s = str;
@@ -615,7 +615,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
     idbuf = malloc(2 * buflen);
     if (idbuf == NULL)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
     value = idbuf + buflen;
 
     if (sscanf(id, "%s -> %s", idbuf, value) != 2)
@@ -629,7 +629,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             if (new_val) {
                 buf = realloc(ctxp->data, len);
                 if (buf == NULL) {
-                    res = MINUS_ERRNO;
+                    res = MINUS_CERRNO;
                     goto err1;
                 }
                 ctxp->data = buf;
@@ -687,7 +687,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
     buflen = 16;
     k = malloc(buflen * sizeof(*k));
     if (k == NULL) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         goto err1;
     }
 
@@ -696,7 +696,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         id = ctxp->export ? idbuf : value;
         if (mbsrtowcs(k, &id, buflen, memset(&s, 0, sizeof(s))) == (size_t)-1) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             goto err2;
         }
         if (id == NULL)
@@ -704,7 +704,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         buflen *= 2;
         tmp = realloc(k, buflen * sizeof(*tmp));
         if (tmp == NULL) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             goto err2;
         }
         k = tmp;
@@ -735,7 +735,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         k = wcsdup(L"hdr_len");
         if (k == NULL) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             goto err4;
         }
 
@@ -755,7 +755,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
             k = wcsdup(L"data_len");
             if (k == NULL) {
-                res = MINUS_ERRNO;
+                res = MINUS_CERRNO;
                 goto err4;
             }
 
@@ -982,7 +982,7 @@ end:
 
     off = ftello(ctxp->cb.dataf);
     if (off == -1)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
     if (fwrite(buf, 1, len, ctxp->cb.dataf) != len)
         goto err3;
 
@@ -1002,7 +1002,7 @@ end:
 
         tmp = realloc(ctxp->tracebuf, framelen);
         if (tmp == NULL)
-            return MINUS_ERRNO;
+            return MINUS_CERRNO;
         ctxp->tracebuf = tmp;
         ctxp->tracebufsz = framelen;
     }
@@ -1102,7 +1102,7 @@ cvt_mkv(int infd, struct ctx *ctx)
     case 0:
         break;
     default:
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         goto err1;
     }
 

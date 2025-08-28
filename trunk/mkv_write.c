@@ -151,11 +151,11 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
     if (path1 != NULL) {
         cb->path = strdup(path1);
         if (cb->path == NULL)
-            return MINUS_ERRNO;
+            return MINUS_CERRNO;
 
         cb->fd = open(path1, O_WRONLY);
         if (cb->fd == -1) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err1;
         }
     } else {
@@ -166,7 +166,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
     if (path2 != NULL) {
         cb->datapath = strdup(path2);
         if (cb->datapath == NULL) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err2;
         }
         cb->datafd = -1;
@@ -179,14 +179,14 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->dataf = fdopen(cb->datafd, "r");
     }
     if (cb->dataf == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err3;
     }
 
     if (path3 != NULL) {
         cb->tracepath = strdup(path3);
         if (cb->tracepath == NULL) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err4;
         }
         cb->tracefd = -1;
@@ -204,7 +204,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
         goto end;
     }
     if (cb->tracef == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err5;
     }
 
@@ -343,7 +343,7 @@ syncfd(int fd)
     while (fsync(fd) == -1) {
         if (errno != EINTR) {
             if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_ERRNO;
+                return MINUS_CERRNO;
             break;
         }
     }
@@ -360,7 +360,7 @@ free_cb(struct cb *cb)
         err = syncfd(fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
 
         if (err)
             fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
@@ -412,7 +412,7 @@ _cvt_string_to_utf8(char **dst, json_value_t src)
     slen = 16;
     str = malloc(slen);
     if (str == NULL) {
-        err = MINUS_ERRNO;
+        err = MINUS_CERRNO;
         goto err1;
     }
 
@@ -424,7 +424,7 @@ _cvt_string_to_utf8(char **dst, json_value_t src)
         srcp = val;
         if (wcsrtombs(str, &srcp, slen, memset(&s, 0, sizeof(s)))
             == (size_t)-1) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err2;
         }
         if (srcp == NULL)
@@ -432,7 +432,7 @@ _cvt_string_to_utf8(char **dst, json_value_t src)
         slen *= 2;
         tmp = realloc(str, slen);
         if (tmp == NULL) {
-            err = MINUS_ERRNO;
+            err = MINUS_CERRNO;
             goto err2;
         }
         str = tmp;
@@ -745,7 +745,7 @@ cvt_string_to_binary(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     val = malloc(vallen);
     if (val == NULL) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         goto err;
     }
 
@@ -822,12 +822,12 @@ bitstream_cb(uint64_t *trackno, void *buf, ssize_t *nbytes, int16_t *ts,
     off = ctxp->lastoff;
 
     if (fseeko(f, off, SEEK_SET) == -1)
-        return MINUS_ERRNO;
+        return MINUS_CERRNO;
 
     for (numread = 0; numread < toread; numread += ret) {
         ret = fread((char *)buf + numread, 1, toread - numread, f);
         if (ret == 0)
-            return feof(f) ? -EILSEQ : MINUS_ERRNO;
+            return feof(f) ? -EILSEQ : MINUS_CERRNO;
     }
 
     if (ctxp->cb.tracef != NULL) {
@@ -1013,7 +1013,7 @@ write_mkv(int infd, struct ctx *ctx)
     case 0:
         break;
     default:
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         errmsg = "Error initializing";
         goto err1;
     }
@@ -1022,13 +1022,13 @@ write_mkv(int infd, struct ctx *ctx)
 
     infd = dup(infd);
     if (infd == -1) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         close(infd);
         goto err1;
     }
@@ -1142,7 +1142,7 @@ write_mkv(int infd, struct ctx *ctx)
 
             if (awcstombs(&buf, elm.k, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
-                res = MINUS_ERRNO;
+                res = MINUS_CERRNO;
                 goto err7;
             }
 
@@ -1196,7 +1196,7 @@ write_mkv(int infd, struct ctx *ctx)
 
         buf = malloc(2 * buflen);
         if (buf == NULL) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             goto err7;
         }
         name = buf + buflen;
@@ -1220,7 +1220,7 @@ write_mkv(int infd, struct ctx *ctx)
         if (etype == ETYPE_MASTER) {
             mdata = malloc(sizeof(*mdata));
             if (mdata == NULL) {
-                res = MINUS_ERRNO;
+                res = MINUS_CERRNO;
                 goto err7;
             }
             if (cluster) {
@@ -1342,13 +1342,13 @@ separate_data(int infd, struct ctx *ctx)
 
     infd = dup(infd);
     if (infd == -1) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
-        res = MINUS_ERRNO;
+        res = MINUS_CERRNO;
         close(infd);
         goto err1;
     }
@@ -1429,7 +1429,7 @@ separate_data(int infd, struct ctx *ctx)
 
             if (awcstombs(&buf, elm.k, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
-                res = MINUS_ERRNO;
+                res = MINUS_CERRNO;
                 json_value_put(elm.v);
                 goto err5;
             }
@@ -1468,7 +1468,7 @@ separate_data(int infd, struct ctx *ctx)
 
         buf = malloc(2 * buflen);
         if (buf == NULL) {
-            res = MINUS_ERRNO;
+            res = MINUS_CERRNO;
             goto err5;
         }
         name = buf + buflen;

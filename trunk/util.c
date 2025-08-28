@@ -56,12 +56,12 @@ strerror_lr(int errnum, char *strerrbuf, size_t buflen, locale_t loc)
     old_errno = errno;
     errno = 0;
     ret = strerror_l(errnum, loc);
-    err = errno;
+    err = en;
     errno = old_errno;
     if (ret == NULL)
-        return err ? err : EIO;
+        return err ? err : E_IO;
 
-    return _strlcpy(strerrbuf, ret, buflen) < buflen ? err : ERANGE;
+    return _strlcpy(strerrbuf, ret, buflen) < buflen ? err : E_RANGE;
 #else
     (void)loc;
 
@@ -245,7 +245,7 @@ strperror_r(int errnum, char *strerrbuf, size_t buflen)
     err = strerror_lr(errnum, strerrbuf, buflen, loc);
     freelocale(loc);
     if (err) {
-        if (err == EINVAL)
+        if (err == E_INVAL)
             fmt = "Unknown error %d";
         goto err;
     }

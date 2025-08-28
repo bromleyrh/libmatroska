@@ -203,7 +203,7 @@ ebml_file_open(void **ctx, int ro, void *args)
     struct ebml_file_ctx *ret;
 
     if (omalloc(&ret) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     a = args;
 
@@ -213,7 +213,7 @@ ebml_file_open(void **ctx, int ro, void *args)
         ret->fd = openat(a->fd, a->pathname,
                          O_CLOEXEC | (ro ? O_RDONLY : O_WRONLY));
         if (ret->fd == -1) {
-            err = ERR_TAG(errno);
+            err = ERR_TAG(en);
             free(ret);
             return err;
         }
@@ -229,7 +229,7 @@ ebml_file_close(void *ctx)
     int err;
     struct ebml_file_ctx *fctx = ctx;
 
-    err = close(fctx->fd) == -1 ? ERR_TAG(errno) : 0;
+    err = close(fctx->fd) == -1 ? ERR_TAG(en) : 0;
 
     free(fctx);
 
@@ -239,6 +239,7 @@ ebml_file_close(void *ctx)
 static int
 ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
 {
+    int err;
     ssize_t ret;
     struct ebml_file_ctx *fctx = ctx;
 
@@ -246,8 +247,9 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
         ret = read(fctx->fd, buf, *nbytes);
         if (ret >= 0)
             break;
-        if (errno != EINTR)
-            return ERR_TAG(errno);
+        err = en;
+        if (err != E_INTR)
+            return ERR_TAG(err);
     }
 
     *nbytes = ret;
@@ -257,6 +259,7 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
 static int
 ebml_file_write(void *ctx, const void *buf, size_t nbytes)
 {
+    int err;
     size_t numwritten;
     ssize_t ret;
     struct ebml_file_ctx *fctx = ctx;
@@ -265,8 +268,9 @@ ebml_file_write(void *ctx, const void *buf, size_t nbytes)
         ret = write(fctx->fd, (const char *)buf + numwritten,
                     nbytes - numwritten);
         if (ret == -1) {
-            if (errno != EINTR)
-                return ERR_TAG(errno);
+            err = en;
+            if (err != E_INTR)
+                return ERR_TAG(err);
             ret = 0;
         }
     }
@@ -277,12 +281,14 @@ ebml_file_write(void *ctx, const void *buf, size_t nbytes)
 static int
 ebml_file_sync(void *ctx)
 {
+    int err;
     struct ebml_file_ctx *fctx = ctx;
 
     while (fsync(fctx->fd) == -1) {
-        if (errno != EINTR) {
-            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return ERR_TAG(errno);
+        err = en;
+        if (err != E_INTR) {
+            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+                return ERR_TAG(err);
             break;
         }
     }
@@ -298,7 +304,7 @@ ebml_file_get_fpos(void *ctx, off_t *offset)
 
     ret = lseek(fctx->fd, 0, SEEK_CUR);
     if (ret == -1)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     *offset = ret;
     return 0;
@@ -392,13 +398,13 @@ parse_eid(uint64_t *eid, size_t *sz, char *bufp)
     res = eid_to_u64(bufp, &ret, &retsz);
     if (res == 0)
         notsup = 0;
-    else if (err_get_code(res) == -ENOTSUP)
+    else if (err_get_code(res) == -E_NOTSUP)
         notsup = 1;
     else
         return res;
 
     if (retsz > EID_MAX_LEN)
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
 
     if (notsup)
         fputs("Error resilience: found invalid all-zero element ID\n", stderr);
@@ -477,7 +483,7 @@ parse_edatasz(uint64_t *elen, size_t *sz, char *bufp)
         return res;
 
     if (retsz > EDATASZ_MAX_LEN)
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
 
     *elen = ret;
     *sz = retsz;
@@ -500,12 +506,12 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
 
     res = l64a_r(eid, idstr, sizeof(idstr));
     if (res != 0)
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
 
     if (f != NULL
         && fprintf(f, "%" PRIu64 "\t%s\t%" PRIx64 "\t%" PRIu64 "\t%" PRIu64,
                    n, idstr, eid, elen, totlen) < 0)
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
 
     parsers[!ebml] = hdl->parser_ebml;
     parsers[ebml] = hdl->parser_doc;
@@ -520,12 +526,12 @@ look_up_elem(struct ebml_hdl *hdl, uint64_t eid, uint64_t elen, uint64_t totlen,
             if (f != NULL
                 && fprintf(f, "\t%s\t%s", parser_desc(parsers[i]), datap->val)
                    < 0)
-                return ERR_TAG(EIO);
+                return ERR_TAG(E_IO);
             found = 1;
         }
     }
     if (!found)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
 
     res = semantic_processor_look_up(hdl->sproc, idstr, &action);
     if (res != 0) {
@@ -555,24 +561,24 @@ buf_new(struct buf **buf, char *eid, size_t eidsz, char *elen, size_t elensz,
     struct buf *ret;
 
     if (omalloc(&ret) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     ret->eid = malloc(eidsz);
     if (ret->eid == NULL) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err1;
     }
 
     ret->elen = malloc(elensz);
     if (ret->elen == NULL) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err2;
     }
 
     if (datasz != 0) {
         ret->data = malloc(datasz);
         if (ret->data == NULL) {
-            err = ERR_TAG(errno);
+            err = ERR_TAG(en);
             goto err3;
         }
     } else
@@ -619,7 +625,7 @@ buf_list_init(struct buf_list *list)
 {
     list->len = 0;
     list->sz = 16;
-    return oallocarray(&list->ents, list->sz) == NULL ? ERR_TAG(errno) : 0;
+    return oallocarray(&list->ents, list->sz) == NULL ? ERR_TAG(en) : 0;
 }
 
 static void
@@ -645,7 +651,7 @@ buf_list_insert(struct buf_list *list, char *eid, size_t eidsz, char *elen,
 
         newsz = 2 * list->sz;
         if (oreallocarray(list->ents, &tmp, newsz) == NULL)
-            return ERR_TAG(errno);
+            return ERR_TAG(en);
         list->ents = tmp;
         list->sz = newsz;
     }
@@ -731,7 +737,7 @@ resize_master_elem(struct buf *buf, int64_t *adj)
 
         tmp = realloc(buf->elen, elensz);
         if (tmp == NULL)
-            return ERR_TAG(errno);
+            return ERR_TAG(en);
         buf->elen = tmp;
     }
 
@@ -752,7 +758,7 @@ push_master(struct elem_stack *stk, const struct elem_data *data, uint64_t eid,
     struct elem_stack_ent *ent;
 
     if (omalloc(&ent) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     len = stk->len;
 
@@ -762,7 +768,7 @@ push_master(struct elem_stack *stk, const struct elem_data *data, uint64_t eid,
 
         newsz = stk->sz == 0 ? 16 : 2 * stk->sz;
         if (oreallocarray(stk->stk, &tmp, newsz) == NULL) {
-            err = ERR_TAG(errno);
+            err = ERR_TAG(en);
             free(ent);
             return err;
         }
@@ -1027,7 +1033,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
     struct timespec tm;
 
     if (elen > ETYPE_MAX_FIXED_WIDTH)
-        return ERR_TAG(EINVAL);
+        return ERR_TAG(E_INVAL);
 
     si = *sip;
     di = *dip;
@@ -1050,7 +1056,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
 
     res = edata_unpack(si, &val, etype, elen);
     if (res != 0) {
-        if (err_get_code(res) != -EINVAL)
+        if (err_get_code(res) != -E_INVAL)
             return res;
         goto end;
     }
@@ -1077,7 +1083,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
             abort();
         }
         if (res < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
     }
 
     res = invoke_user_cb(value, etype, &val, buf, 0, elen, hdrlen, ebml, hdl);
@@ -1158,7 +1164,7 @@ handle_variable_length_value(char *buf, char **sip, char **dip, size_t bufsz,
         if (f != NULL) {
             res = fprintf(f, "%s", val.ptr);
             if (res < 0) {
-                res = ERR_TAG(EIO);
+                res = ERR_TAG(E_IO);
                 goto err;
             }
         }
@@ -1217,7 +1223,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
     if (res != 0)
         return res;
     if (eid != EBML_ELEMENT_ID)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     totlen = hdrlen = sz;
     si = buf + sz;
     hdl->off += sz;
@@ -1298,7 +1304,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
             return res;
 
         if (sz_unknown && etype != ETYPE_MASTER)
-            return ERR_TAG(EILSEQ);
+            return ERR_TAG(E_ILSEQ);
 
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
@@ -1307,7 +1313,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
 
         if (flags & EBML_READ_FLAG_HEADER) {
             if (f != NULL && fputc('\t', f) == EOF)
-                return ERR_TAG(EIO);
+                return ERR_TAG(E_IO);
 
             sz = di - si;
 
@@ -1340,7 +1346,7 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
         }
 
         if (f != NULL && fputc('\n', f) == EOF)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
 
         if (etype != ETYPE_MASTER)
             hdl->off += elen;
@@ -1444,20 +1450,20 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
 
         if (f != NULL && hdl->n == 1
             && fprintf(f, "body\t\t\t%" PRIu64 "\n", elen) < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
 
         res = look_up_elem(hdl, eid, elen, totlen, hdrlen, &act, &etype, &val,
                            &parent, &data, 0, hdl->n, f);
         if (res != 0)
             return res;
         if (etype == ETYPE_NONE)
-            return ERR_TAG(EILSEQ);
+            return ERR_TAG(E_ILSEQ);
 
         if (sz_unknown && etype != ETYPE_MASTER)
-            return ERR_TAG(EILSEQ);
+            return ERR_TAG(E_ILSEQ);
 
         if (f != NULL && fprintf(f, "\t%s\t", typestrmap[etype]) < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
 
         anon = eid == VOID_ELEMENT_ID || eid == CRC32_ELEMENT_ID;
 
@@ -1505,7 +1511,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
         }
 
         if (f != NULL && fputc('\n', f) == EOF)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
 
         if (stk->len > 0) {
             if (!anon) {
@@ -1539,11 +1545,11 @@ eof:
     if (hdl->anonlen > 0) {
         fputs("Synchronization error: unassociated anonymous element(s)\n",
               stderr);
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
     }
     if (f != NULL && (*hdl->fns->get_fpos)(hdl->ctx, &off) == 0
         && fprintf(f, "EOF\t\t\t\t%lld\n", off) < 0)
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
     return 0;
 }
 
@@ -1557,7 +1563,7 @@ ebml_open(ebml_hdl_t *hdl, const ebml_io_fns_t *fns,
     struct ebml_hdl *ret;
 
     if (ocalloc(&ret, 1) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     if (!ro) {
         err = buf_list_init(&ret->buf_list);
@@ -1681,7 +1687,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
                          ? hdl->parser_ebml : hdl->parser_doc,
                          id, &data, &parent);
     if (res != 1)
-        return ERR_TAG(res == 0 ? EINVAL : -res);
+        return ERR_TAG(res == 0 ? E_INVAL : -res);
     etype = data->etype;
 
     fprintf(stderr, "%s: ", id);
@@ -1722,7 +1728,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
     /* output EBML element ID */
 
     if (al64(id, &tmp) == -1)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     eid = tmp;
 
     fprintf(stderr, "Inserting EID 0x%" PRIX64 "\n", eid);
@@ -1880,7 +1886,7 @@ buf_set_binhdr(struct buf *buf, char *binhdr, size_t binhdrsz)
 
     bufp = malloc(binhdrsz);
     if (bufp == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     memcpy(bufp, binhdr, binhdrsz);
 

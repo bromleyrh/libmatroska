@@ -48,6 +48,9 @@ AC_SUBST([std_flags])
 
 warnings="-Wstrict-aliasing"
 
+AX_CPP_WARNING([initializer-overrides])
+AX_CPP_WARNING([override-init])
+
 AX_CHECK_COMPILE_FLAG(
     [-Werror -Wgnu-include-next -Wnewline-eof -Wnullability-extension],
     [warnings="$warnings -Wpedantic -Wno-gnu-include-next -Wno-newline-eof"
