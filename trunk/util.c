@@ -61,7 +61,7 @@ strerror_lr(int errnum, char *strerrbuf, size_t buflen, locale_t loc)
     if (ret == NULL)
         return err ? err : EIO;
 
-    return strlcpy(strerrbuf, ret, buflen) < buflen ? err : ERANGE;
+    return _strlcpy(strerrbuf, ret, buflen) < buflen ? err : ERANGE;
 #else
     (void)loc;
 
