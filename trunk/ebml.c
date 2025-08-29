@@ -229,7 +229,7 @@ ebml_file_close(void *ctx)
     int err;
     struct ebml_file_ctx *fctx = ctx;
 
-    err = close(fctx->fd) == -1 ? MINUS_ERRNO : 0;
+    err = close(fctx->fd) == -1 ? ERR_TAG(errno) : 0;
 
     free(fctx);
 
