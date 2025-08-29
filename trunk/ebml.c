@@ -279,9 +279,15 @@ ebml_file_sync(void *ctx)
 {
     struct ebml_file_ctx *fctx = ctx;
 
-    return fsync(fctx->fd) == -1
-           && errno != EBADF && errno != EINVAL && errno != ENOTSUP
-           ? ERR_TAG(errno) : 0;
+    while (fsync(fctx->fd) == -1) {
+        if (errno != EINTR) {
+            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
+                return ERR_TAG(errno);
+            break;
+        }
+    }
+
+    return 0;
 }
 
 static int
