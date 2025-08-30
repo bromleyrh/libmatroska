@@ -61,6 +61,8 @@ struct ns_key {
 #define EBML_ELEMENT_ID 0xa45dfa3
 #define EBML_ELEMENT_ID_WITH_MARKER 0x1a45dfa3
 
+static int syncf(FILE *);
+
 static int ns_key_cmp(const void *, const void *, void *);
 
 static int ns_key_output(const void *, void *);
@@ -102,6 +104,26 @@ static int _output_parser_data(enum op, xmlNode *, int, struct avl_tree *,
 static int output_parser_data(enum op, xmlDocPtr, const char *, const char *);
 
 static int process_paths(int, int);
+
+static int
+syncf(FILE *f)
+{
+    int fd;
+
+    if (fflush(f) == EOF)
+        return MINUS_ERRNO;
+
+    fd = fileno(f);
+    while (fsync(fd) == -1) {
+        if (errno != EINTR) {
+            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
+                return MINUS_ERRNO;
+            break;
+        }
+    }
+
+    return 0;
+}
 
 static int
 ns_key_cmp(const void *k1, const void *k2, void *ctx)
@@ -837,12 +859,9 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype,
         }
     }
 
-    if (fflush(stdout) == EOF
-        || (fsync(STDOUT_FILENO) == -1
-            && errno != EBADF && errno != EINVAL && errno != ENOTSUP)) {
-        err = MINUS_ERRNO;
+    err = syncf(stdout);
+    if (err)
         goto err2;
-    }
 
     if (op == PROCESS_SCHEMA) {
         do_radix_tree_free(rt);
@@ -950,12 +969,9 @@ process_paths(int infd, int outfd)
 
     ns_destroy(ns);
 
-    if (fflush(outf) == EOF
-        || (fsync(fileno(outf)) == -1
-            && errno != EBADF && errno != EINVAL && errno != ENOTSUP)) {
-        res = MINUS_ERRNO;
+    res = syncf(outf);
+    if (res != 0)
         goto err2;
-    }
 
     res = fclose(outf) == EOF ? MINUS_ERRNO : 0;
     fclose(inf);
