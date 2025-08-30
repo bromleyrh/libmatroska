@@ -535,17 +535,28 @@ strtok_unescape(const char *str, const char *delim, const char *escchar,
 static int
 syncf(FILE *f)
 {
+    int fd;
+
     static const int fsync_na_errs[] = {
         [EBADF]     = 1,
         [EINVAL]    = 1,
         [ENOTSUP]   = 1
     };
 
-    return fflush(f) == EOF
-           || (fsync(fileno(f)) == -1
-               && (errno < 0 || errno >= (int)ARRAY_SIZE(fsync_na_errs)
-                   || !fsync_na_errs[errno]))
-           ? MINUS_ERRNO : 0;
+    if (fflush(f) == EOF)
+        return MINUS_ERRNO;
+
+    fd = fileno(f);
+    while (fsync(fd) == -1) {
+        if (errno != EINTR) {
+            if (errno < 0 || errno >= (int)ARRAY_SIZE(fsync_na_errs)
+                || !fsync_na_errs[errno])
+                return MINUS_ERRNO;
+            break;
+        }
+    }
+
+    return 0;
 }
 
 static int

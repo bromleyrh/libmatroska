@@ -85,6 +85,8 @@ static int parse_elem_spec(const char *, int, const char *, int, const char *,
 
 static int parse_cmdline(int, char **, struct ctx *);
 
+static int syncf(int);
+
 static int free_cb(struct cb *);
 
 static int _cvt_utf8_to_string(json_value_t *, const char *, size_t);
@@ -267,14 +269,26 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
 }
 
 static int
+syncf(int fd)
+{
+    while (fsync(fd) == -1) {
+        if (errno != EINTR) {
+            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
+                return MINUS_ERRNO;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static int
 free_cb(struct cb *cb)
 {
-    int err = 0;
+    int err = 0, tmp;
 
     if (cb->tracef != NULL) {
-        if (fsync(fileno(cb->tracef)) == -1
-            && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-            err = MINUS_ERRNO;
+        err = syncf(fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
             err = MINUS_ERRNO;
@@ -285,9 +299,9 @@ free_cb(struct cb *cb)
         free(cb->tracepath);
     }
 
-    if (fsync(fileno(cb->dataf)) == -1
-        && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-        err = MINUS_ERRNO;
+    tmp = syncf(fileno(cb->dataf));
+    if (tmp != 0)
+        err = tmp;
 
     if (fclose(cb->dataf) == EOF)
         err = MINUS_ERRNO;
@@ -297,9 +311,9 @@ free_cb(struct cb *cb)
 
     free(cb->datapath);
 
-    if (fsync(fileno(cb->f)) == -1
-        && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-        err = MINUS_ERRNO;
+    tmp = syncf(fileno(cb->f));
+    if (tmp != 0)
+        err = tmp;
 
     if (fclose(cb->f) == EOF)
         err = MINUS_ERRNO;

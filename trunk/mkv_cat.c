@@ -43,6 +43,8 @@ static int parse_track_spec(const char *, const char *, int, struct avl_tree *);
 
 static int parse_cmdline(int, char **, struct ctx *);
 
+static int syncfd(int);
+
 static int track_cb_cmp(const void *, const void *, void *);
 static int track_cb_free(const void *, void *);
 
@@ -135,6 +137,20 @@ err:
 }
 
 static int
+syncfd(int fd)
+{
+    while (fsync(fd) == -1) {
+        if (errno != EINTR) {
+            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
+                return MINUS_ERRNO;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static int
 track_cb_cmp(const void *k1, const void *k2, void *ctx)
 {
     const struct track_cb *tcb1 = k1;
@@ -151,9 +167,7 @@ track_cb_free(const void *keyval, void *ctx)
     const struct track_cb *tcb = keyval;
     int err = 0;
 
-    if (fsync(fileno(tcb->f)) == -1
-        && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-        err = MINUS_ERRNO;
+    err = syncfd(fileno(tcb->f));
 
     if (fclose(tcb->f) == EOF)
         err = MINUS_ERRNO;

@@ -181,6 +181,20 @@ err1:
 }
 
 static int
+syncfd(int fd)
+{
+    while (fsync(fd) == -1) {
+        if (errno != EINTR) {
+            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
+                return MINUS_ERRNO;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static int
 track_cb_cmp(const void *k1, const void *k2, void *ctx)
 {
     const struct track_cb *tcb1 = k1;
@@ -197,9 +211,7 @@ track_cb_free(const void *keyval, void *ctx)
     const struct track_cb *tcb = keyval;
     int err = 0;
 
-    if (fsync(fileno(tcb->f)) == -1
-        && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-        err = MINUS_ERRNO;
+    err = syncfd(fileno(tcb->f));
 
     if (fclose(tcb->f) == EOF)
         err = MINUS_ERRNO;
@@ -231,9 +243,7 @@ elem_cb_free(const void *keyval, void *ctx)
     const struct elem_cb *ecb = keyval;
     int err = 0;
 
-    if (fsync(fileno(ecb->f)) == -1
-        && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-        err = MINUS_ERRNO;
+    err = syncfd(fileno(ecb->f));
 
     if (fclose(ecb->f) == EOF)
         err = MINUS_ERRNO;
@@ -403,9 +413,8 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
         goto err3;
     }
 
-    if (fsync(fileno(f)) == -1
-        && errno != EBADF && errno != EINVAL && errno != ENOTSUP) {
-        res = MINUS_ERRNO;
+    res = syncfd(fileno(f));
+    if (res != 0) {
         errmsg = "Error closing output file";
         goto err3;
     }

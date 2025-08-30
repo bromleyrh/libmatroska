@@ -113,6 +113,8 @@ static int parse_cmdline(int, char **, enum op *, struct ctx *);
 
 static unsigned char from_hex(char);
 
+static int syncfd(int);
+
 static int free_cb(struct cb *);
 
 static size_t json_rd_cb(void *, size_t, size_t, void *);
@@ -336,14 +338,26 @@ from_hex(char c)
 }
 
 static int
+syncfd(int fd)
+{
+    while (fsync(fd) == -1) {
+        if (errno != EINTR) {
+            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
+                return MINUS_ERRNO;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static int
 free_cb(struct cb *cb)
 {
     int err = 0;
 
     if (cb->tracef != NULL) {
-        if (fsync(fileno(cb->tracef)) == -1
-            && errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-            err = MINUS_ERRNO;
+        err = syncfd(fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
             err = MINUS_ERRNO;
