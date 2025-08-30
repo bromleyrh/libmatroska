@@ -1,5 +1,5 @@
 /*
- * schema_parse.c
+ * schema_parse_expat.c
  */
 
 #include "common.h"
