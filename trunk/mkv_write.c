@@ -325,7 +325,7 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
     return 0;
 
 quit2:
-    ret = -EINVAL;
+    ret = -1;
 quit1:
     free(ctx->basenm);
     return ret;
