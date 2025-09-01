@@ -252,7 +252,7 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
             free(ctx->basenm);
             ctx->basenm = strdup(optarg);
             if (ctx->basenm == NULL)
-                return MINUS_ERRNO;
+                return -1;
             /* fallthrough */
         case 'm':
             *op = ops[opt];
