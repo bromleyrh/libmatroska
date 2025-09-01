@@ -17,7 +17,6 @@
 
 #include "matroska_semantics.h"
 
-#include <errno.h>
 #include <stddef.h>
 #include <string.h>
 
