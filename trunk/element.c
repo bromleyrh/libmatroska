@@ -385,10 +385,10 @@ const char *
 etype_to_str(enum etype etype)
 {
     static const char *const typemap[] = {
-#define _X(type, val, name, hash) \
+#define X(type, val, name, hash) \
         [type] = name,
-        LIST_ETYPES()
-#undef _X
+        LIST_ETYPES(X)
+#undef X
     };
 
     return etype >= ARRAY_SIZE(typemap) ? NULL : typemap[etype];
@@ -401,10 +401,10 @@ str_to_etype(const char *str)
         const char  *str;
         enum etype  etype;
     } typemap[256 * 256] = {
-#define _X(type, val, name, hash) \
+#define X(type, val, name, hash) \
         [hash] = {.str = name, .etype = type},
-        LIST_ETYPES()
-#undef _X
+        LIST_ETYPES(X)
+#undef X
     };
 
     return str[0] == '\0' || str[1] == '\0'

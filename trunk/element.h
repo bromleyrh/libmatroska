@@ -11,17 +11,17 @@
 
 #define ETYPE_HASH(c1, c2) ((unsigned)(256 * (c1) + (c2)))
 
-#define _LIST_ETYPE(type, val, name, hash) _X(ETYPE_##type, val, name, hash)
+#define _LIST_ETYPE(X, type, val, name, hash) X(ETYPE_##type, val, name, hash)
 
-#define LIST_ETYPES() \
-    _LIST_ETYPE(INTEGER,    1,      "integer",  ETYPE_HASH('i', 'n')) \
-    _LIST_ETYPE(UINTEGER,   2,      "uinteger", ETYPE_HASH('u', 'i')) \
-    _LIST_ETYPE(FLOAT,      4,      "float",    ETYPE_HASH('f', 'l')) \
-    _LIST_ETYPE(STRING,     8,      "string",   ETYPE_HASH('s', 't')) \
-    _LIST_ETYPE(UTF8,       16,     "utf-8",    ETYPE_HASH('u', 't')) \
-    _LIST_ETYPE(DATE,       32,     "date",     ETYPE_HASH('d', 'a')) \
-    _LIST_ETYPE(MASTER,     64,     "master",   ETYPE_HASH('m', 'a')) \
-    _LIST_ETYPE(BINARY,     128,    "binary",   ETYPE_HASH('b', 'i'))
+#define LIST_ETYPES(X) \
+    _LIST_ETYPE(X, INTEGER,     1,      "integer",  ETYPE_HASH('i', 'n')) \
+    _LIST_ETYPE(X, UINTEGER,    2,      "uinteger", ETYPE_HASH('u', 'i')) \
+    _LIST_ETYPE(X, FLOAT,       4,      "float",    ETYPE_HASH('f', 'l')) \
+    _LIST_ETYPE(X, STRING,      8,      "string",   ETYPE_HASH('s', 't')) \
+    _LIST_ETYPE(X, UTF8,        16,     "utf-8",    ETYPE_HASH('u', 't')) \
+    _LIST_ETYPE(X, DATE,        32,     "date",     ETYPE_HASH('d', 'a')) \
+    _LIST_ETYPE(X, MASTER,      64,     "master",   ETYPE_HASH('m', 'a')) \
+    _LIST_ETYPE(X, BINARY,      128,    "binary",   ETYPE_HASH('b', 'i'))
 
 #define ETYPE_IS_NUMERIC(type) \
     ((type) & (ETYPE_INTEGER | ETYPE_UINTEGER | ETYPE_FLOAT))
@@ -36,10 +36,10 @@
 
 enum etype {
     ETYPE_NONE,
-#define _X(type, val, name, hash) \
+#define X(type, val, name, hash) \
     type = val,
-    LIST_ETYPES()
-#undef _X
+    LIST_ETYPES(X)
+#undef X
 };
 
 typedef struct {

@@ -47,20 +47,16 @@ struct trie_edge {
         .desc       = descr \
     };
 
-#define LIST_PARSERS() \
-    _X(ebml,        "EBML") \
-    _X(matroska,    "Matroska")
+#define LIST_PARSERS(X) \
+    X(ebml,     "EBML") \
+    X(matroska, "Matroska")
 
-#define LIST_SEMANTIC_PROCESSORS() \
-    _X(matroska, "Matroska semantics")
+#define LIST_SEMANTIC_PROCESSORS(X) \
+    X(matroska, "Matroska semantics")
 
-#define _X DEF_PARSER
-LIST_PARSERS()
-#undef _X
+LIST_PARSERS(DEF_PARSER)
 
-#define _X DEF_SEMANTIC_PROCESSOR
-LIST_SEMANTIC_PROCESSORS()
-#undef _X
+LIST_SEMANTIC_PROCESSORS(DEF_SEMANTIC_PROCESSOR)
 
 static int find_trie_edge(const struct trie_node *, unsigned char,
                           struct trie_edge *);
