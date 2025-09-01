@@ -318,7 +318,7 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
 
     ret = parse_file_spec(sep1, fd1, sep2, fd2, sep3, fd3, &ctx->cb);
     if (ret != 0)
-        goto quit1;
+        goto quit2;
 
     ctx->import = strcmp(argv[0], "i") == 0;
 
