@@ -3,12 +3,13 @@
  */
 
 #include "debug.h"
+#include "std_sys.h"
+#include "util.h"
 
 #include <json.h>
 
 #include <json/scanner.h>
 
-#include <errno.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -73,13 +74,15 @@ parse_json(json_value_t *jv, const char *pathname)
 
     f = fopen(pathname, "r");
     if (f == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     json_in_filter_ctx_init(&ictx);
     ictx.rd_cb = &json_rd_cb;
     ictx.ctx = f;
 
     err = json_parse_text(jv, NULL, 0, &json_in_filter_discard_comments, &ictx);
+    if (err)
+        err = -sys_maperror(-err);
 
     fclose(f);
 
@@ -97,32 +100,32 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
 
     err = json_value_get_type(jv, &jvt);
     if (err)
-        return err;
+        goto err1;
     if (jvt != JSON_ARRAY_T)
-        return -EINVAL;
+        return -E_INVAL;
 
     err = json_array_get_at(jv, 0, &e);
     if (err)
-        return err;
+        goto err1;
     err = json_value_get_type(e, &jvt);
     if (err)
-        goto err;
+        goto err3;
     if (jvt != JSON_NUMBER_T) {
-        err = -EINVAL;
-        goto err;
+        err = -E_INVAL;
+        goto err2;
     }
     start = json_numeric_get(e);
     json_value_put(e);
 
     err = json_array_get_at(jv, 1, &e);
     if (err)
-        return err;
+        goto err1;
     err = json_value_get_type(e, &jvt);
     if (err)
-        goto err;
+        goto err3;
     if (jvt != JSON_NUMBER_T) {
-        err = -EINVAL;
-        goto err;
+        err = -E_INVAL;
+        goto err2;
     }
     end = json_numeric_get(e);
     json_value_put(e);
@@ -132,19 +135,24 @@ handle_xref_marker(json_value_t out, json_value_t alt_in, json_value_t jv)
     for (i = start; i <= end; i++) {
         err = json_array_get_at(alt_in, i, &e);
         if (err)
-            return err;
+            goto err1;
 
         err = json_array_push(out, e);
         json_value_put(e);
         if (err)
-            return err;
+            goto err1;
     }
 
     return 1;
 
-err:
+err3:
+    err = -sys_maperror(-err);
+err2:
     json_value_put(e);
     return err;
+
+err1:
+    return -sys_maperror(-err);
 }
 
 static int
@@ -154,10 +162,11 @@ handle_object(json_value_t out, json_value_t alt_in, json_value_t jv)
     json_kv_pair_t elm;
 
     res = json_object_get(jv, L"xref_marker", &elm);
-    if (res == -EINVAL)
+    res = sys_maperror(-res);
+    if (res == E_INVAL)
         return 0;
     if (res != 0)
-        return res;
+        return -res;
 
     return handle_xref_marker(out, alt_in, elm.v);
 }
@@ -173,9 +182,9 @@ process_docs(json_value_t out, json_value_t *in)
     for (i = 0; i < 2; i++) {
         res = json_value_get_type(in[i], &jvt);
         if (res != 0)
-            return res;
+            return -sys_maperror(-res);
         if (jvt != JSON_ARRAY_T)
-            return -EINVAL;
+            return -E_INVAL;
     }
 
     n = json_array_get_size(in[1]);
@@ -183,11 +192,11 @@ process_docs(json_value_t out, json_value_t *in)
     for (i = 0; i < n; i++) {
         res = json_array_get_at(in[1], i, &jv);
         if (res != 0)
-            return ERR_TAG(-res);
+            return ERR_TAG(sys_maperror(-res));
 
         res = json_value_get_type(jv, &jvt);
         if (res != 0)
-            return ERR_TAG(-res);
+            return ERR_TAG(sys_maperror(-res));
         if (jvt == JSON_OBJECT_T) {
             res = handle_object(out, in[0], jv);
             if (res != 0) {
@@ -199,8 +208,10 @@ process_docs(json_value_t out, json_value_t *in)
         }
 
         res = json_array_push(out, jv);
-        if (res != 0)
+        if (res != 0) {
+            res = -sys_maperror(-res);
             goto err;
+        }
 
         json_value_put(jv);
     }

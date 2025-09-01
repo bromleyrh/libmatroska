@@ -22,6 +22,8 @@ int sys_maperror(int errnum);
 
 int sys_rmaperror(int errnum);
 
+char *sys_strerror(int errnum);
+
 int sys_strerror_r(int errnum, char *strerrbuf, size_t buflen);
 
 #endif

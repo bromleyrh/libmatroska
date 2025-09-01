@@ -189,6 +189,12 @@ sys_rmaperror(int errnum)
     return rmap_errno(errnum);
 }
 
+char *
+sys_strerror(int errnum)
+{
+    return strerror(rmap_errno(errnum));
+}
+
 int
 sys_strerror_r(int errnum, char *strerrbuf, size_t buflen)
 {

@@ -7,6 +7,7 @@
 #include "common.h"
 #include "debug.h"
 #include "mkv_catalog_obj.h"
+#include "std_sys.h"
 #include "util.h"
 
 #include <json.h>
@@ -310,8 +311,9 @@ enable_debugging_features()
     };
 
     if (setrlimit(RLIMIT_CORE, &rlim) == -1) {
-        err = MINUS_CERRNO;
-        fprintf(stderr, "Couldn't set resource limit: %s\n", strerror(-err));
+        err = MINUS_ERRNO;
+        fprintf(stderr, "Couldn't set resource limit: %s\n",
+                sys_strerror(-err));
         return err;
     }
 
@@ -332,8 +334,9 @@ set_up_signal_handlers()
     struct sigaction sa = {.sa_handler = &pipe_handler};
 
     if (sigaction(SIGPIPE, &sa, NULL) == -1) {
-        err = MINUS_CERRNO;
-        fprintf(stderr, "Couldn't set signal handler: %s\n", strerror(-err));
+        err = MINUS_ERRNO;
+        fprintf(stderr, "Couldn't set signal handler: %s\n",
+                sys_strerror(-err));
         return err;
     }
 
@@ -535,23 +538,25 @@ strtok_unescape(const char *str, const char *delim, const char *escchar,
 static int
 syncf(FILE *f)
 {
+    int err;
     int fd;
 
     static const int fsync_na_errs[] = {
-        [EBADF]     = 1,
-        [EINVAL]    = 1,
-        [ENOTSUP]   = 1
+        [E_BADF]     = 1,
+        [E_INVAL]    = 1,
+        [E_NOTSUP]   = 1
     };
 
     if (fflush(f) == EOF)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     fd = fileno(f);
     while (fsync(fd) == -1) {
-        if (errno != EINTR) {
-            if (errno < 0 || errno >= (int)ARRAY_SIZE(fsync_na_errs)
-                || !fsync_na_errs[errno])
-                return MINUS_CERRNO;
+        err = en;
+        if (err != E_INTR) {
+            if (err < 0 || err >= (int)ARRAY_SIZE(fsync_na_errs)
+                || !fsync_na_errs[err])
+                return -err;
             break;
         }
     }
@@ -581,7 +586,7 @@ print_err(int errdes)
                 goto end;
         }
 
-        fprintf(stderr, "%s\n", strerror(-errcode));
+        fprintf(stderr, "%s\n", sys_strerror(-errcode));
     }
 
 end:
@@ -676,7 +681,7 @@ unescape_pathname(char **dst, const char *src, const char *escchars)
     sz = 16;
     ret = malloc(sz);
     if (ret == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
     len = 0;
 
     first = 1;
@@ -701,7 +706,7 @@ unescape_pathname(char **dst, const char *src, const char *escchars)
             sz *= 2;
             tmp = realloc(ret, sz);
             if (tmp == NULL) {
-                err = MINUS_CERRNO;
+                err = MINUS_ERRNO;
                 free(ret);
                 return err;
             }
@@ -727,18 +732,18 @@ do_index_create(struct index_ctx **ctx, const char *pathname, mode_t mode,
     struct index_ctx *ret;
 
     if (omalloc(&ret) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
     ret->key_size = key_size;
     ret->key_cmp = key_cmp;
 
     if (omalloc(&ret->key_ctx) == NULL) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err1;
     }
 
     ret->key_ctx->last_key = malloc(key_size);
     if (ret->key_ctx->last_key == NULL) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err2;
     }
     ret->key_ctx->last_key_valid = 0;
@@ -746,7 +751,7 @@ do_index_create(struct index_ctx **ctx, const char *pathname, mode_t mode,
     err = db_hl_create(&ret->dbh, pathname, mode, key_size, key_cmp,
                        ret->key_ctx, 0);
     if (err) {
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
         goto err3;
     }
 
@@ -771,18 +776,18 @@ do_index_open(struct index_ctx **ctx, const char *pathname, size_t key_size,
     struct index_ctx *ret;
 
     if (omalloc(&ret) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
     ret->key_size = key_size;
     ret->key_cmp = key_cmp;
 
     if (omalloc(&ret->key_ctx) == NULL) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err1;
     }
 
     ret->key_ctx->last_key = malloc(key_size);
     if (ret->key_ctx->last_key == NULL) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err2;
     }
     ret->key_ctx->last_key_valid = 0;
@@ -793,26 +798,27 @@ do_index_open(struct index_ctx **ctx, const char *pathname, size_t key_size,
 
     err = db_hl_open(&ret->dbh, pathname, key_size, key_cmp, ret->key_ctx, fl);
     if (err) {
-        if (err != -EROFS) {
-            err = ERR_TAG(-err);
+        err = sys_maperror(-err);
+        if (err != E_ROFS) {
+            err = ERR_TAG(err);
             goto err3;
         }
 
         err = db_hl_open(&ret->dbh, pathname, key_size, key_cmp, ret->key_ctx,
                          fl & ~DB_HL_RDONLY);
         if (err) {
-            err = ERR_TAG(-err);
+            err = ERR_TAG(sys_maperror(-err));
             goto err3;
         }
         err = db_hl_close(ret->dbh);
         if (err) {
-            err = ERR_TAG(-err);
+            err = ERR_TAG(sys_maperror(-err));
             goto err3;
         }
         err = db_hl_open(&ret->dbh, pathname, key_size, key_cmp, ret->key_ctx,
                          fl);
         if (err) {
-            err = ERR_TAG(-err);
+            err = ERR_TAG(sys_maperror(-err));
             goto err3;
         }
     }
@@ -836,7 +842,7 @@ do_index_close(struct index_ctx *ctx)
 
     err = db_hl_close(ctx->dbh);
     if (err)
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
 
     free(ctx->key_ctx->last_key);
 
@@ -854,7 +860,7 @@ do_index_insert(struct index_ctx *ctx, const void *key, const void *data,
     int err;
 
     err = db_hl_insert(ctx->dbh, key, data, datasize);
-    return err ? ERR_TAG(err < 0 ? -err : err) : 0;
+    return err ? ERR_TAG(sys_maperror(err < 0 ? -err : err)) : 0;
 }
 
 static int
@@ -864,7 +870,7 @@ do_index_replace(struct index_ctx *ctx, const void *key, const void *data,
     int err;
 
     err = db_hl_replace(ctx->dbh, key, data, datasize);
-    return err ? ERR_TAG(err < 0 ? -err : err) : 0;
+    return err ? ERR_TAG(sys_maperror(err < 0 ? -err : err)) : 0;
 }
 
 static int
@@ -880,7 +886,7 @@ do_index_look_up(struct index_ctx *ctx, const void *key, void *retkey,
     ctx->key_ctx->last_key_valid = 0;
 
     res = db_hl_search(ctx->dbh, key, retkey, retdata, retdatasize);
-    return res < 0 ? ERR_TAG(-res) : res;
+    return res < 0 ? ERR_TAG(sys_maperror(-res)) : res;
 }
 
 static int
@@ -889,7 +895,7 @@ do_index_delete(struct index_ctx *ctx, const void *key)
     int err;
 
     err = db_hl_delete(ctx->dbh, key);
-    return err ? ERR_TAG(err < 0 ? -err : err) : 0;
+    return err ? ERR_TAG(sys_maperror(err < 0 ? -err : err)) : 0;
 }
 
 static int
@@ -898,7 +904,7 @@ do_index_walk(struct index_ctx *ctx, db_hl_walk_cb_t fn, void *wctx)
     int err;
 
     err = db_hl_walk(ctx->dbh, fn, wctx);
-    return err ? ERR_TAG(-err) : 0;
+    return err ? ERR_TAG(sys_maperror(-err)) : 0;
 }
 
 static int
@@ -908,11 +914,11 @@ do_index_iter_new(struct index_iter **iter, struct index_ctx *ctx)
     struct index_iter *ret;
 
     if (omalloc(&ret) == NULL)
-        return ERR_TAG(errno);
+        return ERR_TAG(en);
 
     err = db_hl_iter_new(&ret->iter, ctx->dbh);
     if (err) {
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
         goto err1;
     }
 
@@ -920,10 +926,10 @@ do_index_iter_new(struct index_iter **iter, struct index_ctx *ctx)
 
     ret->srch_key = malloc(ctx->key_size);
     if (ret->srch_key == NULL) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err2;
     }
-    ret->srch_status = -EINVAL;
+    ret->srch_status = -E_INVAL;
 
     *iter = ret;
     return 0;
@@ -944,7 +950,7 @@ do_index_iter_free(struct index_iter *iter)
 
     err = db_hl_iter_free(iter->iter);
     if (err)
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
 
     free(iter);
 
@@ -972,19 +978,19 @@ do_index_iter_get(struct index_iter *iter, void *retkey, void *retdata,
         res = db_hl_iter_search(idxiter, ctx->key_ctx->last_key);
         assert(res != 0);
         if (res < 0)
-            return ERR_TAG(-res);
+            return ERR_TAG(sys_maperror(-res));
 
         if ((*ctx->key_cmp)(ctx->key_ctx->last_key, iter->srch_key, NULL) < 0) {
             res = db_hl_iter_next(idxiter);
             if (res != 0)
-                return ERR_TAG(-res);
+                return ERR_TAG(sys_maperror(-res));
         }
 
         iter->srch_status = 1;
     }
 
     res = db_hl_iter_get(idxiter, retkey, retdata, retdatasize);
-    return res == 0 ? 0 : ERR_TAG(-res);
+    return res == 0 ? 0 : ERR_TAG(sys_maperror(-res));
 }
 
 static int
@@ -994,7 +1000,7 @@ do_index_iter_next(struct index_iter *iter)
 
     err = db_hl_iter_next(iter->iter);
     if (err)
-        iter->srch_status = err = ERR_TAG(-err);
+        iter->srch_status = err = ERR_TAG(sys_maperror(-err));
     else
         iter->srch_status = 1;
 
@@ -1008,7 +1014,7 @@ do_index_iter_prev(struct index_iter *iter)
 
     err = db_hl_iter_prev(iter->iter);
     if (err)
-        iter->srch_status = err = ERR_TAG(-err);
+        iter->srch_status = err = ERR_TAG(sys_maperror(-err));
     else
         iter->srch_status = 1;
 
@@ -1038,7 +1044,7 @@ do_index_trans_new(struct index_ctx *ctx)
     int err;
 
     err = db_hl_trans_new(ctx->dbh);
-    return err ? ERR_TAG(-err) : 0;
+    return err ? ERR_TAG(sys_maperror(-err)) : 0;
 }
 
 static int
@@ -1047,7 +1053,7 @@ do_index_trans_abort(struct index_ctx *ctx)
     int err;
 
     err = db_hl_trans_abort(ctx->dbh);
-    return err ? ERR_TAG(-err) : 0;
+    return err ? ERR_TAG(sys_maperror(-err)) : 0;
 }
 
 static int
@@ -1056,7 +1062,7 @@ do_index_trans_commit(struct index_ctx *ctx)
     int err;
 
     err = db_hl_trans_commit(ctx->dbh);
-    return err ? ERR_TAG(err < 0 ? -err : err) : 0;
+    return err ? ERR_TAG(sys_maperror(err < 0 ? -err : err)) : 0;
 }
 
 static int
@@ -1065,7 +1071,7 @@ do_index_sync(struct index_ctx *ctx)
     int err;
 
     err = db_hl_sync(ctx->dbh);
-    return err ? ERR_TAG(-err) : 0;
+    return err ? ERR_TAG(sys_maperror(-err)) : 0;
 }
 
 static int
@@ -1082,7 +1088,7 @@ open_or_create(struct index_ctx **ctx, const char *pathname)
                         &index_key_cmp, 0);
     if (err) {
         tmp = err_get_code(err);
-        if (tmp != -ENOENT) {
+        if (tmp != -E_NOENT) {
             errmsg = "opening";
             goto err1;
         }
@@ -1125,7 +1131,7 @@ err2:
     tmp = err_get_code(err);
 err1:
     fprintf(stderr, "Error %s index file %s: %s\n", errmsg, pathname,
-            strerror(-tmp));
+            sys_strerror(-tmp));
     return err;
 }
 
@@ -1217,14 +1223,14 @@ get_id(struct index_ctx *ctx, uint64_t *id)
     res = do_index_iter_get(iter, &k, &freeid, NULL);
     do_index_iter_free(iter);
     if (res != 0) {
-        if (err_get_code(res) == -EADDRNOTAVAIL) {
+        if (err_get_code(res) == -E_ADDRNOTAVAIL) {
             clear_err(res);
-            return ERR_TAG(ENOSPC);
+            return ERR_TAG(E_NOSPC);
         }
         return res;
     }
     if (unpack_u32(index_key, &k, type) != TYPE_FREE_ID)
-        return ERR_TAG(ENOSPC);
+        return ERR_TAG(E_NOSPC);
 
     k_id = unpack_u64(index_key, &k, id);
     freeid_used_id = (uint64_t *)packed_memb_addr(index_obj_free_id, &freeid,
@@ -1233,9 +1239,9 @@ get_id(struct index_ctx *ctx, uint64_t *id)
     ret = free_id_find(freeid_used_id, k_id);
     if (ret == 0) {
         if (!(unpack_u8(index_obj_free_id, &freeid, flags) & FREE_ID_LAST_USED))
-            return ERR_TAG(EILSEQ);
+            return ERR_TAG(E_ILSEQ);
         if (ULONG_MAX - k_id < FREE_ID_RANGE_SZ)
-            return ERR_TAG(ENOSPC);
+            return ERR_TAG(E_NOSPC);
 
         res = do_index_delete(ctx, &k);
         if (res != 0)
@@ -1316,30 +1322,30 @@ create_xref_marker(json_value_t *jv, struct filter_state *state)
 
     err = json_value_init(&ret, JSON_OBJECT_T);
     if (err)
-        return ERR_TAG(-err);
+        return ERR_TAG(sys_maperror(-err));
 
     k = wcsdup(L"xref_marker");
     if (k == NULL) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err1;
     }
     elm.k = k;
 
     err = json_value_init(&elm.v, JSON_ARRAY_T);
     if (err) {
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
         goto err2;
     }
 
     err = json_value_init(&e, JSON_NUMBER_T);
     if (err) {
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
         goto err3;
     }
 
     err = json_array_push(elm.v, e);
     if (err) {
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
         goto err4;
     }
 
@@ -1347,19 +1353,19 @@ create_xref_marker(json_value_t *jv, struct filter_state *state)
 
     err = json_value_init(&e, JSON_NUMBER_T);
     if (err) {
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
         goto err3;
     }
 
     err = json_array_push(elm.v, e);
     if (err) {
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
         goto err4;
     }
 
     err = json_object_insert(ret, &elm);
     if (err) {
-        err = ERR_TAG(-err);
+        err = ERR_TAG(sys_maperror(-err));
         goto err3;
     }
 
@@ -1399,7 +1405,7 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
     res = json_object_get_at(jv, 0, &elm);
     json_value_put(elm.v);
     if (res != 0)
-        return res;
+        return -sys_maperror(-res);
 
     res = do_index_trans_new(ctx);
     if (res != 0)
@@ -1417,7 +1423,7 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
             if (res != 0)
                 goto err;
             if (id != ROOT_ID) {
-                res = ERR_TAG(EIO);
+                res = ERR_TAG(E_IO);
                 goto err;
             }
 
@@ -1461,17 +1467,19 @@ _index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         size_t n;
 
         res = json_object_get_at(jv, i, &elm);
-        if (res != 0)
-            return ERR_TAG(res == -EADDRNOTAVAIL ? EIO : -res);
+        if (res != 0) {
+            res = sys_maperror(-res);
+            return ERR_TAG(res == E_ADDRNOTAVAIL ? E_IO : res);
+        }
 
         src = elm.k;
         n = wcsrtombs(packed_memb_addr(index_key, &ent.k, string), &src,
                       packed_memb_size(index_key, string),
                       memset(&s, 0, sizeof(s)));
         if (n == (size_t)-1)
-            return ERR_TAG(errno);
+            return ERR_TAG(en);
         if (src != NULL)
-            return ERR_TAG(ENAMETOOLONG);
+            return ERR_TAG(E_NAMETOOLONG);
 
         fprintf(stderr, "%s%ls: ", elem ? "" : tabs(level), elm.k);
 
@@ -1581,9 +1589,10 @@ index_object_value(struct index_ctx *ctx, struct entry *parent_ent,
         json_kv_pair_t tmpe;
 
         res = json_object_get(jv, filtered_keys[i], &tmpe);
-        if (res != -EINVAL) {
+        res = sys_maperror(-res);
+        if (res != E_INVAL) {
             if (res != 0)
-                return res;
+                return -res;
             if (filter_state->state == 0) {
                 res = create_xref_marker(&filter_state->jv, filter_state);
                 if (res != 0)
@@ -1667,7 +1676,7 @@ index_array_value(struct index_ctx *ctx, struct entry *parent_ent,
 
         res = json_array_get_at(jv, i, &v);
         if (res != 0)
-            return ERR_TAG(-res);
+            return ERR_TAG(sys_maperror(-res));
 
         pack_u64(index_key, &ent.k, numeric, nelem);
 
@@ -1757,14 +1766,14 @@ index_string_value(struct index_ctx *ctx, struct entry *parent_ent,
 
     err = json_string_get_value(jv, &str);
     if (err)
-        return ERR_TAG(-err);
+        return ERR_TAG(sys_maperror(-err));
 
     src = str;
     n = wcsrtombs(packed_memb_addr(index_obj_ent_data, &parent_ent->d, string),
                   &src, packed_memb_size(index_obj_ent_data, string),
                   memset(&s, 0, sizeof(s)));
     if (n == (size_t)-1) {
-        err = ERR_TAG(errno);
+        err = ERR_TAG(en);
         goto err1;
     }
 
@@ -1817,15 +1826,15 @@ index_value(struct index_ctx *ctx, struct entry *parent_ent, json_value_t jv,
 
     err = json_value_get_type(jv, &jvt);
     if (err)
-        return ERR_TAG(-err);
+        return ERR_TAG(sys_maperror(-err));
     if (jvt == JSON_NONE_T)
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
 
     if ((size_t)jvt >= ARRAY_SIZE(fns))
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     fn = fns[jvt];
     if (fn == NULL)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
 
     if (jvt == JSON_OBJECT_T || jvt == JSON_ARRAY_T) {
         ++level;
@@ -1876,7 +1885,7 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
             if (_strlcpy(packed_memb_addr(index_key, &k, string), elem,
                          packed_memb_size(index_key, string))
                 >= packed_memb_size(index_key, string)) {
-                res = ERR_TAG(ENAMETOOLONG);
+                res = ERR_TAG(E_NAMETOOLONG);
                 goto err1;
             }
 
@@ -1897,7 +1906,7 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
         else if (_strlcpy(packed_memb_addr(index_key, &k, string), elem,
                           packed_memb_size(index_key, string))
                  >= packed_memb_size(index_key, string)) {
-            res = ERR_TAG(ENAMETOOLONG);
+            res = ERR_TAG(E_NAMETOOLONG);
             goto err2;
         }
 
@@ -1916,7 +1925,7 @@ path_look_up(struct index_ctx *ctx, const char *pathname, uint64_t *id,
             terminal = datasize == sizeof(struct index_obj_ent_data);
             break;
         default:
-            res = ERR_TAG(EILSEQ);
+            res = ERR_TAG(E_ILSEQ);
             goto err1;
         }
 
@@ -1996,13 +2005,13 @@ path_list_possible(struct index_ctx *ctx, const struct index_key *key, FILE *f)
 
         res = fprintf(f, "%s\n", s);
         if (res < 0) {
-            res = -EIO;
+            res = -E_IO;
             goto end;
         }
 
         res = do_index_iter_next(iter);
         if (res != 0) {
-            if (res != -ENOENT)
+            if (res != -E_NOENT)
                 goto end;
             break;
         }
@@ -2060,9 +2069,9 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
 
         res = do_index_iter_get(iter, &k, NULL, NULL);
         if (res != 0) {
-            if (err_get_code(res) == -EADDRNOTAVAIL) {
+            if (err_get_code(res) == -E_ADDRNOTAVAIL) {
                 clear_err(res);
-                res = ERR_TAG(ENOENT);
+                res = ERR_TAG(E_NOENT);
             }
             goto err;
         }
@@ -2072,15 +2081,15 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
 
         res = do_index_iter_get(iter, &k, &ent, &datasize);
         if (res != 0) {
-            if (err_get_code(res) == -EADDRNOTAVAIL) {
+            if (err_get_code(res) == -E_ADDRNOTAVAIL) {
                 clear_err(res);
-                res = ERR_TAG(EIO);
+                res = ERR_TAG(E_IO);
             }
             goto err;
         }
         if (unpack_u32(index_key, &k, type) != typ
             || unpack_u64(index_key, &k, id) != parent_id) {
-            res = ERR_TAG(EIO);
+            res = ERR_TAG(E_IO);
             goto err;
         }
 
@@ -2111,7 +2120,7 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
             }
             break;
         default:
-            res = ERR_TAG(EILSEQ);
+            res = ERR_TAG(E_ILSEQ);
             goto err;
         }
 
@@ -2131,7 +2140,7 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
             if (res != 0)
                 goto err;
             if (!allow_deletes) {
-                res = ERR_TAG(EIO);
+                res = ERR_TAG(E_IO);
                 goto err;
             }
             continue;
@@ -2139,7 +2148,7 @@ get_ents(struct index_ctx *ctx, uint64_t type, uint64_t id, int allow_deletes,
 
         res = do_index_iter_next(iter);
         if (res != 0) {
-            if (err_get_code(res) != -ENOENT)
+            if (err_get_code(res) != -E_NOENT)
                 goto err;
             clear_err(res);
             break;
@@ -2206,13 +2215,13 @@ list_index_entries_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     (void)id;
 
     if (subtype >= ARRAY_SIZE(typedescs))
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     typechar = typedescs[subtype].typechar;
     if (typechar == '\0')
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
 
     if (fprintf(f, "%c\t", typechar) < 0)
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
 
     if (type == TYPE_OBJECT)
         fprintf(f, "%s", sval1);
@@ -2221,30 +2230,30 @@ list_index_entries_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     fputc('\t', f);
 
     if (ferror(f))
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
 
     switch (subtype) {
     case TYPE_NULL:
         if (fputs("null", f) == EOF)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         break;
     case TYPE_BOOLEAN:
         if (fprintf(f, "%d", nval2 != 0) < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         break;
     case TYPE_NUMERIC:
         if (fprintf(f, "%" PRIu64, nval2) < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         break;
     case TYPE_STRING:
         if (fputs(sval2, f) == EOF)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         /* fallthrough */
     default:
         break;
     }
 
-    return fputc('\n', f) == EOF ? ERR_TAG(EIO) : 0;
+    return fputc('\n', f) == EOF ? ERR_TAG(E_IO) : 0;
 }
 
 static int
@@ -2296,7 +2305,7 @@ delete_from_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
         fprintf(f, "String value: %s\n", sval2);
         break;
     default:
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     }
 
     --wctx->level;
@@ -2392,12 +2401,12 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     case TYPE_STRING:
         len = strlen(sval2) + 1;
         if (oallocarray(&str, len) == NULL) {
-            res = ERR_TAG(errno);
+            res = ERR_TAG(en);
             goto err1;
         }
         if (mbsrtowcs(str, &sval2, len, memset(&s, 0, sizeof(s)))
             == (size_t)-1) {
-            res = ERR_TAG(errno);
+            res = ERR_TAG(en);
             goto err2;
         }
         res = json_string_set_value(jv, str);
@@ -2407,7 +2416,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
         print_verbose(f, "String value: %s\n", sval2);
         break;
     default:
-        res = ERR_TAG(EILSEQ);
+        res = ERR_TAG(E_ILSEQ);
         goto err1;
     }
 
@@ -2422,12 +2431,12 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
         case TYPE_OBJECT:
             len = strlen(sval1) + 1;
             if (oallocarray(&str, len) == NULL) {
-                res = ERR_TAG(errno);
+                res = ERR_TAG(en);
                 goto err1;
             }
             if (mbsrtowcs(str, &sval1, len, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
-                res = ERR_TAG(errno);
+                res = ERR_TAG(en);
                 goto err2;
             }
             elm.k = str;
@@ -2480,23 +2489,23 @@ walk_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype, uint64_t id,
     }
 
     if (ferror(f))
-        return ERR_TAG(EIO);
+        return ERR_TAG(E_IO);
 
     switch (subtype) {
     case TYPE_NULL:
         if (fputs("Null value\n", f) == EOF)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         break;
     case TYPE_BOOLEAN:
         if (fprintf(f, "Boolean value: %d\n", nval2 != 0) < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         break;
     case TYPE_OBJECT:
     case TYPE_ARRAY:
         if (fprintf(f, "%s value: %" PRIu64 "\n", typedescs[subtype].typestr,
                     id)
             < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         ++wctx->level;
         res = get_ents(wctx->ctx, subtype, id, 0, &walk_index_cb, wctx);
         --wctx->level;
@@ -2505,14 +2514,14 @@ walk_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype, uint64_t id,
         break;
     case TYPE_NUMERIC:
         if (fprintf(f, "Numeric value: %" PRIu64 "\n", nval2) < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         break;
     case TYPE_STRING:
         if (fprintf(f, "String value: %s\n", sval2) < 0)
-            return ERR_TAG(EIO);
+            return ERR_TAG(E_IO);
         break;
     default:
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     }
 
     --wctx->level;
@@ -2550,10 +2559,10 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
     type = unpack_u32(index_key, k, type);
 
     if (type >= ARRAY_SIZE(typemap))
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     str = typemap[type];
     if (str == NULL)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     if (str[0] == '\0')
         return 0;
 
@@ -2581,9 +2590,9 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
         str = packed_memb_addr(index_key, k, string);
         if (mbsrtowcs(wcs, &str, ARRAY_SIZE(wcs), memset(&s, 0, sizeof(s)))
             == (size_t)-1)
-            return ERR_TAG(errno);
+            return ERR_TAG(en);
         if (str != NULL)
-            return ERR_TAG(ENAMETOOLONG);
+            return ERR_TAG(E_NAMETOOLONG);
         print_attr(&args, "%ls", "Key", wcs);
         break;
     default:
@@ -2600,14 +2609,14 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
         subtype = unpack_u32(index_obj_ent, obj.ent, subtype);
         break;
     default:
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     }
 
     if (subtype >= ARRAY_SIZE(typedescs))
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     str = typedescs[subtype].typestr;
     if (str == NULL)
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     print_attr(&args, "%s", "Type", str);
 
     switch (subtype) {
@@ -2629,19 +2638,19 @@ dump_index_cb(const void *key, const void *data, size_t datasize, void *ctx)
         str = packed_memb_addr(index_obj_ent_data, obj.ent_data, string);
         if (mbsrtowcs(wcs, &str, ARRAY_SIZE(wcs), memset(&s, 0, sizeof(s)))
             == (size_t)-1)
-            return ERR_TAG(errno);
+            return ERR_TAG(en);
         if (str != NULL)
-            return ERR_TAG(ENAMETOOLONG);
+            return ERR_TAG(E_NAMETOOLONG);
         print_attr(&args, "%ls", "Value", wcs);
         /* fallthrough */
     case TYPE_NULL:
         break;
     default:
-        return ERR_TAG(EILSEQ);
+        return ERR_TAG(E_ILSEQ);
     }
 
 end:
-    return ferror(f) ? ERR_TAG(EIO) : 0;
+    return ferror(f) ? ERR_TAG(E_IO) : 0;
 }
 
 #undef FWIDTH
@@ -2666,25 +2675,26 @@ index_json(int infd, const char *index_pathname, const char *filename)
     errmsg = "Error opening input";
 
     if (filename == NULL) {
-        err = -ENOSYS;
+        err = -E_NOSYS;
         goto err1;
     }
 
     infd = dup(infd);
     if (infd == -1) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         close(infd);
         goto err1;
     }
 
     err = json_init();
     if (err) {
+        err = -sys_maperror(-err);
         errmsg = "Error initializing";
         goto err2;
     }
@@ -2696,6 +2706,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
     err = json_parse_text(&jv, NULL, 0, &json_in_filter_discard_comments,
                           &ictx);
     if (err) {
+        err = -sys_maperror(-err);
         errmsg = "Error parsing input";
         goto err3;
     }
@@ -2709,31 +2720,35 @@ index_json(int infd, const char *index_pathname, const char *filename)
     errmsg = "Error generating index";
 
     err = json_value_init(&new_jv, JSON_OBJECT_T);
-    if (err)
+    if (err) {
+        err = -sys_maperror(-err);
         goto err5;
+    }
 
     len = strlen(filename) + 1;
     if (oallocarray(&k, len) == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err6;
     }
 
     src = filename;
     ret = mbsrtowcs(k, &src, len, memset(&s, 0, sizeof(s)));
     if (ret == (size_t)-1) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err7;
     }
     if (ret == len) {
-        err = -EIO;
+        err = -E_IO;
         goto err7;
     }
 
     elm.k = k;
     elm.v = jv;
     err = json_object_insert(new_jv, &elm);
-    if (err)
+    if (err) {
+        err = -sys_maperror(-err);
         goto err6;
+    }
     json_value_put(jv);
     jv = new_jv;
 
@@ -2769,7 +2784,7 @@ err1:
     if (!sigpipe_recv) {
         if (err > 0)
             err = print_err(err);
-        fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
+        fprintf(stderr, "%s: %s\n", errmsg, sys_strerror(-err));
     }
     return err;
 }
@@ -2788,24 +2803,25 @@ output_json(const char *index_pathname, const char *filename, int outfd,
 
     outfd = dup(outfd);
     if (outfd == -1) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err1;
     }
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         close(outfd);
         goto err1;
     }
 
     if (setvbuf(f, NULL, _IOLBF, 0) == EOF) {
-        err = -ENOMEM;
+        err = -E_NOMEM;
         goto err2;
     }
 
     err = json_init();
     if (err) {
+        err = -sys_maperror(-err);
         errmsg = "Error initializing";
         goto err2;
     }
@@ -2833,8 +2849,10 @@ output_json(const char *index_pathname, const char *filename, int outfd,
 
     if (octx.jv != NULL) {
         err = json_write_text(NULL, NULL, octx.jv, &json_wr_cb, f, 1);
-        if (err)
+        if (err) {
+            err = -sys_maperror(-err);
             goto err3;
+        }
 
         err = syncf(f);
         if (err)
@@ -2844,7 +2862,7 @@ output_json(const char *index_pathname, const char *filename, int outfd,
     json_deinit();
 
     if (fclose(f) == EOF) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err1;
     }
 
@@ -2860,7 +2878,7 @@ err1:
     if (!sigpipe_recv) {
         if (err > 0)
             err = print_err(err);
-        fprintf(stderr, "%s: %s\n", errmsg, strerror(-err));
+        fprintf(stderr, "%s: %s\n", errmsg, sys_strerror(-err));
     }
     return err;
 }
@@ -2879,7 +2897,7 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
 
     if (pathname == NULL) {
         if (infd != -1) {
-            err = -ENOSYS;
+            err = -E_NOSYS;
             goto err1;
         }
         infd = STDIN_FILENO;
@@ -2889,13 +2907,13 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
 
     infd = dup(infd);
     if (infd == -1) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         close(infd);
         goto err1;
     }
@@ -2923,8 +2941,8 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
             errno = 0;
             ret = getline(&line, &linecap, f);
             if (ret == -1) {
-                if (errno != 0) {
-                    err = MINUS_CERRNO;
+                err = -en;
+                if (err != 0) {
                     free(line);
                     goto err4;
                 }
@@ -2977,7 +2995,7 @@ err1:
             err = print_err(err);
         if (errmsg != NULL)
             fprintf(stderr, "%s: ", errmsg);
-        fprintf(stderr, "%s\n", strerror(-err));
+        fprintf(stderr, "%s\n", sys_strerror(-err));
     }
     return err;
 }
@@ -2992,7 +3010,7 @@ output_index(const char *index_pathname, const char *pathname, int outfd,
     struct index_ctx *ctx;
 
     if (pathname == NULL) {
-        err = -ENOSYS;
+        err = -E_NOSYS;
         errmsg = "Error opening input";
         goto err1;
     }
@@ -3001,19 +3019,19 @@ output_index(const char *index_pathname, const char *pathname, int outfd,
 
     outfd = dup(outfd);
     if (outfd == -1) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err1;
     }
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         close(outfd);
         goto err1;
     }
 
     if (setvbuf(f, NULL, _IOLBF, 0) == EOF) {
-        err = -ENOMEM;
+        err = -E_NOMEM;
         goto err2;
     }
 
@@ -3041,7 +3059,7 @@ output_index(const char *index_pathname, const char *pathname, int outfd,
         goto err2;
 
     if (fclose(f) == EOF) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err1;
     }
 
@@ -3057,7 +3075,7 @@ err1:
             err = print_err(err);
         if (errmsg != NULL)
             fprintf(stderr, "%s: ", errmsg);
-        fprintf(stderr, "%s\n", strerror(-err));
+        fprintf(stderr, "%s\n", sys_strerror(-err));
     }
     return err;
 }
@@ -3080,7 +3098,7 @@ delete_from_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     res = path_look_up(ctx, pathname, &id, &e, 0, NULL);
     if (res != 1) {
         if (res == 0)
-            res = -ENOENT;
+            res = -E_NOENT;
         goto err1;
     }
 
@@ -3191,10 +3209,9 @@ update_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     errno = 0;
     ret = getline(&line, &linecap, f);
     if (ret == -1) {
-        if (errno != 0) {
-            res = MINUS_CERRNO;
+        res = -en;
+        if (res != 0)
             goto err;
-        }
         return 0;
     }
 
@@ -3211,7 +3228,7 @@ update_index(struct index_ctx *ctx, const char *pathname, FILE *f,
 
         len = _strlcpy(s, line, packed_memb_size(index_obj_ent_data, string));
         if (len >= packed_memb_size(index_obj_ent_data, string)) {
-            res = -ENAMETOOLONG;
+            res = -E_NAMETOOLONG;
             free(line);
             goto err;
         }
@@ -3242,7 +3259,7 @@ list_index_entries(struct index_ctx *ctx, const char *pathname, FILE *f,
     res = path_look_up(ctx, pathname, &id, &e, 0, NULL);
     if (res != 1) {
         if (res == 0) {
-            res = -ENOENT;
+            res = -E_NOENT;
             *errmsg = NULL;
             fprintf(stderr, "%s not found\n", pathname);
         } else
@@ -3289,7 +3306,7 @@ search_index(struct index_ctx *ctx, const char *pathname, FILE *f,
         } else
             fprintf(f, "Type: %c\n", typedescs[subtype].typechar);
         if (ferror(f)) {
-            res = -EIO;
+            res = -E_IO;
             goto err;
         }
     } else {

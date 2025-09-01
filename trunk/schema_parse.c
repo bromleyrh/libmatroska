@@ -58,6 +58,11 @@ struct ns_key {
     struct id_node      *idnode;
 };
 
+struct ns_dump_ctx {
+    FILE    *f;
+    int     cb_err;
+};
+
 #define EBML_ELEMENT_ID 0xa45dfa3
 #define EBML_ELEMENT_ID_WITH_MARKER 0x1a45dfa3
 
@@ -108,16 +113,18 @@ static int process_paths(int, int);
 static int
 syncf(FILE *f)
 {
+    int err;
     int fd;
 
     if (fflush(f) == EOF)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     fd = fileno(f);
     while (fsync(fd) == -1) {
-        if (errno != EINTR) {
-            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_CERRNO;
+        err = en;
+        if (err != E_INTR) {
+            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+                return -err;
             break;
         }
     }
@@ -150,7 +157,7 @@ ns_key_output(const void *k, void *ctx)
     sz = 16;
     dir_stk = malloc(sz * sizeof(*dir_stk));
     if (dir_stk == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     dir_stk[0] = key;
     len = 1;
@@ -162,7 +169,7 @@ ns_key_output(const void *k, void *ctx)
             sz *= 2;
             tmp = realloc(dir_stk, sz * sizeof(*tmp));
             if (tmp == NULL) {
-                err = MINUS_CERRNO;
+                err = MINUS_ERRNO;
                 goto err;
             }
             dir_stk = tmp;
@@ -173,7 +180,7 @@ ns_key_output(const void *k, void *ctx)
     --len;
     for (;;) {
         if (fprintf(f, "/%s", dir_stk[len]->name) < 0) {
-            err = -EIO;
+            err = -E_IO;
             goto err;
         }
         if (len == 0)
@@ -184,7 +191,7 @@ ns_key_output(const void *k, void *ctx)
     free(dir_stk);
 
     key = *(struct ns_key *const *)k;
-    return fprintf(f, "%s\n", key->type == TYPE_DIR ? "/" : "") < 0 ? -EIO : 0;
+    return fprintf(f, "%s\n", key->type == TYPE_DIR ? "/" : "") < 0 ? -E_IO : 0;
 
 err:
     free(dir_stk);
@@ -231,7 +238,7 @@ ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
 
     k = malloc(sizeof(*k));
     if (k == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     k->addr = key->addr;
     k->name = key->name;
@@ -243,7 +250,7 @@ ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
     err = avl_tree_insert(ns, &k);
     if (err) {
         free(k);
-        return err;
+        return -sys_maperror(-err);
     }
 
     if (idstr == NULL)
@@ -257,7 +264,7 @@ ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
                   "off_t, void *, int);\n\n",
                   idnode->handler)
            < 0)
-        return -EIO;
+        return -E_IO;
 
     if (printf("DEF_EBML_DATA(%016" PRIx64 ", \"%s -> %s\", %s%s, %d, "
                "%s%s);\n\n",
@@ -267,7 +274,7 @@ ns_insert(struct avl_tree *ns, struct ns_key *key, const char *idstr)
                idnode->type, idnode->ref == NULL ? "" : "&",
                idnode->ref == NULL ? "NULL" : idnode->ref)
         < 0)
-        return -EIO;
+        return -E_IO;
 
     return 0;
 }
@@ -282,11 +289,11 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
 
     s = strdup(path);
     if (s == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     name = strtok_r(s, "/", &saveptr);
     if (name == NULL) {
-        res = -EINVAL;
+        res = -E_INVAL;
         goto err;
     }
 
@@ -297,10 +304,12 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
         kp = &k;
         res = avl_tree_search(ns, &kp, &kp);
         if (res != 1) {
-            if (res != 0)
+            if (res != 0) {
+                res = -sys_maperror(-res);
                 goto err;
+            }
             if (strtok_r(NULL, "/", &saveptr) != NULL) {
-                res = -ENOENT;
+                res = -E_NOENT;
                 goto err;
             }
             break;
@@ -308,7 +317,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
 
         if (kp->type == TYPE_ENT) {
             if (strtok_r(NULL, "/", &saveptr) != NULL) {
-                res = -ENOTDIR;
+                res = -E_NOTDIR;
                 goto err;
             }
             res = 1;
@@ -318,7 +327,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
 
         name = strtok_r(NULL, "/", &saveptr);
         if (name == NULL) {
-            res = -EISDIR;
+            res = -E_ISDIR;
             goto err;
         }
 
@@ -328,7 +337,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
     if (res == 0) {
         k.name = strdup(k.name);
         if (k.name == NULL) {
-            res = MINUS_CERRNO;
+            res = MINUS_ERRNO;
             goto err;
         }
         *retkey = k;
@@ -348,8 +357,14 @@ static int
 ns_dump(FILE *f, struct avl_tree *ns)
 {
     avl_tree_walk_ctx_t wctx = NULL;
+    int err;
+    struct ns_dump_ctx dctx;
 
-    return avl_tree_walk(ns, NULL, &ns_key_output, f, &wctx);
+    dctx.f = f;
+    dctx.cb_err = 0;
+
+    err = avl_tree_walk(ns, NULL, &ns_key_output, &dctx, &wctx);
+    return err && !dctx.cb_err ? -sys_maperror(-err) : err;
 }
 
 static int
@@ -363,7 +378,7 @@ do_printf(jmp_buf *env, const char *fmt, ...)
     va_end(ap);
 
     if (ret < 0)
-        longjmp(*env, -EIO);
+        longjmp(*env, -E_IO);
 
     return 0;
 }
@@ -394,12 +409,12 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
 
     idnode = malloc(sizeof(*idnode));
     if (idnode == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     prop = xmlGetProp(node, (unsigned char *)"type");
     if (prop == NULL) {
         fputs("Element is missing type\n", stderr);
-        res = -EINVAL;
+        res = -E_INVAL;
         goto err1;
     }
 
@@ -410,13 +425,13 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
     path = (char *)xmlGetProp(node, (unsigned char *)"path");
     if (path == NULL) {
         fputs("Element is missing path\n", stderr);
-        res = -EINVAL;
+        res = -E_INVAL;
         goto err1;
     }
     if (op == DUMP_PATHS) {
         res = printf("%s%s\n", path, idnode->type == ETYPE_MASTER ? "/" : "")
               < 0
-              ? -EIO : 0;
+              ? -E_IO : 0;
         xmlFree(path);
         goto err1;
     }
@@ -424,22 +439,22 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
     idnode->name = (char *)xmlGetProp(node, (unsigned char *)"name");
     if (idnode->name == NULL) {
         fputs("Element is missing name\n", stderr);
-        res = -EINVAL;
+        res = -E_INVAL;
         goto err2;
     }
 
     prop = xmlGetProp(node, (unsigned char *)"id");
     if (prop == NULL) {
         fputs("Element is missing ID\n", stderr);
-        res = -EINVAL;
+        res = -E_INVAL;
         goto err3;
     }
 
     errno = 0;
     id = strtoul((const char *)prop, &endptr, 16);
-    res = -errno;
+    res = -en;
     if (res != 0 && *endptr != '\0')
-        res = -EINVAL;
+        res = -E_INVAL;
 
     xmlFree(prop);
 
@@ -456,13 +471,15 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
     idnode->handler = (char *)xmlGetProp(node, (unsigned char *)"handler");
 
     res = l64a_r(id, idstr, sizeof(idstr));
-    if (res != 0)
+    if (res != 0) {
+        res = -sys_maperror(-res);
         goto err4;
+    }
 
     res = ns_look_up(ns, path, &retkey);
     if (res != 0) {
         if (res == 1)
-            res = -EILSEQ;
+            res = -E_ILSEQ;
         goto err4;
     }
 
@@ -471,7 +488,7 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
 
     k = malloc(sizeof(*k));
     if (k == NULL) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         goto err5;
     }
 
@@ -499,7 +516,7 @@ parse_element(enum op op, xmlNode *node, struct avl_tree *ns,
                   ");\n\n",
                   get_node_id(idnode))
            < 0)
-        return -EIO;
+        return -E_IO;
 
     fprintf(stderr, "ID %s\n", idstr);
 
@@ -667,7 +684,7 @@ sr_fn(const struct radix_tree_node *node, const char *str, void *val, void *ctx)
         return 0;
 
 err:
-    return -EIO;
+    return -E_IO;
 }
 
 static int
@@ -757,7 +774,7 @@ _output_parser_data(enum op op, xmlNode *node, int level, struct avl_tree *ns,
 
 inval_err:
     fprintf(stderr, "Unrecognized element %s\n", cur->name);
-    return -EINVAL;
+    return -E_INVAL;
 }
 
 #undef INIT_ENTRY
@@ -798,18 +815,20 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype,
         if (strcmp("ebml", doctype) != 0) {
             idnode = malloc(sizeof(*idnode));
             if (idnode == NULL) {
-                err = MINUS_CERRNO;
+                err = MINUS_ERRNO;
                 goto err1;
             }
 
             err = l64a_r(EBML_ELEMENT_ID, idstr, sizeof(idstr));
-            if (err)
+            if (err) {
+                err = -sys_maperror(-err);
                 goto err3;
+            }
 
             k.name = strdup(strcmp("matroska_semantics", doctype) == 0
                             ? "EBMLSemantics" : "EBML");
             if (k.name == NULL) {
-                err = MINUS_CERRNO;
+                err = MINUS_ERRNO;
                 goto err3;
             }
             k.addr = NULL;
@@ -845,7 +864,7 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype,
         if (printf("#define %s_TRIE_ROOT (&%s_trie_node_%016" PRIx64 ")\n\n",
                    doctype, doctype, get_node_id(rt->root))
             < 0) {
-            err = -EIO;
+            err = -E_IO;
             goto err2;
         }
 
@@ -854,7 +873,7 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype,
             goto err2;
 
         if (printf("#undef TRIE_NODE_PREFIX\n\n") < 0) {
-            err = -EIO;
+            err = -E_IO;
             goto err2;
         }
     }
@@ -894,24 +913,24 @@ process_paths(int infd, int outfd)
 
     infd = dup(infd);
     if (infd == -1)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     inf = fdopen(infd, "r");
     if (inf == NULL) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         close(infd);
         return res;
     }
 
     outfd = dup(outfd);
     if (outfd == -1) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         goto err1;
     }
 
     outf = fdopen(outfd, "w");
     if (outf == NULL) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         close(outfd);
         goto err1;
     }
@@ -927,10 +946,12 @@ process_paths(int infd, int outfd)
 
         errno = 0;
         if (getline(&line, &linecap, inf) == -1) {
-            res = -errno;
+            res = en;
             free(line);
-            if (res != 0)
+            if (res != 0) {
+                res = -res;
                 goto err3;
+            }
             break;
         }
         len = strlen(line);
@@ -948,7 +969,7 @@ process_paths(int infd, int outfd)
 
         k = malloc(sizeof(*k));
         if (k == NULL) {
-            res = MINUS_CERRNO;
+            res = MINUS_ERRNO;
             goto err4;
         }
 
@@ -973,7 +994,7 @@ process_paths(int infd, int outfd)
     if (res != 0)
         goto err2;
 
-    res = fclose(outf) == EOF ? MINUS_CERRNO : 0;
+    res = fclose(outf) == EOF ? MINUS_ERRNO : 0;
     fclose(inf);
 
     return res;

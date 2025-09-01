@@ -8,12 +8,13 @@
 #include "ebml.h"
 #include "matroska.h"
 #include "parser.h"
+#include "std_sys.h"
+#include "util.h"
 
 #include <avl_tree.h>
 #include <malloc_ext.h>
 #include <strings_ext.h>
 
-#include <errno.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -69,22 +70,24 @@ parse_track_spec(const char *trackno, const char *path, int fd,
     } else {
         e.path = strdup(path);
         if (e.path == NULL)
-            return MINUS_CERRNO;
+            return MINUS_ERRNO;
         e.fd = -1;
 
         e.f = fopen(e.path, "w");
     }
     if (e.f == NULL) {
-        err = MINUS_CERRNO;
-        fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
+        err = MINUS_ERRNO;
+        fprintf(stderr, "Error opening output file: %s\n", sys_strerror(-err));
         goto err1;
     }
 
     e.trackno = strtoumax(trackno, NULL, 10);
 
     err = avl_tree_insert(tcb, &e);
-    if (err)
+    if (err) {
+        err = -sys_maperror(-err);
         goto err2;
+    }
 
     return 0;
 
@@ -104,8 +107,10 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
 
     err = avl_tree_new(&trackcb, sizeof(struct track_cb), &track_cb_cmp, 0,
                        NULL, NULL, NULL);
-    if (err)
+    if (err) {
+        err = -sys_maperror(-err);
         return err;
+    }
 
     for (i = 1; i < argc; i++) {
         char *sep;
@@ -113,7 +118,7 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
 
         sep = argv[i] + strcspn(argv[i], "#:");
         if (*sep == '\0')
-            return -EINVAL;
+            return -E_INVAL;
         fd = *sep == '#';
         *sep++ = '\0';
 
@@ -139,10 +144,13 @@ err:
 static int
 syncfd(int fd)
 {
+    int err;
+
     while (fsync(fd) == -1) {
-        if (errno != EINTR) {
-            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_CERRNO;
+        err = en;
+        if (err != E_INTR) {
+            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+                return -err;
             break;
         }
     }
@@ -170,10 +178,10 @@ track_cb_free(const void *keyval, void *ctx)
     err = syncfd(fileno(tcb->f));
 
     if (fclose(tcb->f) == EOF)
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
 
     if (err) {
-        fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
+        fprintf(stderr, "Error closing output file: %s\n", sys_strerror(-err));
         *(int *)ctx = err;
     }
 
@@ -221,16 +229,16 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         size_t ret;
 
         if (res != 1)
-            return res;
+            return -sys_maperror(-res);
 
         fprintf(stderr, " (>%s)",
                 e.path == NULL ? itoa(e.fd, tmp, 10) : e.path);
 
         ret = fwrite(buf, 1, len, e.f);
         if (ret != len) {
-            res = MINUS_CERRNO;
+            res = MINUS_ERRNO;
             fprintf(stderr, "Error writing to output file: %s\n",
-                    strerror(-res));
+                    sys_strerror(-res));
             return res;
         }
     }
@@ -278,7 +286,7 @@ err2:
 err1:
     if (res > 0)
         res = matroska_print_err(stderr, res);
-    fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
+    fprintf(stderr, "%s: %s\n", errmsg, sys_strerror(-res));
     return res;
 }
 

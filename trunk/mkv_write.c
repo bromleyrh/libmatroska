@@ -151,11 +151,11 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
     if (path1 != NULL) {
         cb->path = strdup(path1);
         if (cb->path == NULL)
-            return MINUS_CERRNO;
+            return MINUS_ERRNO;
 
         cb->fd = open(path1, O_WRONLY);
         if (cb->fd == -1) {
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
             goto err1;
         }
     } else {
@@ -166,7 +166,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
     if (path2 != NULL) {
         cb->datapath = strdup(path2);
         if (cb->datapath == NULL) {
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
             goto err2;
         }
         cb->datafd = -1;
@@ -179,14 +179,14 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->dataf = fdopen(cb->datafd, "r");
     }
     if (cb->dataf == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err3;
     }
 
     if (path3 != NULL) {
         cb->tracepath = strdup(path3);
         if (cb->tracepath == NULL) {
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
             goto err4;
         }
         cb->tracefd = -1;
@@ -204,7 +204,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
         goto end;
     }
     if (cb->tracef == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err5;
     }
 
@@ -222,7 +222,7 @@ err2:
         close(cb->fd);
 err1:
     free(cb->path);
-    fprintf(stderr, "Error opening input file: %s\n", strerror(-err));
+    fprintf(stderr, "Error opening input file: %s\n", sys_strerror(-err));
     return err;
 }
 
@@ -340,10 +340,13 @@ from_hex(char c)
 static int
 syncfd(int fd)
 {
+    int err;
+
     while (fsync(fd) == -1) {
-        if (errno != EINTR) {
-            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_CERRNO;
+        err = en;
+        if (err != E_INTR) {
+            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+                return -err;
             break;
         }
     }
@@ -360,10 +363,12 @@ free_cb(struct cb *cb)
         err = syncfd(fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
 
-        if (err)
-            fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
+        if (err) {
+            fprintf(stderr, "Error closing output file: %s\n",
+                    sys_strerror(-err));
+        }
 
         free(cb->tracepath);
     }
@@ -401,19 +406,19 @@ _cvt_string_to_utf8(char **dst, json_value_t src)
 
     err = json_value_get_type(src, &jvt);
     if (err)
-        return err;
+        goto err1;
     if (jvt != JSON_STRING_T)
-        return -EILSEQ;
+        return -E_ILSEQ;
 
     err = json_string_get_value(src, &val);
     if (err)
-        return err;
+        goto err1;
 
     slen = 16;
     str = malloc(slen);
     if (str == NULL) {
-        err = MINUS_CERRNO;
-        goto err1;
+        err = MINUS_ERRNO;
+        goto err2;
     }
 
     for (;;) {
@@ -424,16 +429,16 @@ _cvt_string_to_utf8(char **dst, json_value_t src)
         srcp = val;
         if (wcsrtombs(str, &srcp, slen, memset(&s, 0, sizeof(s)))
             == (size_t)-1) {
-            err = MINUS_CERRNO;
-            goto err2;
+            err = MINUS_ERRNO;
+            goto err3;
         }
         if (srcp == NULL)
             break;
         slen *= 2;
         tmp = realloc(str, slen);
         if (tmp == NULL) {
-            err = MINUS_CERRNO;
-            goto err2;
+            err = MINUS_ERRNO;
+            goto err3;
         }
         str = tmp;
     }
@@ -443,11 +448,14 @@ _cvt_string_to_utf8(char **dst, json_value_t src)
     *dst = str;
     return 0;
 
-err2:
+err3:
     free(str);
-err1:
+err2:
     free(val);
     return err;
+
+err1:
+    return -sys_maperror(-err);
 }
 
 static int
@@ -460,13 +468,15 @@ cvt_block_data(json_value_t jv, struct ctx *ctx)
     uint64_t hdrsz, sz;
 
     res = json_object_get(jv, L"trackno", &elm);
-    if (res != 0)
-        return res == -EINVAL ? 1 : res;
+    if (res != 0) {
+        res = sys_maperror(-res);
+        return res == E_INVAL ? 1 : -res;
+    }
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err1;
-    if (jvt != JSON_NUMBER_T)
         goto err2;
+    if (jvt != JSON_NUMBER_T)
+        goto err3;
     ctx->trackno = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -474,12 +484,12 @@ cvt_block_data(json_value_t jv, struct ctx *ctx)
 
     res = json_object_get(jv, L"hdr_len", &elm);
     if (res != 0)
-        return res;
+        goto err1;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err1;
-    if (jvt != JSON_NUMBER_T)
         goto err2;
+    if (jvt != JSON_NUMBER_T)
+        goto err3;
     hdrsz = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -487,12 +497,12 @@ cvt_block_data(json_value_t jv, struct ctx *ctx)
 
     res = json_object_get(jv, L"data_offset", &elm);
     if (res != 0)
-        return res;
+        goto err1;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err1;
-    if (jvt != JSON_NUMBER_T)
         goto err2;
+    if (jvt != JSON_NUMBER_T)
+        goto err3;
     off = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -504,7 +514,7 @@ cvt_block_data(json_value_t jv, struct ctx *ctx)
             fprintf(stderr, "Synchronization error: displacement %zu byte%s "
                             "(%+" PRIi64 " byte%s)\n",
                     PL(disp), PL((int64_t)disp - (int64_t)lastsz));
-            return -EILSEQ;
+            return -E_ILSEQ;
         }
     }
 
@@ -512,12 +522,12 @@ cvt_block_data(json_value_t jv, struct ctx *ctx)
 
     res = json_object_get(jv, L"data_len", &elm);
     if (res != 0)
-        return res;
+        goto err1;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err1;
-    if (jvt != JSON_NUMBER_T)
         goto err2;
+    if (jvt != JSON_NUMBER_T)
+        goto err3;
     sz = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -525,12 +535,12 @@ cvt_block_data(json_value_t jv, struct ctx *ctx)
 
     res = json_object_get(jv, L"keyframe", &elm);
     if (res != 0)
-        return res;
+        goto err1;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err1;
-    if (jvt != JSON_BOOLEAN_T)
         goto err2;
+    if (jvt != JSON_BOOLEAN_T)
+        goto err3;
     ctx->keyframe = json_boolean_get(elm.v);
     json_value_put(elm.v);
 
@@ -538,12 +548,12 @@ cvt_block_data(json_value_t jv, struct ctx *ctx)
 
     res = json_object_get(jv, L"ts", &elm);
     if (res != 0)
-        return res;
+        goto err1;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
-        goto err1;
-    if (jvt != JSON_NUMBER_T)
         goto err2;
+    if (jvt != JSON_NUMBER_T)
+        goto err3;
     ctx->ts = json_numeric_get(elm.v);
     json_value_put(elm.v);
 
@@ -555,11 +565,14 @@ cvt_block_data(json_value_t jv, struct ctx *ctx)
 
     return 0;
 
-err2:
-    res = -EILSEQ;
-err1:
+err3:
     json_value_put(elm.v);
-    return res;
+    return -E_ILSEQ;
+
+err2:
+    json_value_put(elm.v);
+err1:
+    return -sys_maperror(-res);
 }
 
 static int
@@ -576,9 +589,9 @@ cvt_number_to_integer(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     err = json_value_get_type(src, &jvt);
     if (err)
-        return err;
+        return -sys_maperror(-err);
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        return -E_ILSEQ;
 
     dst->integer = json_numeric_get(src);
 
@@ -599,9 +612,9 @@ cvt_number_to_uinteger(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     err = json_value_get_type(src, &jvt);
     if (err)
-        return err;
+        return -sys_maperror(-err);
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        return -E_ILSEQ;
 
     dst->uinteger = json_numeric_get(src);
 
@@ -622,9 +635,9 @@ cvt_number_to_float(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     err = json_value_get_type(src, &jvt);
     if (err)
-        return err;
+        return -sys_maperror(-err);
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        return -E_ILSEQ;
 
     dst->dbl = json_numeric_get(src);
 
@@ -644,7 +657,9 @@ cvt_string_to_utf8(matroska_metadata_t *dst, size_t *len, json_value_t obj,
     (void)ctx;
 
     err = _cvt_string_to_utf8(&str, src);
-    if (!err) {
+    if (err)
+        err = -sys_maperror(-err);
+    else {
         dst->data = str;
         dst->len = strlen(str);
     }
@@ -670,7 +685,7 @@ cvt_string_to_date(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     err = _cvt_string_to_utf8(&str, src);
     if (err)
-        return err;
+        return -sys_maperror(-err);
 
     slen = strlen(str);
 
@@ -686,7 +701,7 @@ cvt_string_to_date(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     utc_tm = _timegm(&tm);
     if (utc_tm == (time_t)-1)
-        return -ENOMEM;
+        return -E_NOMEM;
 
     dst->integer = (utc_tm - mktime(&rtm)) * TIME_GRAN + s;
 
@@ -694,7 +709,7 @@ cvt_string_to_date(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
 err:
     free(str);
-    return -EILSEQ;
+    return -E_ILSEQ;
 }
 
 static int
@@ -710,9 +725,9 @@ cvt_number_to_master(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     err = json_value_get_type(src, &jvt);
     if (err)
-        return err;
+        return -sys_maperror(-err);
     if (jvt != JSON_NUMBER_T)
-        return -EILSEQ;
+        return -E_ILSEQ;
 
     dst->len = *len = json_numeric_get(src);
     return 0;
@@ -745,7 +760,7 @@ cvt_string_to_binary(matroska_metadata_t *dst, size_t *len, json_value_t obj,
 
     val = malloc(vallen);
     if (val == NULL) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         goto err;
     }
 
@@ -822,12 +837,12 @@ bitstream_cb(uint64_t *trackno, void *buf, ssize_t *nbytes, int16_t *ts,
     off = ctxp->lastoff;
 
     if (fseeko(f, off, SEEK_SET) == -1)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     for (numread = 0; numread < toread; numread += ret) {
         ret = fread((char *)buf + numread, 1, toread - numread, f);
         if (ret == 0)
-            return feof(f) ? -EILSEQ : MINUS_CERRNO;
+            return feof(f) ? -E_ILSEQ : MINUS_ERRNO;
     }
 
     if (ctxp->cb.tracef != NULL) {
@@ -836,20 +851,20 @@ bitstream_cb(uint64_t *trackno, void *buf, ssize_t *nbytes, int16_t *ts,
 
         cctx = adler32_init();
         if (cctx == NULL)
-            return -ENOMEM;
+            return -E_NOMEM;
         err = adler32_update(cctx, buf, toread);
         if (err) {
             adler32_end(cctx, NULL);
-            return err;
+            goto err;
         }
         err = adler32_end(cctx, &sum);
         if (err)
-            return err;
+            goto err;
 
         if (fprintf(ctxp->cb.tracef, "%10" PRIi64 "\t%7zu\t0x%08" PRIx32 "\n",
                     off, toread, sum)
             < 0)
-            return -EIO;
+            return -E_IO;
     }
 
     fprintf(stderr, "Offset: %" PRIi64 " byte%s\n"
@@ -865,6 +880,9 @@ end:
     if (keyframe != NULL)
         *keyframe = ctxp->keyframe;
     return 0;
+
+err:
+    return -sys_maperror(-err);
 }
 
 static int
@@ -877,7 +895,7 @@ process_block_data(json_value_t jv, struct ctx *ctx)
 
     res = json_object_get(jv, L"trackno", &elm);
     if (res != 0)
-        return res == -EINVAL ? 0 : res;
+        return res == -E_INVAL ? 0 : res;
     res = json_value_get_type(elm.v, &jvt);
     if (res != 0)
         goto err1;
@@ -920,7 +938,7 @@ process_block_data(json_value_t jv, struct ctx *ctx)
             fprintf(stderr, "Synchronization error: displacement %zu byte%s "
                             "(%+" PRIi64 " byte%s)\n",
                     PL(disp), PL((int64_t)disp - (int64_t)lastsz));
-            return -EILSEQ;
+            return -E_ILSEQ;
         }
     }
 
@@ -943,7 +961,7 @@ process_block_data(json_value_t jv, struct ctx *ctx)
     if (res != 0)
         return res;
     if (json_value_get_type(elm.v, &jvt) != JSON_BOOLEAN_T)
-        return -EILSEQ;
+        return -E_ILSEQ;
     res = json_boolean_get(elm.v);
     json_value_put(elm.v);
 
@@ -968,7 +986,7 @@ process_block_data(json_value_t jv, struct ctx *ctx)
     return 0;
 
 err2:
-    res = -EILSEQ;
+    res = -E_ILSEQ;
 err1:
     json_value_put(elm.v);
     return res;
@@ -997,23 +1015,24 @@ write_mkv(int infd, struct ctx *ctx)
 
     if (!ctx->import) {
         fputs("Only import operation is currently implemented\n", stderr);
-        return -ENOSYS;
+        return -E_NOSYS;
     }
 
     errno = 0;
     if (isatty(STDOUT_FILENO) == 1) {
-        res = -EINVAL;
+        res = -E_INVAL;
         errmsg = NULL;
         fputs("Standard output refers to a terminal device\n", stderr);
         goto err1;
     }
-    switch (errno) {
-    case ENOTTY:
-    case ENOSYS:
+    res = en;
+    switch (res) {
+    case E_NOTTY:
+    case E_NOSYS:
     case 0:
         break;
     default:
-        res = MINUS_CERRNO;
+        res = -res;
         errmsg = "Error initializing";
         goto err1;
     }
@@ -1022,13 +1041,13 @@ write_mkv(int infd, struct ctx *ctx)
 
     infd = dup(infd);
     if (infd == -1) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         close(infd);
         goto err1;
     }
@@ -1054,7 +1073,7 @@ write_mkv(int infd, struct ctx *ctx)
     if (res != 0)
         goto err4;
     if (jvt != JSON_ARRAY_T) {
-        res = -EILSEQ;
+        res = -E_ILSEQ;
         goto err4;
     }
 
@@ -1122,7 +1141,7 @@ write_mkv(int infd, struct ctx *ctx)
             }
             /* fallthrough */
         default:
-            res = -EILSEQ;
+            res = -E_ILSEQ;
             goto err6;
         }
 
@@ -1142,7 +1161,7 @@ write_mkv(int infd, struct ctx *ctx)
 
             if (awcstombs(&buf, elm.k, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
-                res = MINUS_CERRNO;
+                res = MINUS_ERRNO;
                 goto err7;
             }
 
@@ -1171,7 +1190,7 @@ write_mkv(int infd, struct ctx *ctx)
                                  &data, NULL);
             if (res != 1) {
                 if (res == 0)
-                    res = -EILSEQ;
+                    res = -E_ILSEQ;
                 goto err7;
             }
 
@@ -1183,12 +1202,12 @@ write_mkv(int infd, struct ctx *ctx)
         }
 
         if (etype >= ARRAY_SIZE(fns)) {
-            res = -EIO;
+            res = -E_IO;
             goto err7;
         }
         fn = fns[etype];
         if (fn == NULL) {
-            res = -EIO;
+            res = -E_IO;
             goto err7;
         }
 
@@ -1196,13 +1215,13 @@ write_mkv(int infd, struct ctx *ctx)
 
         buf = malloc(2 * buflen);
         if (buf == NULL) {
-            res = MINUS_CERRNO;
+            res = MINUS_ERRNO;
             goto err7;
         }
         name = buf + buflen;
 
         if (sscanf(value, "%s -> %s", buf, name) != 2) {
-            res = -EIO;
+            res = -E_IO;
             goto err7;
         }
 
@@ -1220,7 +1239,7 @@ write_mkv(int infd, struct ctx *ctx)
         if (etype == ETYPE_MASTER) {
             mdata = malloc(sizeof(*mdata));
             if (mdata == NULL) {
-                res = MINUS_CERRNO;
+                res = MINUS_ERRNO;
                 goto err7;
             }
             if (cluster) {
@@ -1240,7 +1259,7 @@ write_mkv(int infd, struct ctx *ctx)
             if (res != 0)
                 goto err9;
             if (jvt != JSON_NUMBER_T) {
-                res = -EILSEQ;
+                res = -E_ILSEQ;
                 goto err9;
             }
             json_value_put(obje.v);
@@ -1252,11 +1271,11 @@ write_mkv(int infd, struct ctx *ctx)
                     if (res != 0)
                         goto err9;
                     if (jvt != JSON_NUMBER_T) {
-                        res = -EILSEQ;
+                        res = -E_ILSEQ;
                         goto err9;
                     }
                     json_value_put(obje.v);
-                } else if (res != -EINVAL)
+                } else if (res != -E_INVAL)
                     goto err8;
             }
         }
@@ -1317,7 +1336,7 @@ err1:
     if (res > 0)
         res = matroska_print_err(stderr, res);
     if (errmsg != NULL)
-        fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
+        fprintf(stderr, "%s: %s\n", errmsg, sys_strerror(-res));
     return res;
 }
 
@@ -1342,13 +1361,13 @@ separate_data(int infd, struct ctx *ctx)
 
     infd = dup(infd);
     if (infd == -1) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         close(infd);
         goto err1;
     }
@@ -1374,7 +1393,7 @@ separate_data(int infd, struct ctx *ctx)
     if (res != 0)
         goto err4;
     if (jvt != JSON_ARRAY_T) {
-        res = -EILSEQ;
+        res = -E_ILSEQ;
         goto err4;
     }
 
@@ -1411,7 +1430,7 @@ separate_data(int infd, struct ctx *ctx)
             }
             /* fallthrough */
         default:
-            res = -EILSEQ;
+            res = -E_ILSEQ;
             goto err5;
         }
 
@@ -1429,7 +1448,7 @@ separate_data(int infd, struct ctx *ctx)
 
             if (awcstombs(&buf, elm.k, memset(&s, 0, sizeof(s)))
                 == (size_t)-1) {
-                res = MINUS_CERRNO;
+                res = MINUS_ERRNO;
                 json_value_put(elm.v);
                 goto err5;
             }
@@ -1458,7 +1477,7 @@ separate_data(int infd, struct ctx *ctx)
             free(buf);
             if (res != 1) {
                 if (res == 0)
-                    res = -EILSEQ;
+                    res = -E_ILSEQ;
                 goto err5;
             }
             lastvalue = value = data->val;
@@ -1468,13 +1487,13 @@ separate_data(int infd, struct ctx *ctx)
 
         buf = malloc(2 * buflen);
         if (buf == NULL) {
-            res = MINUS_CERRNO;
+            res = MINUS_ERRNO;
             goto err5;
         }
         name = buf + buflen;
 
         if (sscanf(value, "%s -> %s", buf, name) != 2) {
-            res = -EIO;
+            res = -E_IO;
             goto err6;
         }
 
@@ -1490,7 +1509,7 @@ separate_data(int infd, struct ctx *ctx)
             if (res != 0)
                 goto err7;
             if (jvt != JSON_NUMBER_T) {
-                res = -EILSEQ;
+                res = -E_ILSEQ;
                 goto err7;
             }
             json_value_put(elm.v);
@@ -1501,11 +1520,11 @@ separate_data(int infd, struct ctx *ctx)
                 if (res != 0)
                     goto err7;
                 if (jvt != JSON_NUMBER_T) {
-                    res = -EILSEQ;
+                    res = -E_ILSEQ;
                     goto err7;
                 }
                 json_value_put(elm.v);
-            } else if (res != -EINVAL)
+            } else if (res != -E_INVAL)
                 goto err6;
         }
 
@@ -1535,7 +1554,7 @@ err3:
 err2:
     fclose(f);
 err1:
-    fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
+    fprintf(stderr, "%s: %s\n", errmsg, sys_strerror(-res));
     return res;
 }
 

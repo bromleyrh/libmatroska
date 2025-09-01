@@ -25,7 +25,7 @@ static int
 print_err(FILE *f, int errdes)
 {
     err_print(f, &errdes);
-    return errdes < ERRDES_MIN ? -sys_rmaperror(-errdes) : errdes;
+    return errdes;
 }
 
 static int
@@ -33,7 +33,7 @@ zlib_stream_cb(const void *buf, size_t len, void *ctx)
 {
     FILE *f = *(FILE **)ctx;
 
-    return fwrite(buf, 1, len, f) == len ? 0 : MINUS_CERRNO;
+    return fwrite(buf, 1, len, f) == len ? 0 : MINUS_ERRNO;
 }
 
 int
@@ -54,7 +54,7 @@ main(int argc, char **argv)
     if (res != 0) {
         if (res > 0)
             res = print_err(stderr, res);
-        fprintf(stderr, "Error initializing output: %s\n", strerror(-res));
+        fprintf(stderr, "Error initializing output: %s\n", sys_strerror(-res));
         return EXIT_FAILURE;
     }
 
@@ -79,7 +79,7 @@ main(int argc, char **argv)
                 if (res > 0)
                     res = print_err(stderr, res);
                 fprintf(stderr, "Error decompressing input: %s\n",
-                        strerror(-res));
+                        sys_strerror(-res));
                 goto err;
             }
 
@@ -92,7 +92,7 @@ main(int argc, char **argv)
                 if (res > 0)
                     res = print_err(stderr, res);
                 fprintf(stderr, "Error initializing output: %s\n",
-                        strerror(-res));
+                        sys_strerror(-res));
                 return EXIT_FAILURE;
             }
 

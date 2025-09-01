@@ -101,9 +101,10 @@ bin_PROGRAMS = mkv_cat mkv_catalog mkv_dump mkv_join mkv_ls mkv_write zlib_cat
 mkv_cat_SOURCES = mkv_cat.c
 mkv_cat_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libutil_cppflags@
 mkv_cat_CFLAGS = $(AM_CFLAGS)
-mkv_cat_LDADD = $(matroska_link) $(matroska_link_dep) @libutil_link_dep@
+mkv_cat_LDADD = libstdsys.a $(matroska_link) $(matroska_link_dep) \
+	@libutil_link_dep@
 mkv_cat_LDFLAGS = -rpath @abs_top_builddir@/.libs
-mkv_cat_DEPENDENCIES = libmatroska.la
+mkv_cat_DEPENDENCIES = libstdsys.a libmatroska.la
 
 mkv_catalog_SOURCES = debug.c mkv_catalog.c util.c
 mkv_catalog_CPPFLAGS = $(AM_CPPFLAGS) @libjson_cppflags@ @libutil_cppflags@
@@ -114,10 +115,10 @@ mkv_catalog_DEPENDENCIES = libstdsys.a
 mkv_dump_SOURCES = mkv_dump.c
 mkv_dump_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libutil_cppflags@
 mkv_dump_CFLAGS = $(AM_CFLAGS)
-mkv_dump_LDADD = $(matroska_link) $(matroska_link_dep) \
+mkv_dump_LDADD = libstdsys.a $(matroska_link) $(matroska_link_dep) \
 	@libutil_link_dep@
 mkv_dump_LDFLAGS = -rpath @abs_top_builddir@/.libs
-mkv_dump_DEPENDENCIES = libmatroska.la
+mkv_dump_DEPENDENCIES = libstdsys.a libmatroska.la
 
 mkv_join_SOURCES = debug.c mkv_join.c util.c
 mkv_join_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@
@@ -128,19 +129,19 @@ mkv_join_DEPENDENCIES = libstdsys.a
 mkv_ls_SOURCES = mkv_ls.c
 mkv_ls_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@ @libutil_cppflags@
 mkv_ls_CFLAGS = $(AM_CFLAGS)
-mkv_ls_LDADD = $(matroska_link) $(matroska_link_dep) \
+mkv_ls_LDADD = libstdsys.a $(matroska_link) $(matroska_link_dep) \
 	@libjson_link_dep@ @libutil_link_dep@
 mkv_ls_LDFLAGS = -rpath @abs_top_builddir@/.libs
-mkv_ls_DEPENDENCIES = libmatroska.la
+mkv_ls_DEPENDENCIES = libstdsys.a libmatroska.la
 
 mkv_write_SOURCES = mkv_write.c strptime.c util.c
 mkv_write_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@ \
 	@libutil_cppflags@
 mkv_write_CFLAGS = $(AM_CFLAGS)
-mkv_write_LDADD = $(matroska_link) $(matroska_link_dep) \
+mkv_write_LDADD = libstdsys.a $(matroska_link) $(matroska_link_dep) \
 	@libjson_link_dep@ @libutil_link_dep@
 mkv_write_LDFLAGS = -rpath @abs_top_builddir@/.libs
-mkv_write_DEPENDENCIES = libmatroska.la
+mkv_write_DEPENDENCIES = libstdsys.a libmatroska.la
 
 zlib_cat_SOURCES = debug.c util.c zlib_cat.c zlib_stream.c
 zlib_cat_CPPFLAGS = $(AM_CPPFLAGS) @libutil_cppflags@ @zlib_cppflags@

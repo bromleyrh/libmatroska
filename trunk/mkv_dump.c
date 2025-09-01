@@ -8,11 +8,12 @@
 #include "ebml.h"
 #include "matroska.h"
 #include "parser.h"
+#include "std_sys.h"
+#include "util.h"
 
 #include <avl_tree.h>
 #include <malloc_ext.h>
 
-#include <errno.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -72,20 +73,22 @@ parse_track_spec(const char *trackno, const char *path, struct avl_tree *tcb)
 
     e.path = strdup(path);
     if (e.path == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     e.f = fopen(e.path, "w");
     if (e.f == NULL) {
-        err = MINUS_CERRNO;
-        fprintf(stderr, "Error opening %s: %s\n", e.path, strerror(-err));
+        err = MINUS_ERRNO;
+        fprintf(stderr, "Error opening %s: %s\n", e.path, sys_strerror(-err));
         goto err1;
     }
 
     e.trackno = strtoumax(trackno, NULL, 10);
 
     err = avl_tree_insert(tcb, &e);
-    if (err)
+    if (err) {
+        err = -sys_maperror(-err);
         goto err2;
+    }
 
     return 0;
 
@@ -104,20 +107,22 @@ parse_elem_spec(const char *elemno, const char *path, struct avl_tree *ecb)
 
     e.path = strdup(path);
     if (e.path == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     e.f = fopen(e.path, "w");
     if (e.f == NULL) {
-        err = MINUS_CERRNO;
-        fprintf(stderr, "Error opening %s: %s\n", e.path, strerror(-err));
+        err = MINUS_ERRNO;
+        fprintf(stderr, "Error opening %s: %s\n", e.path, sys_strerror(-err));
         goto err1;
     }
 
     e.elemno = strtoumax(elemno + 1, NULL, 10);
 
     err = avl_tree_insert(ecb, &e);
-    if (err)
+    if (err) {
+        err = -sys_maperror(-err);
         goto err2;
+    }
 
     return 0;
 
@@ -143,12 +148,12 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
     err = avl_tree_new(&trackcb, sizeof(struct track_cb), &track_cb_cmp, 0,
                        NULL, NULL, NULL);
     if (err)
-        return err;
+        goto err1;
 
     err = avl_tree_new(&elemcb, sizeof(struct elem_cb), &elem_cb_cmp, 0, NULL,
                        NULL, NULL);
     if (err)
-        goto err1;
+        goto err2;
 
     parse_data[0].cb = trackcb;
     parse_data[0].parse_fn = &parse_track_spec;
@@ -160,13 +165,16 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
 
         sep = strchr(argv[i], ':');
         if (sep == NULL)
-            return -EINVAL;
+            return -E_INVAL;
         *sep = '\0';
 
         parse_data_p = &parse_data[argv[i][0] == '[' && sep[-1] == ']'];
         err = (*parse_data_p->parse_fn)(argv[i], sep + 1, parse_data_p->cb);
-        if (err)
-            goto err2;
+        if (err) {
+            free_ecb(elemcb);
+            free_tcb(trackcb);
+            return err;
+        }
     }
 
     ctx->tcb = trackcb;
@@ -174,19 +182,21 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
     return 0;
 
 err2:
-    free_ecb(elemcb);
-err1:
     free_tcb(trackcb);
-    return err;
+err1:
+    return -sys_maperror(-err);
 }
 
 static int
 syncfd(int fd)
 {
+    int err;
+
     while (fsync(fd) == -1) {
-        if (errno != EINTR) {
-            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_CERRNO;
+        err = en;
+        if (err != E_INTR) {
+            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+                return -err;
             break;
         }
     }
@@ -214,10 +224,11 @@ track_cb_free(const void *keyval, void *ctx)
     err = syncfd(fileno(tcb->f));
 
     if (fclose(tcb->f) == EOF)
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
 
     if (err) {
-        fprintf(stderr, "Error closing %s: %s\n", tcb->path, strerror(-err));
+        fprintf(stderr, "Error closing %s: %s\n",
+                tcb->path, sys_strerror(-err));
         *(int *)ctx = err;
     }
 
@@ -246,10 +257,11 @@ elem_cb_free(const void *keyval, void *ctx)
     err = syncfd(fileno(ecb->f));
 
     if (fclose(ecb->f) == EOF)
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
 
     if (err) {
-        fprintf(stderr, "Error closing %s: %s\n", ecb->path, strerror(-err));
+        fprintf(stderr, "Error closing %s: %s\n",
+                ecb->path, sys_strerror(-err));
         *(int *)ctx = err;
     }
 
@@ -308,13 +320,13 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
         size_t ret;
 
         if (res != 1)
-            return res;
+            return -sys_maperror(-res);
 
         ret = fwrite(val->data, 1, val->len, e.f);
         if (ret != val->len) {
-            res = MINUS_CERRNO;
+            res = MINUS_ERRNO;
             fprintf(stderr, "Error writing to %s: %s\n",
-                    e.path, strerror(-res));
+                    e.path, sys_strerror(-res));
             return res;
         }
     }
@@ -355,15 +367,15 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         size_t ret;
 
         if (res != 1)
-            return res;
+            return -sys_maperror(-res);
 
         fprintf(stderr, " (>%s)", e.path);
 
         ret = fwrite(buf, 1, len, e.f);
         if (ret != len) {
-            res = MINUS_CERRNO;
+            res = MINUS_ERRNO;
             fprintf(stderr, "Error writing to %s: %s\n",
-                    e.path, strerror(-res));
+                    e.path, sys_strerror(-res));
             return res;
         }
     }
@@ -399,11 +411,11 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         goto err2;
     }
     if (setvbuf(f, NULL, _IOLBF, 0) == EOF) {
-        res = -ENOMEM;
+        res = -E_NOMEM;
         goto err3;
     }
 
@@ -420,7 +432,7 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
     }
 
     if (fclose(f) == EOF) {
-        res = MINUS_CERRNO;
+        res = MINUS_ERRNO;
         errmsg = "Error closing output file";
         goto err2;
     }
@@ -440,7 +452,7 @@ err2:
 err1:
     if (res > 0)
         res = matroska_print_err(stderr, res);
-    fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
+    fprintf(stderr, "%s: %s\n", errmsg, sys_strerror(-res));
     return res;
 }
 

@@ -123,7 +123,7 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
     if (path1 != NULL) {
         cb->path = strdup(path1);
         if (cb->path == NULL)
-            return MINUS_CERRNO;
+            return MINUS_ERRNO;
         cb->fd = -1;
 
         cb->f = fopen(cb->path, "w");
@@ -134,14 +134,14 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->f = fdopen(cb->fd, "w");
     }
     if (cb->f == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err1;
     }
 
     if (path2 != NULL) {
         cb->datapath = strdup(path2);
         if (cb->datapath == NULL) {
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
             goto err2;
         }
         cb->datafd = -1;
@@ -154,14 +154,14 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->dataf = fdopen(cb->datafd, "w");
     }
     if (cb->dataf == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err3;
     }
 
     if (path3 != NULL) {
         cb->tracepath = strdup(path3);
         if (cb->tracepath == NULL) {
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
             goto err4;
         }
         cb->tracefd = -1;
@@ -179,7 +179,7 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         goto end;
     }
     if (cb->tracef == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err5;
     }
 
@@ -196,7 +196,7 @@ err2:
     fclose(cb->f);
 err1:
     free(cb->path);
-    fprintf(stderr, "Error opening output file: %s\n", strerror(-err));
+    fprintf(stderr, "Error opening output file: %s\n", sys_strerror(-err));
     return err;
 }
 
@@ -212,18 +212,18 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
                 argc < 2
                 ? "Must specify output files"
                 : "Unrecognized arguments");
-        return -EINVAL;
+        return -E_INVAL;
     }
 
     sep1 = argv[1] + strcspn(argv[1], "#:");
     if (*sep1 == '\0')
-        return -EINVAL;
+        return -E_INVAL;
     fd1 = *sep1 == '#';
     *sep1++ = '\0';
 
     sep2 = strchr(sep1, ';');
     if (sep2 == NULL)
-        return -EINVAL;
+        return -E_INVAL;
     *sep2++ = '\0';
     if (*sep2 == '#') {
         fd2 = 1;
@@ -271,10 +271,13 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
 static int
 syncf(int fd)
 {
+    int err;
+
     while (fsync(fd) == -1) {
-        if (errno != EINTR) {
-            if (errno != EBADF && errno != EINVAL && errno != ENOTSUP)
-                return MINUS_CERRNO;
+        err = en;
+        if (err != E_INTR) {
+            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+                return -err;
             break;
         }
     }
@@ -291,10 +294,12 @@ free_cb(struct cb *cb)
         err = syncf(fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
 
-        if (err)
-            fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
+        if (err) {
+            fprintf(stderr, "Error closing output file: %s\n",
+                    sys_strerror(-err));
+        }
 
         free(cb->tracepath);
     }
@@ -304,10 +309,10 @@ free_cb(struct cb *cb)
         err = tmp;
 
     if (fclose(cb->dataf) == EOF)
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
 
     if (err)
-        fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
+        fprintf(stderr, "Error closing output file: %s\n", sys_strerror(-err));
 
     free(cb->datapath);
 
@@ -316,10 +321,10 @@ free_cb(struct cb *cb)
         err = tmp;
 
     if (fclose(cb->f) == EOF)
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
 
     if (err)
-        fprintf(stderr, "Error closing output file: %s\n", strerror(-err));
+        fprintf(stderr, "Error closing output file: %s\n", sys_strerror(-err));
 
     free(cb->path);
 
@@ -341,7 +346,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
     else {
         buf = malloc(len + 1);
         if (buf == NULL)
-            return MINUS_CERRNO;
+            return MINUS_ERRNO;
         memcpy(buf, data, len);
         buf[len] = '\0';
         data = buf;
@@ -349,7 +354,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
 
     str = malloc(len * sizeof(*str));
     if (str == NULL) {
-        err = MINUS_CERRNO;
+        err = MINUS_ERRNO;
         goto err1;
     }
 
@@ -359,7 +364,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
         src = data;
         if (mbsrtowcs(str, &src, len, memset(&s, 0, sizeof(s)))
             == (size_t)-1) {
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
             goto err2;
         }
         if (src == NULL)
@@ -367,7 +372,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
         len *= 2;
         tmp = realloc(str, len * sizeof(*tmp));
         if (tmp == NULL) {
-            err = MINUS_CERRNO;
+            err = MINUS_ERRNO;
             goto err2;
         }
         str = tmp;
@@ -387,7 +392,7 @@ _cvt_utf8_to_string(json_value_t *dst, const char *data, size_t len)
 
 end:
     free(str);
-    return err;
+    return -sys_maperror(-err);
 
 err2:
     free(str);
@@ -407,7 +412,9 @@ cvt_integer_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     (void)name;
 
     err = json_value_init(&ret, JSON_NUMBER_T);
-    if (!err) {
+    if (err)
+        err = -sys_maperror(-err);
+    else {
         json_numeric_set(ret, src->integer);
         *dst = ret;
     }
@@ -426,7 +433,9 @@ cvt_uinteger_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     (void)name;
 
     err = json_value_init(&ret, JSON_NUMBER_T);
-    if (!err) {
+    if (err)
+        err = -sys_maperror(-err);
+    else {
         json_numeric_set(ret, src->uinteger);
         *dst = ret;
     }
@@ -445,7 +454,9 @@ cvt_float_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     (void)name;
 
     err = json_value_init(&ret, JSON_NUMBER_T);
-    if (!err) {
+    if (err)
+        err = -sys_maperror(-err);
+    else {
         json_numeric_set(ret, src->dbl);
         *dst = ret;
     }
@@ -481,9 +492,9 @@ cvt_date_to_string(json_value_t *dst, matroska_metadata_t *src, size_t len,
 
     if (s >= 0) {
         if ((int64_t)(TIME_T_MAX - reftm) < s)
-            return -EOVERFLOW;
+            return -E_OVERFLOW;
     } else if ((int64_t)(TIME_T_MIN - reftm) > s)
-        return -EOVERFLOW;
+        return -E_OVERFLOW;
 
     date = reftm + s;
 
@@ -507,7 +518,9 @@ cvt_master_to_number(json_value_t *dst, matroska_metadata_t *src, size_t len,
     (void)name;
 
     err = json_value_init(&ret, JSON_NUMBER_T);
-    if (!err) {
+    if (err)
+        err = -sys_maperror(-err);
+    else {
         json_numeric_set(ret, len);
         *dst = ret;
     }
@@ -530,7 +543,9 @@ cvt_binary_to_string(json_value_t *dst, matroska_metadata_t *src, size_t len,
         json_value_t ret;
 
         err = json_value_init(&ret, JSON_NULL_T);
-        if (!err)
+        if (err)
+            err = -sys_maperror(-err);
+        else
             *dst = ret;
         return err;
     }
@@ -539,7 +554,7 @@ cvt_binary_to_string(json_value_t *dst, matroska_metadata_t *src, size_t len,
 
     str = malloc(slen);
     if (str == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
 
     i = 0;
     s = str;
@@ -550,7 +565,7 @@ cvt_binary_to_string(json_value_t *dst, matroska_metadata_t *src, size_t len,
 
         n = snprintf(s, len, "%x%x", b >> CHAR_BIT / 2, b & 0xf);
         if (n >= (int)len) {
-            err = -ENAMETOOLONG;
+            err = -E_NAMETOOLONG;
             goto end;
         }
 
@@ -603,19 +618,19 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         res = json_value_init(&jv, JSON_NULL_T);
         if (res != 0)
-            return res;
+            goto err1;
 
         res = json_array_push(ctxp->cb.jv, jv);
         json_value_put(jv);
         if (res != 0)
-            return res;
+            goto err1;
     }
 
     buflen = strlen(id) + 1;
 
     idbuf = malloc(2 * buflen);
     if (idbuf == NULL)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
     value = idbuf + buflen;
 
     if (sscanf(id, "%s -> %s", idbuf, value) != 2)
@@ -629,8 +644,8 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             if (new_val) {
                 buf = realloc(ctxp->data, len);
                 if (buf == NULL) {
-                    res = MINUS_CERRNO;
-                    goto err1;
+                    res = MINUS_ERRNO;
+                    goto err5;
                 }
                 ctxp->data = buf;
             } else
@@ -670,25 +685,25 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
                          idbuf, &data, NULL);
     if (res != 1) {
         if (res != 0)
-            goto err1;
+            goto err5;
         goto end2;
     }
 
     if (data->etype >= ARRAY_SIZE(fns)) {
-        res = -EIO;
-        goto err1;
+        res = -E_IO;
+        goto err5;
     }
     fn = fns[data->etype];
     if (fn == NULL) {
-        res = -EIO;
-        goto err1;
+        res = -E_IO;
+        goto err5;
     }
 
     buflen = 16;
     k = malloc(buflen * sizeof(*k));
     if (k == NULL) {
-        res = MINUS_CERRNO;
-        goto err1;
+        res = MINUS_ERRNO;
+        goto err5;
     }
 
     for (;;) {
@@ -696,16 +711,16 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         id = ctxp->export ? idbuf : value;
         if (mbsrtowcs(k, &id, buflen, memset(&s, 0, sizeof(s))) == (size_t)-1) {
-            res = MINUS_CERRNO;
-            goto err2;
+            res = MINUS_ERRNO;
+            goto err6;
         }
         if (id == NULL)
             break;
         buflen *= 2;
         tmp = realloc(k, buflen * sizeof(*tmp));
         if (tmp == NULL) {
-            res = MINUS_CERRNO;
-            goto err2;
+            res = MINUS_ERRNO;
+            goto err6;
         }
         k = tmp;
     }
@@ -716,7 +731,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
     res = (*fn)(&elm.v, val, len, value);
     if (res != 0)
-        goto err3;
+        goto err7;
 
     elm.k = k;
 
@@ -735,8 +750,8 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
         k = wcsdup(L"hdr_len");
         if (k == NULL) {
-            res = MINUS_CERRNO;
-            goto err4;
+            res = MINUS_ERRNO;
+            goto err8;
         }
 
         elm.k = k;
@@ -755,8 +770,8 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
 
             k = wcsdup(L"data_len");
             if (k == NULL) {
-                res = MINUS_CERRNO;
-                goto err4;
+                res = MINUS_ERRNO;
+                goto err8;
             }
 
             elm.k = k;
@@ -789,15 +804,25 @@ end1:
     free(idbuf);
     return 0;
 
+err8:
+    json_value_put(elm.v);
+err7:
+    json_value_put(jv);
+err6:
+    free(k);
+err5:
+    free(idbuf);
+    return res;
+
 err4:
     json_value_put(elm.v);
 err3:
     json_value_put(jv);
 err2:
     free(k);
-err1:
     free(idbuf);
-    return res;
+err1:
+    return -sys_maperror(-res);
 }
 
 static int
@@ -827,20 +852,20 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
         err = json_value_init(&jv, JSON_OBJECT_T);
         if (err)
-            return err;
+            goto err1;
 
         err = json_array_push(ctxp->cb.jv, jv);
         if (err)
-            return err;
+            goto err1;
 
         err = json_value_init(&elm.v, JSON_BOOLEAN_T);
         if (err)
-            return err;
+            goto err1;
         json_boolean_set(elm.v, 1);
 
         k = wcsdup(L"continued");
         if (k == NULL)
-            goto err1;
+            goto err3;
         elm.k = k;
 
         err = json_object_insert(jv, &elm);
@@ -854,18 +879,18 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         fputs("Synchronization error: total length of frames in block output "
               "too small\n",
               stderr);
-        return -EIO;
+        return -E_IO;
     }
     ctxp->remlen = framelen;
 
     err = json_value_init(&elm.v, JSON_NUMBER_T);
     if (err)
-        return err;
+        goto err1;
     json_numeric_set(elm.v, trackno);
 
     k = wcsdup(L"trackno");
     if (k == NULL)
-        goto err1;
+        goto err3;
     elm.k = k;
 
     err = json_object_insert(jv, &elm);
@@ -875,12 +900,12 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
     err = json_value_init(&elm.v, JSON_NUMBER_T);
     if (err)
-        return err;
+        goto err1;
     json_numeric_set(elm.v, ts);
 
     k = wcsdup(L"ts");
     if (k == NULL)
-        goto err1;
+        goto err3;
     elm.k = k;
 
     err = json_object_insert(jv, &elm);
@@ -890,12 +915,12 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
     err = json_value_init(&elm.v, JSON_BOOLEAN_T);
     if (err)
-        return err;
+        goto err1;
     json_boolean_set(elm.v, keyframe);
 
     k = wcsdup(L"keyframe");
     if (k == NULL)
-        goto err1;
+        goto err3;
     elm.k = k;
 
     err = json_object_insert(jv, &elm);
@@ -905,12 +930,12 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
     err = json_value_init(&elm.v, JSON_NUMBER_T);
     if (err)
-        return err;
+        goto err1;
     json_numeric_set(elm.v, ctxp->off);
 
     k = wcsdup(L"data_offset");
     if (k == NULL)
-        goto err1;
+        goto err3;
     elm.k = k;
 
     err = json_object_insert(jv, &elm);
@@ -920,12 +945,12 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
     err = json_value_init(&elm.v, JSON_NUMBER_T);
     if (err)
-        return err;
+        goto err1;
     json_numeric_set(elm.v, hdrlen);
 
     k = wcsdup(L"hdr_len");
     if (k == NULL)
-        goto err1;
+        goto err3;
     elm.k = k;
 
     err = json_object_insert(jv, &elm);
@@ -943,7 +968,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
                 fprintf(stderr, "Synchronization error: nonzero base offset (%"
                                 PRIi64 " byte%s)\n",
                         PL(off));
-                return -EIO;
+                return -E_IO;
             }
             ctxp->baseoff = 0;
         }
@@ -952,18 +977,18 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
             fprintf(stderr, "Synchronization error: offset %" PRIi64 " byte%s "
                             "(%+" PRIi64 " byte%s)\n",
                     PL(off), PL(off - ctxp->off));
-            return -EIO;
+            return -E_IO;
         }
     }
 
     err = json_value_init(&elm.v, JSON_NUMBER_T);
     if (err)
-        return err;
+        goto err1;
     json_numeric_set(elm.v, framelen);
 
     k = wcsdup(L"data_len");
     if (k == NULL)
-        goto err1;
+        goto err3;
     elm.k = k;
 
     err = json_object_insert(jv, &elm);
@@ -982,15 +1007,15 @@ end:
 
     off = ftello(ctxp->cb.dataf);
     if (off == -1)
-        return MINUS_CERRNO;
+        return MINUS_ERRNO;
     if (fwrite(buf, 1, len, ctxp->cb.dataf) != len)
-        goto err3;
+        goto err4;
 
     if (len > ctxp->remlen) {
         fputs("Synchronization error: total length of frames in block output "
               "too large\n",
               stderr);
-        return -EIO;
+        return -E_IO;
     }
     ctxp->remlen -= len;
 
@@ -1002,7 +1027,7 @@ end:
 
         tmp = realloc(ctxp->tracebuf, framelen);
         if (tmp == NULL)
-            return MINUS_CERRNO;
+            return MINUS_ERRNO;
         ctxp->tracebuf = tmp;
         ctxp->tracebufsz = framelen;
     }
@@ -1018,38 +1043,39 @@ end:
 
         cctx = adler32_init();
         if (cctx == NULL)
-            return -ENOMEM;
+            return -E_NOMEM;
         err = adler32_update(cctx, ctxp->tracebuf, ctxp->tracebuflen);
         if (err) {
             adler32_end(cctx, NULL);
-            return err;
+            goto err1;
         }
         err = adler32_end(cctx, &sum);
         if (err)
-            return err;
+            goto err1;
 
         if (fprintf(ctxp->cb.tracef,
                     "%10" PRIi64 "\t%7zu\t0x%08" PRIx32 "\n",
                     off + len - ctxp->tracebuflen, ctxp->tracebuflen, sum)
             < 0)
-            goto err3;
+            goto err4;
 
         ctxp->tracebuflen = 0;
     }
 
     return 0;
 
-err3:
+err4:
     fprintf(stderr, "Error writing output: %s\n", strerror(errno));
-    return -EIO;
+    return -E_IO;
+
+err3:
+    json_value_put(elm.v);
+    return -E_NOMEM;
 
 err2:
     free(k);
-    return err;
-
 err1:
-    json_value_put(elm.v);
-    return -ENOMEM;
+    return -sys_maperror(-err);
 }
 
 static size_t
@@ -1091,18 +1117,19 @@ cvt_mkv(int infd, struct ctx *ctx)
 
     errno = 0;
     if (isatty(fileno(ctx->cb.dataf)) == 1) {
-        res = -EINVAL;
+        res = -E_INVAL;
         errmsg = NULL;
         fputs("Standard output refers to a terminal device\n", stderr);
         goto err1;
     }
-    switch (errno) {
-    case ENOTTY:
-    case ENOSYS:
+    res = en;
+    switch (res) {
+    case E_NOTTY:
+    case E_NOSYS:
     case 0:
         break;
     default:
-        res = MINUS_CERRNO;
+        res = -res;
         goto err1;
     }
 
@@ -1158,7 +1185,7 @@ cvt_mkv(int infd, struct ctx *ctx)
         fputs("Synchronization error: total length of frames in block output "
               "too small\n",
               stderr);
-        res = -EIO;
+        res = -E_IO;
         goto err3;
     }
 
@@ -1184,7 +1211,7 @@ err1:
     if (res > 0)
         res = matroska_print_err(stderr, res);
     if (errmsg != NULL)
-        fprintf(stderr, "%s: %s\n", errmsg, strerror(-res));
+        fprintf(stderr, "%s: %s\n", errmsg, sys_strerror(-res));
     return res;
 }
 
