@@ -762,7 +762,7 @@ push_master(struct elem_stack *stk, const struct elem_data *data, uint64_t eid,
 
         newsz = stk->sz == 0 ? 16 : 2 * stk->sz;
         if (oreallocarray(stk->stk, &tmp, newsz) == NULL) {
-            err = MINUS_ERRNO;
+            err = ERR_TAG(errno);
             free(ent);
             return err;
         }
