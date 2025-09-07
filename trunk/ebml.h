@@ -21,7 +21,7 @@ typedef struct {
     int (*read)(void *, void *, ssize_t *);
     int (*write)(void *, const void *, size_t);
     int (*sync)(void *);
-    int (*get_fpos)(void *, off_t *);
+    int (*get_fpos)(void *, int64_t *);
 } ebml_io_fns_t;
 
 #define EBML_FD_CWD -128

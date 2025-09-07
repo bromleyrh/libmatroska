@@ -43,7 +43,7 @@ int sys_dup2_nocancel(int oldfd, int newfd);
 int sys_close(int fd);
 int sys_close_nocancel(int fd);
 
-off_t sys_lseek(int fd, off_t offset, int whence);
+int64_t sys_lseek(int fd, int64_t offset, int whence);
 
 int sys_fseek64(FILE *stream, off_t offset, int whence);
 off_t sys_ftell64(FILE *stream);

@@ -123,7 +123,7 @@ static int ebml_file_read(void *, void *, ssize_t *);
 static int ebml_file_write(void *, const void *, size_t);
 static int ebml_file_sync(void *);
 
-static int ebml_file_get_fpos(void *, off_t *);
+static int ebml_file_get_fpos(void *, int64_t *);
 
 static int read_elem_hdr(struct ebml_hdl *, char **, char *);
 static int read_elem_data(struct ebml_hdl *, char *, uint64_t, uint64_t, size_t,
@@ -287,9 +287,9 @@ ebml_file_sync(void *ctx)
 }
 
 static int
-ebml_file_get_fpos(void *ctx, off_t *offset)
+ebml_file_get_fpos(void *ctx, int64_t *offset)
 {
-    off_t ret;
+    int64_t ret;
     struct ebml_file_ctx *fctx = ctx;
 
     ret = sys_lseek(fctx->fd, 0, SEEK_CUR);
@@ -305,7 +305,7 @@ read_elem_hdr(struct ebml_hdl *hdl, char **buf, char *bufp)
 {
     char *di, *si;
     int res;
-    off_t off;
+    int64_t off;
     ssize_t nbytes;
 
     if ((*hdl->fns->get_fpos)(hdl->ctx, &off) == 0) {
@@ -1368,7 +1368,7 @@ parse_body(FILE *f, struct ebml_hdl *hdl, int flags)
     char *tmp;
     int eof;
     int res;
-    off_t off;
+    int64_t off;
     struct elem_stack *stk;
 
     (void)flags;
