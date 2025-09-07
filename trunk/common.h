@@ -21,6 +21,9 @@ static _Thread_local int asserttmp;
 
 #define ERRNO (asserttmp = en, assert(asserttmp > 0), asserttmp)
 #define MINUS_ERRNO (asserttmp = -en, assert(asserttmp < 0), asserttmp)
+
+#define ERRN (asserttmp = sys_errno, assert(asserttmp > 0), asserttmp)
+#define MINUS_ERRN (asserttmp = -sys_errno, assert(asserttmp < 0), asserttmp)
 #endif
 
 #define STR_NO_EVAL(x) #x

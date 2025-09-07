@@ -1144,12 +1144,14 @@ matroska_open(matroska_hdl_t *hdl, matroska_io_fns_t *fns,
         return ERR_TAG(en);
 
     if (fns == NULL) {
+        int fd;
         struct matroska_file_args *fileargsp = args;
 
         ret->iofns = *EBML_FILE_FNS;
         ebmlfns = EBML_FILE_FNS;
 
-        fileargs.fd = fileargsp->fd;
+        fd = fileargsp->fd;
+        fileargs.fd = fd == MATROSKA_FD_CWD ? EBML_FD_CWD : fd;
         fileargs.pathname = fileargsp->pathname;
         argsp = &fileargs;
     } else {

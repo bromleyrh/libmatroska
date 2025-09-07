@@ -24,6 +24,8 @@ typedef struct {
     int (*get_fpos)(void *, off_t *);
 } ebml_io_fns_t;
 
+#define EBML_FD_CWD -128
+
 struct ebml_file_args {
     int         fd;
     const char  *pathname;

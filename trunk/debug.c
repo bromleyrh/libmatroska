@@ -51,8 +51,6 @@ static _Thread_local struct err_data {
 #ifdef HAVE_ADDR2LINE
 static int close_pipe(int [2]);
 
-static int redir_fd(int, int);
-
 #endif
 static int err_info_cmp(const void *, const void *, void *);
 static int err_info_walk_cb(const void *, void *);
@@ -70,19 +68,8 @@ close_pipe(int pfd[2])
 {
     int err;
 
-    err = close(pfd[0]) == -1 ? MINUS_ERRNO : 0;
-    return close(pfd[1]) == -1 ? MINUS_ERRNO : err;
-}
-
-static int
-redir_fd(int newfd, int oldfd)
-{
-    while (dup2(oldfd, newfd) == -1) {
-        if (errno != EINTR)
-            return MINUS_ERRNO;
-    }
-
-    return 0;
+    err = sys_close(pfd[0]) == -1 ? MINUS_ERRN : 0;
+    return sys_close(pfd[1]) == -1 ? MINUS_ERRN : err;
 }
 
 #endif
@@ -150,19 +137,19 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
 
     pid = fork();
     if (pid == 0) {
-        close(inpfd[1]);
-        close(outpfd[0]);
+        sys_close(inpfd[1]);
+        sys_close(outpfd[0]);
 
-        if (redir_fd(STDIN_FILENO, inpfd[0]) != -1
-            && redir_fd(STDOUT_FILENO, outpfd[1]) != -1)
+        if (sys_dup2_nocancel(inpfd[0], STDIN_FILENO) != -1
+            && sys_dup2_nocancel(outpfd[1], STDOUT_FILENO) != -1)
             execlp("addr2line", "addr2line", "-e", path, "-f", "-s", NULL);
 
-        close(inpfd[0]);
-        close(outpfd[1]);
+        sys_close(inpfd[0]);
+        sys_close(outpfd[1]);
         _exit(EXIT_FAILURE);
     }
-    close(inpfd[0]);
-    close(outpfd[1]);
+    sys_close(inpfd[0]);
+    sys_close(outpfd[1]);
     if (pid == -1)
         goto err3;
 
@@ -233,11 +220,11 @@ err3:
     err = MINUS_ERRNO;
 err2:
     if (outf == NULL)
-        close(outpfd[0]);
+        sys_close(outpfd[0]);
     else
         fclose(outf);
     if (inf == NULL)
-        close(inpfd[1]);
+        sys_close(inpfd[1]);
     else
         fclose(inf);
 err1:
