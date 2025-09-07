@@ -254,7 +254,14 @@ _sys_call_nocancel(va_list ap)
 #define _expand_type_and_name(type, name) , type name
 
 #define _expand_type(type) type
-#define _expand_typep(type) type *
+
+#define _expand_itype(type) type
+#define _expand_itypep(type) type *
+
+#define _expand_type_cvt(type_int, type) type
+
+#define _expand_itype_cvt(type_int, type) type_int
+#define _expand_itypep_cvt(type_int, type) type_int *
 
 #define _expand_name_0(type, name) name
 #define _expand_name(type, name) , name
@@ -262,15 +269,21 @@ _sys_call_nocancel(va_list ap)
 #define _expand_name_append_0 _expand_name_append
 #define _expand_name_append _expand_name
 
+#define _expand_name_cvt_append_0 _expand_name_cvt_append
+#define _expand_name_cvt_append(type, name) , (type)name
+
 #define _def_args_0 _def_args
 #define _def_args(type, name) type name = va_arg(ap, type);
+
+#define _cvt(dsttype, srctype) dsttype
+#define _nocvt(dsttype, srctype) srctype
 
 #define _NAME __SYS_CALL__(_expand_sys_call_name, _na, _na)
 #define _PARAM_LIST(X) __SYS_CALL__(_na, X##_0, X)
 
-#define _NAME_RETV __SYS_CALL__(_expand_sys_call_name, _na, _na, _na)
-#define _PARAM_LIST_RETV(X) __SYS_CALL__(_na, _na, X##_0, X)
-#define _TYPE_RETV(X) __SYS_CALL__(_na, X, _na, _na)
+#define _NAME_RETV __SYS_CALL__(_expand_sys_call_name, _na, _na, _na, _na, _na)
+#define _PARAM_LIST_RETV(X, XCVT) __SYS_CALL__(_na, _na, _na, X##_0, X, XCVT)
+#define _TYPE_RETV(X) __SYS_CALL__(_na, X, X##_cvt, _na, _na, _na)
 
 #define ___DEF_SYS_CALL(fn, nm) \
 static int _sys_##nm(va_list); \
@@ -298,25 +311,26 @@ _sys_##nm(va_list ap) \
 static int _sys_##nm(va_list); \
 \
 _TYPE_RETV(_expand_type) \
-sys_##nm(_PARAM_LIST_RETV(_expand_type_and_name)) \
+sys_##nm(_PARAM_LIST_RETV(_expand_type_and_name, _nocvt)) \
 { \
-    _TYPE_RETV(_expand_type) ret; \
+    _TYPE_RETV(_expand_itype) ret; \
 \
-    return fn(&_sys_##nm, &ret _PARAM_LIST_RETV(_expand_name_append)) == -1 \
-           ? -1 : (_TYPE_RETV(_expand_type))ret; \
+    return fn(&_sys_##nm, \
+              &ret _PARAM_LIST_RETV(_expand_name_cvt_append, _cvt)) \
+           == -1 ? -1 : (_TYPE_RETV(_expand_type))ret; \
 } \
 \
 static int \
 _sys_##nm(va_list ap) \
 { \
-    _TYPE_RETV(_expand_type) ret; \
-    _TYPE_RETV(_expand_typep) retp = va_arg(ap, _TYPE_RETV(_expand_typep)); \
-    _PARAM_LIST_RETV(_def_args)
+    _TYPE_RETV(_expand_itype) ret; \
+    _TYPE_RETV(_expand_itypep) retp = va_arg(ap, _TYPE_RETV(_expand_itypep)); \
+    _PARAM_LIST_RETV(_def_args, _nocvt)
 
 #define CALL_AND_RET RET(_NAME(_PARAM_LIST(_expand_name)))
 
 #define CALL_AND_RET_RETV \
-        ret = _NAME_RETV(_PARAM_LIST_RETV(_expand_name)); \
+        ret = _NAME_RETV(_PARAM_LIST_RETV(_expand_name, _nocvt)); \
         if (ret != -1) { \
             *retp = ret; \
             return 0; \
@@ -397,12 +411,12 @@ DEF_SYS_CALL_NOCANCEL
 }
 #undef __SYS_CALL__
 
-#define __SYS_CALL__(SYS_CALL, RETV, X1, X) \
+#define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
 SYS_CALL(lseek) \
-    RETV(off_t) \
-    X1( int, fd) \
-    X(off_t, offset) \
-    X(  int, whence)
+    RETV_CVT(off_t, int64_t) \
+    X1(               int, fd) \
+    X(CVT(off_t, int64_t), offset) \
+    X(                int, whence)
 DEF_SYS_CALL_RETV
 {
     CALL_AND_RET_RETV;
@@ -421,7 +435,7 @@ sys_ftell64(FILE *stream)
     return ftello(stream);
 }
 
-#define __SYS_CALL__(SYS_CALL, RETV, X1, X) \
+#define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
 SYS_CALL(read) \
     RETV(ssize_t) \
     X1(  int, fd) \
@@ -433,7 +447,7 @@ DEF_SYS_CALL_RETV_NOCANCEL
 }
 #undef __SYS_CALL__
 
-#define __SYS_CALL__(SYS_CALL, RETV, X1, X) \
+#define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
 SYS_CALL(write) \
     RETV(ssize_t) \
     X1(        int, fd) \

@@ -31,7 +31,7 @@ typedef struct {
     int (*read)(void *, void *, ssize_t *);
     int (*write)(void *, const void *, size_t);
     int (*sync)(void *);
-    int (*get_fpos)(void *, off_t *);
+    int (*get_fpos)(void *, int64_t *);
 } matroska_io_fns_t;
 
 #define MATROSKA_FD_CWD -128
