@@ -5,9 +5,14 @@
 #ifndef _STD_SYS_H
 #define _STD_SYS_H
 
+#define FILE_OFFSET_BITS 64
+
 #include "util.h"
 
 #include <stddef.h>
+#include <stdint.h>
+
+#include <sys/types.h>
 
 enum {
 #define X(nm, ...) \
@@ -15,6 +20,30 @@ enum {
     LIST_ERRNO(X)
 #undef X
 };
+
+#define SYS_AT_FDCWD -128
+
+#define SYS_O_RDONLY 1
+#define SYS_O_WRONLY 2
+
+#define SYS_O_CLOEXEC 4
+
+extern _Thread_local int sys_errno;
+
+int sys_openat(int dirfd, const char *pathname, int flags);
+
+int sys_dup2_nocancel(int oldfd, int newfd);
+
+int sys_close(int fd);
+int sys_close_nocancel(int fd);
+
+off_t sys_lseek(int fd, off_t offset, int whence);
+
+ssize_t sys_read_nocancel(int fd, void *buf, size_t count);
+
+ssize_t sys_write_nocancel(int fd, const void *buf, size_t count);
+
+int sys_fsync_nocancel(int fd);
 
 int sys_maperrn(void);
 

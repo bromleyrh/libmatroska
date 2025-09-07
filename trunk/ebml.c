@@ -10,6 +10,7 @@
 #include "element.h"
 #include "matroska.h"
 #include "parser.h"
+#include "std_sys.h"
 #include "util.h"
 #include "vint.h"
 
@@ -17,7 +18,6 @@
 #include <strings_ext.h>
 
 #include <errno.h>
-#include <fcntl.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 #include <sys/types.h>
 
@@ -199,6 +198,7 @@ static int
 ebml_file_open(void **ctx, int ro, void *args)
 {
     int err;
+    int fd;
     struct ebml_file_args *a;
     struct ebml_file_ctx *ret;
 
@@ -207,13 +207,17 @@ ebml_file_open(void **ctx, int ro, void *args)
 
     a = args;
 
+    fd = a->fd;
     if (a->pathname == NULL)
-        ret->fd = a->fd;
+        ret->fd = fd;
     else {
-        ret->fd = openat(a->fd, a->pathname,
-                         O_CLOEXEC | (ro ? O_RDONLY : O_WRONLY));
+        if (fd == EBML_FD_CWD)
+            fd = SYS_AT_FDCWD;
+        ret->fd = sys_openat(fd, a->pathname,
+                             SYS_O_CLOEXEC
+                             | (ro ? SYS_O_RDONLY : SYS_O_WRONLY));
         if (ret->fd == -1) {
-            err = ERR_TAG(en);
+            err = ERR_TAG(sys_errno);
             free(ret);
             return err;
         }
@@ -229,7 +233,7 @@ ebml_file_close(void *ctx)
     int err;
     struct ebml_file_ctx *fctx = ctx;
 
-    err = close(fctx->fd) == -1 ? ERR_TAG(en) : 0;
+    err = sys_close(fctx->fd) == -1 ? ERR_TAG(sys_errno) : 0;
 
     free(fctx);
 
@@ -239,18 +243,12 @@ ebml_file_close(void *ctx)
 static int
 ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
 {
-    int err;
     ssize_t ret;
     struct ebml_file_ctx *fctx = ctx;
 
-    for (;;) {
-        ret = read(fctx->fd, buf, *nbytes);
-        if (ret >= 0)
-            break;
-        err = en;
-        if (err != E_INTR)
-            return ERR_TAG(err);
-    }
+    ret = sys_read_nocancel(fctx->fd, buf, *nbytes);
+    if (ret < 0)
+        return ERR_TAG(sys_errno);
 
     *nbytes = ret;
     return 0;
@@ -259,20 +257,15 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
 static int
 ebml_file_write(void *ctx, const void *buf, size_t nbytes)
 {
-    int err;
     size_t numwritten;
     ssize_t ret;
     struct ebml_file_ctx *fctx = ctx;
 
     for (numwritten = 0; numwritten < nbytes; numwritten += ret) {
-        ret = write(fctx->fd, (const char *)buf + numwritten,
-                    nbytes - numwritten);
-        if (ret == -1) {
-            err = en;
-            if (err != E_INTR)
-                return ERR_TAG(err);
-            ret = 0;
-        }
+        ret = sys_write_nocancel(fctx->fd, (const char *)buf + numwritten,
+                                 nbytes - numwritten);
+        if (ret == -1)
+            return ERR_TAG(sys_errno);
     }
 
     return 0;
@@ -284,13 +277,10 @@ ebml_file_sync(void *ctx)
     int err;
     struct ebml_file_ctx *fctx = ctx;
 
-    while (fsync(fctx->fd) == -1) {
-        err = en;
-        if (err != E_INTR) {
-            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-                return ERR_TAG(err);
-            break;
-        }
+    if (sys_fsync_nocancel(fctx->fd) == -1) {
+        err = sys_errno;
+        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+            return ERR_TAG(err);
     }
 
     return 0;
@@ -302,9 +292,9 @@ ebml_file_get_fpos(void *ctx, off_t *offset)
     off_t ret;
     struct ebml_file_ctx *fctx = ctx;
 
-    ret = lseek(fctx->fd, 0, SEEK_CUR);
+    ret = sys_lseek(fctx->fd, 0, SEEK_CUR);
     if (ret == -1)
-        return ERR_TAG(en);
+        return ERR_TAG(sys_errno);
 
     *offset = ret;
     return 0;

@@ -34,6 +34,8 @@ typedef struct {
     int (*get_fpos)(void *, off_t *);
 } matroska_io_fns_t;
 
+#define MATROSKA_FD_CWD -128
+
 struct matroska_file_args {
     int         fd;
     const char  *pathname;
