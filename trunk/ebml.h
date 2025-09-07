@@ -11,14 +11,12 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include <sys/types.h>
-
 typedef struct ebml_hdl *ebml_hdl_t;
 
 typedef struct {
     int (*open)(void **, int, void *);
     int (*close)(void *);
-    int (*read)(void *, void *, ssize_t *);
+    int (*read)(void *, void *, int64_t *);
     int (*write)(void *, const void *, size_t);
     int (*sync)(void *);
     int (*get_fpos)(void *, int64_t *);

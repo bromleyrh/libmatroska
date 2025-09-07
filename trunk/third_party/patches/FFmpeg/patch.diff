@@ -154,10 +154,10 @@ index cebd5e0c67..371b605760 100644
  extern const AVOutputFormat ff_microdvd_muxer;
 diff --git a/libavformat/libmatroska.c b/libavformat/libmatroska.c
 new file mode 100644
-index 0000000000..11d2bec620
+index 0000000000..0b868070a2
 --- /dev/null
 +++ b/libavformat/libmatroska.c
-@@ -0,0 +1,911 @@
+@@ -0,0 +1,909 @@
 +/*
 + * libmatroska.c
 + */
@@ -192,8 +192,6 @@ index 0000000000..11d2bec620
 +#include <stdint.h>
 +#include <stdio.h>
 +#include <string.h>
-+
-+#include <sys/types.h>
 +
 +struct stream_ctx {
 +    int comp_algo;
@@ -274,7 +272,7 @@ index 0000000000..11d2bec620
 +
 +static int io_open(void **, int, void *);
 +static int io_close(void *);
-+static int io_read(void *, void *, ssize_t *);
++static int io_read(void *, void *, int64_t *);
 +static int io_get_fpos(void *, int64_t *);
 +
 +static void adjust_ar(struct libmatroska_demux_ctx *);
@@ -390,7 +388,7 @@ index 0000000000..11d2bec620
 +}
 +
 +static int
-+io_read(void *ctx, void *buf, ssize_t *nbytes)
++io_read(void *ctx, void *buf, int64_t *nbytes)
 +{
 +    AVIOContext *s = ctx;
 +    int ret;
