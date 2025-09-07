@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/types.h>
+
 int err_print(FILE *, int *);
 
 static int print_err(FILE *, int);
