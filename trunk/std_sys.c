@@ -437,7 +437,7 @@ sys_ftell64(FILE *stream)
 
 #define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
 SYS_CALL(read) \
-    RETV(ssize_t) \
+    RETV_CVT(ssize_t, int64_t) \
     X1(  int, fd) \
     X(void *, buf) \
     X(size_t, count)
@@ -449,7 +449,7 @@ DEF_SYS_CALL_RETV_NOCANCEL
 
 #define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
 SYS_CALL(write) \
-    RETV(ssize_t) \
+    RETV_CVT(ssize_t, int64_t) \
     X1(        int, fd) \
     X(const void *, buf) \
     X(      size_t, count)

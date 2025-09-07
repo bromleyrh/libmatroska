@@ -11,8 +11,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <sys/types.h>
-
 enum {
 #define X(nm, ...) \
     SYS_E##nm = E_##nm,
@@ -46,9 +44,9 @@ int64_t sys_lseek(int fd, int64_t offset, int whence);
 int sys_fseek64(FILE *stream, int64_t offset, int whence);
 int64_t sys_ftell64(FILE *stream);
 
-ssize_t sys_read_nocancel(int fd, void *buf, size_t count);
+int64_t sys_read_nocancel(int fd, void *buf, size_t count);
 
-ssize_t sys_write_nocancel(int fd, const void *buf, size_t count);
+int64_t sys_write_nocancel(int fd, const void *buf, size_t count);
 
 int sys_fsync_nocancel(int fd);
 

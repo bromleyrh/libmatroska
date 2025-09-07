@@ -115,7 +115,7 @@ struct ebml_file_ctx {
 static int ebml_file_open(void **, int, void *);
 static int ebml_file_close(void *);
 
-static int ebml_file_read(void *, void *, ssize_t *);
+static int ebml_file_read(void *, void *, int64_t *);
 static int ebml_file_write(void *, const void *, size_t);
 static int ebml_file_sync(void *);
 
@@ -237,9 +237,9 @@ ebml_file_close(void *ctx)
 }
 
 static int
-ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
+ebml_file_read(void *ctx, void *buf, int64_t *nbytes)
 {
-    ssize_t ret;
+    int64_t ret;
     struct ebml_file_ctx *fctx = ctx;
 
     ret = sys_read_nocancel(fctx->fd, buf, *nbytes);
@@ -253,8 +253,8 @@ ebml_file_read(void *ctx, void *buf, ssize_t *nbytes)
 static int
 ebml_file_write(void *ctx, const void *buf, size_t nbytes)
 {
+    int64_t ret;
     size_t numwritten;
-    ssize_t ret;
     struct ebml_file_ctx *fctx = ctx;
 
     for (numwritten = 0; numwritten < nbytes; numwritten += ret) {
@@ -301,8 +301,8 @@ read_elem_hdr(struct ebml_hdl *hdl, char **buf, char *bufp)
 {
     char *di, *si;
     int res;
+    int64_t nbytes;
     int64_t off;
-    ssize_t nbytes;
 
     if ((*hdl->fns->get_fpos)(hdl->ctx, &off) == 0) {
         off -= bufp - *buf;
@@ -339,8 +339,8 @@ read_elem_data(struct ebml_hdl *hdl, char *buf, uint64_t elen,
 {
     char *di, *si;
     int res;
+    int64_t nbytes;
     size_t sz;
-    ssize_t nbytes;
 
     for (; elen > 0; elen -= sz) {
         sz = MIN(elen, bufsz);
@@ -1025,7 +1025,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
     di = *dip;
 
     if (elen > sz) {
-        ssize_t nbytes;
+        int64_t nbytes;
 
         memcpy(valbuf, si, sz);
 
@@ -1189,9 +1189,9 @@ parse_header(FILE *f, struct ebml_hdl *hdl, int flags)
     const struct elem_data *data, *parent;
     enum etype etype;
     int res;
+    int64_t nbytes;
     size_t hdrlen;
     size_t sz;
-    ssize_t nbytes;
     struct elem_stack *stk;
     struct elem_stack_ent *ent;
     uint64_t eid, elen;

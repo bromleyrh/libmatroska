@@ -33,8 +33,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <sys/types.h>
-
 struct stream_ctx {
     int comp_algo;
 };
@@ -114,7 +112,7 @@ static unsigned hash_id(const char *);
 
 static int io_open(void **, int, void *);
 static int io_close(void *);
-static int io_read(void *, void *, ssize_t *);
+static int io_read(void *, void *, int64_t *);
 static int io_get_fpos(void *, int64_t *);
 
 static void adjust_ar(struct libmatroska_demux_ctx *);
@@ -230,7 +228,7 @@ io_close(void *ctx)
 }
 
 static int
-io_read(void *ctx, void *buf, ssize_t *nbytes)
+io_read(void *ctx, void *buf, int64_t *nbytes)
 {
     AVIOContext *s = ctx;
     int ret;
