@@ -47,7 +47,7 @@ struct ctx {
     char        *data;
     size_t      len;
     size_t      remlen;
-    off_t       baseoff;
+    int64_t     baseoff;
     off_t       off;
     size_t      totmdlen;
     size_t      totlogbytes;
