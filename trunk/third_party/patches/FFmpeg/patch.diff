@@ -154,15 +154,13 @@ index cebd5e0c67..371b605760 100644
  extern const AVOutputFormat ff_microdvd_muxer;
 diff --git a/libavformat/libmatroska.c b/libavformat/libmatroska.c
 new file mode 100644
-index 0000000000..4fd3806eff
+index 0000000000..11d2bec620
 --- /dev/null
 +++ b/libavformat/libmatroska.c
-@@ -0,0 +1,913 @@
+@@ -0,0 +1,911 @@
 +/*
 + * libmatroska.c
 + */
-+
-+#define _FILE_OFFSET_BITS 64
 +
 +#include "libmatroska_codecs.h"
 +
@@ -835,8 +833,8 @@ index 0000000000..4fd3806eff
 +
 +static int
 +bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
-+             size_t totlen, size_t hdrlen, size_t num_logical_bytes, off_t off,
-+             int16_t ts, int new_frame, int keyframe, void *ctx)
++             size_t totlen, size_t hdrlen, size_t num_logical_bytes,
++             int64_t off, int16_t ts, int new_frame, int keyframe, void *ctx)
 +{
 +    AVPacket *pkt;
 +    struct libmatroska_demux_ctx *dctx = ctx;

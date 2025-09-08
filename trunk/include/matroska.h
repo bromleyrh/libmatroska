@@ -5,10 +5,6 @@
 #ifndef _MATROSKA_H
 #define _MATROSKA_H
 
-#if _FILE_OFFSET_BITS != 64
-#error "'-D_FILE_OFFSET_BITS=64' is required to use this module"
-#endif
-
 #define _LIBMATROSKA_H_INTERNAL
 #include <matroska/libmatroska_common.h>
 #undef _LIBMATROSKA_H_INTERNAL
@@ -66,7 +62,7 @@ typedef int matroska_metadata_output_cb_t(const char *, matroska_metadata_t *,
 
 typedef int matroska_bitstream_output_cb_t(uint64_t, const void *, size_t,
                                            size_t, size_t, size_t, size_t,
-                                           off_t, int16_t, int, int, void *);
+                                           int64_t, int16_t, int, int, void *);
 
 typedef int matroska_bitstream_input_cb_t(uint64_t *, void *, ssize_t *,
                                           int16_t *, int *, void *);

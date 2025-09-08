@@ -825,12 +825,13 @@ err1:
 
 static int
 bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
-             size_t totlen, size_t hdrlen, size_t num_logical_bytes, off_t off,
-             int16_t ts, int new_frame, int keyframe, void *ctx)
+             size_t totlen, size_t hdrlen, size_t num_logical_bytes,
+             int64_t off, int16_t ts, int new_frame, int keyframe, void *ctx)
 {
     int err;
     json_kv_pair_t elm;
     json_value_t jv;
+    off_t offset;
     struct ctx *ctxp = ctx;
     wchar_t *k;
 
@@ -1003,8 +1004,8 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
 end:
 
-    off = sys_ftell64(ctxp->cb.dataf);
-    if (off == -1)
+    offset = sys_ftell64(ctxp->cb.dataf);
+    if (offset == -1)
         return MINUS_ERRNO;
     if (fwrite(buf, 1, len, ctxp->cb.dataf) != len)
         goto err4;
@@ -1053,7 +1054,7 @@ end:
 
         if (fprintf(ctxp->cb.tracef,
                     "%10" PRIi64 "\t%7zu\t0x%08" PRIx32 "\n",
-                    off + len - ctxp->tracebuflen, ctxp->tracebuflen, sum)
+                    offset + len - ctxp->tracebuflen, ctxp->tracebuflen, sum)
             < 0)
             goto err4;
 
