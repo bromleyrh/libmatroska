@@ -17,8 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sys/types.h>
-
 struct radix_tree_edge {
     char                    *label;
     struct radix_tree_node  *dst;
@@ -52,8 +50,7 @@ static int check_nchildren(struct radix_tree_node *);
 static void subtree_free(struct radix_tree_node *);
 
 static int new_node(struct radix_tree *, struct radix_tree_node **,
-                    enum radix_tree_node_type, const char *, ssize_t,
-                    const void *);
+                    enum radix_tree_node_type, const char *, int, const void *);
 static void free_node(struct radix_tree_node *);
 
 static int find_edge(const struct radix_tree_node *, unsigned char,
@@ -118,7 +115,7 @@ subtree_free(struct radix_tree_node *node)
 
 static int
 new_node(struct radix_tree *rt, struct radix_tree_node **node,
-         enum radix_tree_node_type type, const char *label, ssize_t lenlabel,
+         enum radix_tree_node_type type, const char *label, int lenlabel,
          const void *val)
 {
     int err;
