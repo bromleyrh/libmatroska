@@ -2,8 +2,6 @@
  * zlib_cat.c
  */
 
-#define _FILE_OFFSET_BITS 64
-
 #include "common.h"
 #include "debug.h"
 #include "std_sys.h"
@@ -11,11 +9,10 @@
 
 #include <errno.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <sys/types.h>
 
 int err_print(FILE *, int *);
 
@@ -43,7 +40,7 @@ main(int argc, char **argv)
 {
     FILE *f;
     int res;
-    off_t off;
+    int64_t off;
     size_t ret;
     zlib_stream_hdl_t hdl;
 
