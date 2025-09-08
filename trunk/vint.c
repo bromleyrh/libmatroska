@@ -120,18 +120,18 @@ u64_to_vint(uint64_t x, char *y, size_t *bufsz)
 {
     int err;
     size_t len;
-    uint64_t bnd;
+    uint64_t bound;
 
     /* determine VINT_WIDTH */
-    bnd = 1 << CHAR_BIT;
+    bound = 1 << CHAR_BIT;
     len = 1;
     for (;;) {
-        if (x < bnd)
+        if (x < bound)
             break;
         ++len;
-        if (bnd == UINT64_C(1) << (sizeof(x) - 1) * CHAR_BIT)
+        if (bound == UINT64_C(1) << (sizeof(x) - 1) * CHAR_BIT)
             break;
-        bnd <<= CHAR_BIT;
+        bound <<= CHAR_BIT;
     }
     if (*bufsz < len)
         return ERR_TAG(E_INVAL);
