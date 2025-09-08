@@ -78,7 +78,7 @@ struct matroska_state {
     size_t                  lacing_hdr_sz;
     size_t                  lacing_nframes;
     size_t                  data_len;
-    off_t                   data_off;
+    int64_t                 data_off;
     size_t                  ebml_hdr_len;
     size_t                  num_frames;
     uint64_t                trackno;
