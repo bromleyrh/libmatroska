@@ -56,7 +56,7 @@ struct ctx {
     int         import;
     char        *basenm;
     size_t      len;
-    off_t       lastoff;
+    int64_t     lastoff;
     size_t      tothdrsz;
     size_t      lastsz;
     uint64_t    trackno;
