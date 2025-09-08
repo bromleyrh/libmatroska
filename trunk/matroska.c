@@ -2,8 +2,6 @@
  * matroska.c
  */
 
-#define _FILE_OFFSET_BITS 64
-
 #include "common.h"
 #include "debug.h"
 #include "ebml.h"
@@ -153,7 +151,7 @@ static int parse_ebml_lacing_header(const void *, size_t, size_t, size_t *,
 static int get_track_data(struct matroska_state *, uint64_t,
                           struct track_data **);
 
-static int return_track_data(const char *, size_t, size_t, size_t, off_t,
+static int return_track_data(const char *, size_t, size_t, size_t, int64_t,
                              struct track_data *, struct matroska_state *);
 
 static int block_output_handler(const char *, enum etype, void **, size_t *,
@@ -389,7 +387,7 @@ get_track_data(struct matroska_state *state, uint64_t trackno,
 
 static int
 return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
-                  off_t off, struct track_data *tdata,
+                  int64_t off, struct track_data *tdata,
                   struct matroska_state *state)
 {
     const char *dp, *sp;
