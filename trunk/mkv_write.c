@@ -29,8 +29,6 @@
 #include <unistd.h>
 #include <wchar.h>
 
-#include <sys/types.h>
-
 enum op {
     MULTIPLEX = 1,
     SEPARATE
@@ -814,7 +812,7 @@ master_free_cb(void *mdata, void *ctx)
 }
 
 static int
-bitstream_cb(uint64_t *trackno, void *buf, ssize_t *nbytes, int16_t *ts,
+bitstream_cb(uint64_t *trackno, void *buf, int64_t *nbytes, int16_t *ts,
              int *keyframe, void *ctx)
 {
     FILE *f;

@@ -792,8 +792,8 @@ block_input_handler(const char *val, enum etype etype, void **outbuf,
     int err;
     int keyframe;
     int resize;
+    int64_t nbytes;
     size_t len;
-    ssize_t nbytes;
     struct matroska_state *state = ctx;
     uint64_t trackno;
     union {

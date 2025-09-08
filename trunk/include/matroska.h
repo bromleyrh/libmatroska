@@ -13,8 +13,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <sys/types.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -64,7 +62,7 @@ typedef int matroska_bitstream_output_cb_t(uint64_t, const void *, size_t,
                                            size_t, size_t, size_t, size_t,
                                            int64_t, int16_t, int, int, void *);
 
-typedef int matroska_bitstream_input_cb_t(uint64_t *, void *, ssize_t *,
+typedef int matroska_bitstream_input_cb_t(uint64_t *, void *, int64_t *,
                                           int16_t *, int *, void *);
 
 typedef union {
