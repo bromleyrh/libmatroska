@@ -2,8 +2,6 @@
  * ebml.c
  */
 
-#define _FILE_OFFSET_BITS 64
-
 #include "common.h"
 #include "debug.h"
 #include "ebml.h"
@@ -25,8 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#include <sys/types.h>
 
 struct buf {
     char        *eid;
@@ -77,7 +73,7 @@ struct ebml_hdl {
     char                            buf[4096];
     char                            *di;
     char                            *si;
-    off_t                           off;
+    int64_t                         off;
     void                            *valbuf;
     size_t                          vallen;
     struct buf_list                 buf_list;
