@@ -158,10 +158,10 @@ static int return_track_data(const char *, size_t, size_t, size_t, off_t,
 
 static int block_output_handler(const char *, enum etype, void **, size_t *,
                                 void **, size_t *, size_t, size_t, struct buf *,
-                                off_t, int, void *);
+                                int64_t, int, void *);
 static int block_input_handler(const char *, enum etype, void **, size_t *,
                                void **, size_t *, size_t, size_t, struct buf *,
-                               off_t, int, void *);
+                               int64_t, int, void *);
 
 static int _matroska_read(FILE *, matroska_hdl_t, int,
                           int (*)(FILE *, ebml_hdl_t, int));
@@ -486,7 +486,7 @@ return_track_data(const char *buf, size_t len, size_t totlen, size_t hdrlen,
 static int
 block_output_handler(const char *val, enum etype etype, void **outbuf,
                      size_t *outlen, void **bufp, size_t *lenp, size_t totlen,
-                     size_t hdrlen, struct buf *bufhdl, off_t off, int simple,
+                     size_t hdrlen, struct buf *bufhdl, int64_t off, int simple,
                      void *ctx)
 {
     const void *buf;
@@ -789,7 +789,7 @@ block_output_handler(const char *val, enum etype etype, void **outbuf,
 static int
 block_input_handler(const char *val, enum etype etype, void **outbuf,
                     size_t *outlen, void **bufp, size_t *lenp, size_t totlen,
-                    size_t hdrlen, struct buf *bufhdl, off_t off, int simple,
+                    size_t hdrlen, struct buf *bufhdl, int64_t off, int simple,
                     void *ctx)
 {
     char buf[MAX_OUTPUT_HDR_LEN];
@@ -930,7 +930,7 @@ int
 matroska_tracknumber_handler(const char *val, enum etype etype, edata_t *edata,
                              void **outbuf, size_t *outlen, void **buf,
                              size_t *len, size_t totlen, size_t hdrlen,
-                             struct buf *bufhdl, off_t off, void *ctx,
+                             struct buf *bufhdl, int64_t off, void *ctx,
                              int encode)
 {
     int err;
@@ -996,7 +996,7 @@ int
 matroska_simpleblock_handler(const char *val, enum etype etype, edata_t *edata,
                              void **outbuf, size_t *outlen, void **buf,
                              size_t *len, size_t totlen, size_t hdrlen,
-                             struct buf *bufhdl, off_t off, void *ctx,
+                             struct buf *bufhdl, int64_t off, void *ctx,
                              int encode)
 {
     (void)edata;
@@ -1010,7 +1010,7 @@ int
 matroska_block_handler(const char *val, enum etype etype, edata_t *edata,
                        void **outbuf, void *outlen, void **buf, size_t *len,
                        size_t totlen, size_t hdrlen, struct buf *bufhdl,
-                       off_t off, void *ctx, int encode)
+                       int64_t off, void *ctx, int encode)
 {
     (void)edata;
 
@@ -1023,7 +1023,7 @@ int
 matroska_contentcompalgo_handler(const char *val, enum etype etype,
                                  edata_t *edata, void **outbuf, size_t *outlen,
                                  void **buf, size_t *len, size_t totlen,
-                                 size_t hdrlen, struct buf *bufhdl, off_t off,
+                                 size_t hdrlen, struct buf *bufhdl, int64_t off,
                                  void *ctx, int encode)
 {
     int err;
@@ -1070,7 +1070,7 @@ matroska_contentcompsettings_handler(const char *val, enum etype etype,
                                      edata_t *edata, void **outbuf,
                                      size_t *outlen, void **buf, size_t *len,
                                      size_t totlen, size_t hdrlen,
-                                     struct buf *bufhdl, off_t off, void *ctx,
+                                     struct buf *bufhdl, int64_t off, void *ctx,
                                      int encode)
 {
     int err;
