@@ -2,8 +2,6 @@
  * mkv_catalog.c
  */
 
-#define _FILE_OFFSET_BITS 64
-
 #include "common.h"
 #include "debug.h"
 #include "mkv_catalog_obj.h"
