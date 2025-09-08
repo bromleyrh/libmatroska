@@ -22,8 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <sys/types.h>
-
 #define LIST_BLOCK_HDR_FIELDS(X) \
     X(TRACKNO,      8) \
     X(TIMESTAMP,    2) \
@@ -50,7 +48,7 @@ struct track_data {
     void                    *stripped_bytes;
     size_t                  num_stripped_bytes;
     size_t                  *frame_sz; /* used when lacing employed */
-    ssize_t                 frame_idx;
+    int64_t                 frame_idx;
     size_t                  num_frames;
     size_t                  num_frame_sz;
     size_t                  next_frame_off;
