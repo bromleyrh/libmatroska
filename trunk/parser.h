@@ -5,15 +5,9 @@
 #ifndef _PARSER_H
 #define _PARSER_H
 
-#if _FILE_OFFSET_BITS != 64
-#error "'-D_FILE_OFFSET_BITS=64' is required to use this module"
-#endif
-
 #include "element.h"
 
 #include <stddef.h>
-
-#include <sys/types.h>
 
 struct parser;
 
@@ -23,7 +17,7 @@ struct buf;
 
 typedef int semantic_action_t(const char *, enum etype, edata_t *, void **,
                               size_t *, void **, size_t *, size_t, size_t,
-                              struct buf *, off_t, void *, int);
+                              struct buf *, int64_t, void *, int);
 
 struct elem_data {
     const char              *val;

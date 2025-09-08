@@ -9,56 +9,56 @@
 
 extern const struct elem_data *ebml_data;
 
-DEF_EBML_DATA(402dbe52e10b572d, "XyRF8 -> EBMLSemantics", NULL, 64, &ebml_data);
+DEF_EBML_DATA(6dd70f98c422251c, "XyRF8 -> EBMLSemantics", NULL, 64, &ebml_data);
 
-int matroska_tracknumber_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, off_t, void *, int);
+int matroska_tracknumber_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, int64_t, void *, int);
 
-DEF_EBML_DATA(85ab6be21cf87443, "L1 -> ElementHandler1", &matroska_tracknumber_handler, 64, NULL);
+DEF_EBML_DATA(ddb2c7846eac7ba2, "L1 -> ElementHandler1", &matroska_tracknumber_handler, 64, NULL);
 
-int matroska_simpleblock_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, off_t, void *, int);
+int matroska_simpleblock_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, int64_t, void *, int);
 
-DEF_EBML_DATA(47a14196b371ffb4, "X0 -> ElementHandler2", &matroska_simpleblock_handler, 64, NULL);
+DEF_EBML_DATA(0bb25e0546a54357, "X0 -> ElementHandler2", &matroska_simpleblock_handler, 64, NULL);
 
-int matroska_block_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, off_t, void *, int);
+int matroska_block_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, int64_t, void *, int);
 
-DEF_EBML_DATA(6db13baaf48a96c5, "V0 -> ElementHandler3", &matroska_block_handler, 64, NULL);
+DEF_EBML_DATA(7e8e21972ffbfa8c, "V0 -> ElementHandler3", &matroska_block_handler, 64, NULL);
 
-int matroska_contentcompalgo_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, off_t, void *, int);
+int matroska_contentcompalgo_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, int64_t, void *, int);
 
-DEF_EBML_DATA(659b53b5119f3b19, "I72 -> ElementHandler4", &matroska_contentcompalgo_handler, 2, NULL);
+DEF_EBML_DATA(4addf55787a7973e, "I72 -> ElementHandler4", &matroska_contentcompalgo_handler, 2, NULL);
 
-int matroska_contentcompsettings_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, off_t, void *, int);
+int matroska_contentcompsettings_handler(const char *, enum etype, edata_t *, void **, size_t *, void **, size_t *, size_t, size_t, struct buf *, int64_t, void *, int);
 
-DEF_EBML_DATA(85b695da9279c4e8, "J72 -> ElementHandler5", &matroska_contentcompsettings_handler, 128, NULL);
+DEF_EBML_DATA(a66baeebeba93a1a, "J72 -> ElementHandler5", &matroska_contentcompsettings_handler, 128, NULL);
 
-#define matroska_semantics_TRIE_ROOT (&matroska_semantics_trie_node_8460a923eaf26118)
+#define matroska_semantics_TRIE_ROOT (&matroska_semantics_trie_node_13e43b905e15355c)
 
-DEF_TRIE_NODE_INFORMATION(659b53b5119f3b19, "I72",
-	EBML_DATA(402dbe52e10b572d)
+DEF_TRIE_NODE_INFORMATION(4addf55787a7973e, "I72",
+	EBML_DATA(6dd70f98c422251c)
 );
 
-DEF_TRIE_NODE_INFORMATION(85b695da9279c4e8, "J72",
-	EBML_DATA(402dbe52e10b572d)
+DEF_TRIE_NODE_INFORMATION(a66baeebeba93a1a, "J72",
+	EBML_DATA(6dd70f98c422251c)
 );
 
-DEF_TRIE_NODE_INFORMATION(85ab6be21cf87443, "L1",
-	EBML_DATA(402dbe52e10b572d)
+DEF_TRIE_NODE_INFORMATION(ddb2c7846eac7ba2, "L1",
+	EBML_DATA(6dd70f98c422251c)
 );
 
-DEF_TRIE_NODE_INFORMATION(6db13baaf48a96c5, "V0",
-	EBML_DATA(402dbe52e10b572d)
+DEF_TRIE_NODE_INFORMATION(7e8e21972ffbfa8c, "V0",
+	EBML_DATA(6dd70f98c422251c)
 );
 
-DEF_TRIE_NODE_INFORMATION(47a14196b371ffb4, "X0",
-	EBML_DATA(402dbe52e10b572d)
+DEF_TRIE_NODE_INFORMATION(0bb25e0546a54357, "X0",
+	EBML_DATA(6dd70f98c422251c)
 );
 
-DEF_TRIE_NODE_BRANCH(8460a923eaf26118, "NULL",
-	ENTRY('I', 659b53b5119f3b19),
-	ENTRY('J', 85b695da9279c4e8),
-	ENTRY('L', 85ab6be21cf87443),
-	ENTRY('V', 6db13baaf48a96c5),
-	ENTRY('X', 47a14196b371ffb4)
+DEF_TRIE_NODE_BRANCH(13e43b905e15355c, "NULL",
+	ENTRY('I', 4addf55787a7973e),
+	ENTRY('J', a66baeebeba93a1a),
+	ENTRY('L', ddb2c7846eac7ba2),
+	ENTRY('V', 7e8e21972ffbfa8c),
+	ENTRY('X', 0bb25e0546a54357)
 );
 
 #undef TRIE_NODE_PREFIX
