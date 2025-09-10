@@ -686,7 +686,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
     (void)new_frame;
 
     debug_printf("Track %" PRIu64 ": %zu byte%s (total %zu byte%s), offset "
-                 "%lld byte%s%s\n",
+                 "%" PRIi64 " byte%s%s\n",
                  trackno, len, PLURAL(len, "s"), totlen, PLURAL(totlen, "s"),
                  off, PLURAL(off, "s"), keyframe ? " (keyframe)" : "");
 

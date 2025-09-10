@@ -154,7 +154,7 @@ index cebd5e0c67..371b605760 100644
  extern const AVOutputFormat ff_microdvd_muxer;
 diff --git a/libavformat/libmatroska.c b/libavformat/libmatroska.c
 new file mode 100644
-index 0000000000..94d6bc6d44
+index 0000000000..705d84675d
 --- /dev/null
 +++ b/libavformat/libmatroska.c
 @@ -0,0 +1,913 @@
@@ -846,7 +846,7 @@ index 0000000000..94d6bc6d44
 +    (void)new_frame;
 +
 +    debug_printf("Track %" PRIu64 ": %zu byte%s (total %zu byte%s), offset "
-+                 "%lld byte%s%s\n",
++                 "%" PRIi64 " byte%s%s\n",
 +                 trackno, len, PLURAL(len, "s"), totlen, PLURAL(totlen, "s"),
 +                 off, PLURAL(off, "s"), keyframe ? " (keyframe)" : "");
 +
