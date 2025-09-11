@@ -23,7 +23,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -539,7 +538,6 @@ static int
 syncf(FILE *f)
 {
     int err;
-    int fd;
 
     static const int fsync_na_errs[] = {
         [E_BADF]     = 1,
@@ -550,15 +548,11 @@ syncf(FILE *f)
     if (fflush(f) == EOF)
         return MINUS_ERRNO;
 
-    fd = fileno(f);
-    while (fsync(fd) == -1) {
-        err = en;
-        if (err != E_INTR) {
-            if (err < 0 || err >= (int)ARRAY_SIZE(fsync_na_errs)
-                || !fsync_na_errs[err])
-                return -err;
-            break;
-        }
+    if (sys_fsync_nocancel(fileno(f)) == -1) {
+        err = sys_errno;
+        if (err < 0 || err >= (int)ARRAY_SIZE(fsync_na_errs)
+            || !fsync_na_errs[err])
+            return -err;
     }
 
     return 0;
@@ -2679,16 +2673,16 @@ index_json(int infd, const char *index_pathname, const char *filename)
         goto err1;
     }
 
-    infd = dup(infd);
+    infd = sys_dup(infd);
     if (infd == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_ERRN;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
         err = MINUS_ERRNO;
-        close(infd);
+        sys_close(infd);
         goto err1;
     }
 
@@ -2801,16 +2795,16 @@ output_json(const char *index_pathname, const char *filename, int outfd,
 
     (void)filename;
 
-    outfd = dup(outfd);
+    outfd = sys_dup(outfd);
     if (outfd == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_ERRN;
         goto err1;
     }
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
         err = MINUS_ERRNO;
-        close(outfd);
+        sys_close(outfd);
         goto err1;
     }
 
@@ -2905,16 +2899,16 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
     } else
         paths_from_stdin = 0;
 
-    infd = dup(infd);
+    infd = sys_dup(infd);
     if (infd == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_ERRN;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
         err = MINUS_ERRNO;
-        close(infd);
+        sys_close(infd);
         goto err1;
     }
 
@@ -3017,16 +3011,16 @@ output_index(const char *index_pathname, const char *pathname, int outfd,
 
     errmsg = "Error opening output";
 
-    outfd = dup(outfd);
+    outfd = sys_dup(outfd);
     if (outfd == -1) {
-        err = MINUS_ERRNO;
+        err = MINUS_ERRN;
         goto err1;
     }
 
     f = fdopen(outfd, "w");
     if (f == NULL) {
         err = MINUS_ERRNO;
-        close(outfd);
+        sys_close(outfd);
         goto err1;
     }
 

@@ -8,6 +8,7 @@
 #include "debug.h"
 #include "matroska.h"
 #include "parser.h"
+#include "std_sys.h"
 
 #include <checksums.h>
 
@@ -273,13 +274,10 @@ syncf(int fd)
 {
     int err;
 
-    while (fsync(fd) == -1) {
-        err = en;
-        if (err != E_INTR) {
-            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-                return -err;
-            break;
-        }
+    if (sys_fsync_nocancel(fd) == -1) {
+        err = sys_errno;
+        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+            return -err;
     }
 
     return 0;

@@ -7,6 +7,7 @@
 #include "common.h"
 #include "element.h"
 #include "radix_tree.h"
+#include "std_sys.h"
 
 #include <avl_tree.h>
 #include <crypto.h>
@@ -114,19 +115,14 @@ static int
 syncf(FILE *f)
 {
     int err;
-    int fd;
 
     if (fflush(f) == EOF)
         return MINUS_ERRNO;
 
-    fd = fileno(f);
-    while (fsync(fd) == -1) {
-        err = en;
-        if (err != E_INTR) {
-            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-                return -err;
-            break;
-        }
+    if (sys_fsync_nocancel(fileno(f)) == -1) {
+        err = sys_errno;
+        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+            return -err;
     }
 
     return 0;
@@ -911,27 +907,27 @@ process_paths(int infd, int outfd)
     struct avl_tree *ns;
     struct ns_key *k, retkey;
 
-    infd = dup(infd);
+    infd = sys_dup(infd);
     if (infd == -1)
-        return MINUS_ERRNO;
+        return MINUS_ERRN;
 
     inf = fdopen(infd, "r");
     if (inf == NULL) {
         res = MINUS_ERRNO;
-        close(infd);
+        sys_close(infd);
         return res;
     }
 
-    outfd = dup(outfd);
+    outfd = sys_dup(outfd);
     if (outfd == -1) {
-        res = MINUS_ERRNO;
+        res = MINUS_ERRN;
         goto err1;
     }
 
     outf = fdopen(outfd, "w");
     if (outf == NULL) {
         res = MINUS_ERRNO;
-        close(outfd);
+        sys_close(outfd);
         goto err1;
     }
 
