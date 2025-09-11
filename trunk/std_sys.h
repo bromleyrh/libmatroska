@@ -32,6 +32,7 @@ extern _Thread_local int sys_errno;
 
 int sys_openat(int dirfd, const char *pathname, int flags);
 
+int sys_dup(int oldfd);
 int sys_dup2_nocancel(int oldfd, int newfd);
 
 int sys_close(int fd);

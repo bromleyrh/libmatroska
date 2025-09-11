@@ -9,6 +9,7 @@
 #include "common.h"
 #include "matroska.h"
 #include "parser.h"
+#include "std_sys.h"
 #include "util.h"
 
 #include <json.h>
@@ -20,7 +21,6 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stddef.h>
@@ -155,9 +155,9 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
         if (cb->path == NULL)
             return MINUS_ERRNO;
 
-        cb->fd = open(path1, O_WRONLY);
+        cb->fd = sys_openat(SYS_AT_FDCWD, path1, SYS_O_WRONLY);
         if (cb->fd == -1) {
-            err = MINUS_ERRNO;
+            err = MINUS_ERRN;
             goto err1;
         }
     } else {
@@ -221,7 +221,7 @@ err3:
     free(cb->datapath);
 err2:
     if (cb->fd != -1)
-        close(cb->fd);
+        sys_close(cb->fd);
 err1:
     free(cb->path);
     fprintf(stderr, "Error opening input file: %s\n", sys_strerror(-err));
@@ -344,13 +344,10 @@ syncfd(int fd)
 {
     int err;
 
-    while (fsync(fd) == -1) {
-        err = en;
-        if (err != E_INTR) {
-            if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-                return -err;
-            break;
-        }
+    if (sys_fsync_nocancel(fd) == -1) {
+        err = sys_errno;
+        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
+            return -err;
     }
 
     return 0;
@@ -379,7 +376,7 @@ free_cb(struct cb *cb)
     free(cb->datapath);
 
     if (cb->fd != -1)
-        close(cb->fd);
+        sys_close(cb->fd);
     free(cb->path);
 
     return err;
@@ -1041,16 +1038,16 @@ write_mkv(int infd, struct ctx *ctx)
 
     errmsg = "Error opening input";
 
-    infd = dup(infd);
+    infd = sys_dup(infd);
     if (infd == -1) {
-        res = MINUS_ERRNO;
+        res = MINUS_ERRN;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
         res = MINUS_ERRNO;
-        close(infd);
+        sys_close(infd);
         goto err1;
     }
 
@@ -1361,16 +1358,16 @@ separate_data(int infd, struct ctx *ctx)
 
     errmsg = "Error opening input";
 
-    infd = dup(infd);
+    infd = sys_dup(infd);
     if (infd == -1) {
-        res = MINUS_ERRNO;
+        res = MINUS_ERRN;
         goto err1;
     }
 
     f = fdopen(infd, "r");
     if (f == NULL) {
         res = MINUS_ERRNO;
-        close(infd);
+        sys_close(infd);
         goto err1;
     }
 

@@ -353,6 +353,15 @@ DEF_SYS_CALL
 #undef __SYS_CALL__
 
 #define __SYS_CALL__(SYS_CALL, X1, X) \
+SYS_CALL(dup) \
+    X1(int, oldfd)
+DEF_SYS_CALL
+{
+    CALL_AND_RET;
+}
+#undef __SYS_CALL__
+
+#define __SYS_CALL__(SYS_CALL, X1, X) \
 SYS_CALL(dup2) \
     X1(int, oldfd) \
     X( int, newfd)
