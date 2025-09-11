@@ -424,7 +424,7 @@ DEF_SYS_CALL_RETV
 #undef __SYS_CALL__
 
 int
-sys_fseek64(FILE *stream, off_t offset, int whence)
+sys_fseek64(FILE *stream, int64_t offset, int whence)
 {
     return fseeko(stream, offset, whence);
 }
