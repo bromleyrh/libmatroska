@@ -1003,7 +1003,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
 
 end:
 
-    off = ftello(ctxp->cb.dataf);
+    off = sys_ftell64(ctxp->cb.dataf);
     if (off == -1)
         return MINUS_ERRNO;
     if (fwrite(buf, 1, len, ctxp->cb.dataf) != len)

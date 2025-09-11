@@ -11,6 +11,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include <sys/types.h>
 
@@ -43,6 +44,9 @@ int sys_close(int fd);
 int sys_close_nocancel(int fd);
 
 off_t sys_lseek(int fd, off_t offset, int whence);
+
+int sys_fseek64(FILE *stream, off_t offset, int whence);
+off_t sys_ftell64(FILE *stream);
 
 ssize_t sys_read_nocancel(int fd, void *buf, size_t count);
 
