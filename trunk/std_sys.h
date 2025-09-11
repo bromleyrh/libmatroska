@@ -46,7 +46,7 @@ int sys_close_nocancel(int fd);
 int64_t sys_lseek(int fd, int64_t offset, int whence);
 
 int sys_fseek64(FILE *stream, off_t offset, int whence);
-off_t sys_ftell64(FILE *stream);
+int64_t sys_ftell64(FILE *stream);
 
 ssize_t sys_read_nocancel(int fd, void *buf, size_t count);
 

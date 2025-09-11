@@ -429,7 +429,7 @@ sys_fseek64(FILE *stream, off_t offset, int whence)
     return fseeko(stream, offset, whence);
 }
 
-off_t
+int64_t
 sys_ftell64(FILE *stream)
 {
     return ftello(stream);

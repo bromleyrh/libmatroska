@@ -2,8 +2,6 @@
  * mkv_ls.c
  */
 
-#define _FILE_OFFSET_BITS 64
-
 #include "common.h"
 #include "debug.h"
 #include "matroska.h"
@@ -25,8 +23,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <wchar.h>
-
-#include <sys/types.h>
 
 struct cb {
     char            *path;
@@ -829,9 +825,9 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
              int64_t off, int16_t ts, int new_frame, int keyframe, void *ctx)
 {
     int err;
+    int64_t offset;
     json_kv_pair_t elm;
     json_value_t jv;
-    off_t offset;
     struct ctx *ctxp = ctx;
     wchar_t *k;
 
