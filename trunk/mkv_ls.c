@@ -1230,7 +1230,7 @@ main(int argc, char **argv)
             ctx.cb.tracepath == NULL ? "NULL" : ctx.cb.tracepath,
             ctx.cb.tracefd);
 
-    err = cvt_mkv(STDIN_FILENO, &ctx);
+    err = cvt_mkv(SYS_STDIN_FILENO, &ctx);
 
     tmp = free_cb(&ctx.cb);
     if (tmp != 0)

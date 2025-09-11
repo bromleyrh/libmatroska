@@ -140,8 +140,8 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
         sys_close(inpfd[1]);
         sys_close(outpfd[0]);
 
-        if (sys_dup2_nocancel(inpfd[0], STDIN_FILENO) != -1
-            && sys_dup2_nocancel(outpfd[1], STDOUT_FILENO) != -1)
+        if (sys_dup2_nocancel(inpfd[0], SYS_STDIN_FILENO) != -1
+            && sys_dup2_nocancel(outpfd[1], SYS_STDOUT_FILENO) != -1)
             execlp("addr2line", "addr2line", "-e", path, "-f", "-s", NULL);
 
         sys_close(inpfd[0]);

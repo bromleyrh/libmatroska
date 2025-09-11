@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include <sys/types.h>
 
@@ -296,7 +295,7 @@ main(int argc, char **argv)
     if (parse_cmdline(argc, argv, &ctx) != 0)
         return EXIT_FAILURE;
 
-    err = cvt_mkv(STDIN_FILENO, &ctx);
+    err = cvt_mkv(SYS_STDIN_FILENO, &ctx);
 
     tmp = free_tcb(ctx.tcb);
     if (tmp != 0)

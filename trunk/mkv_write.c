@@ -1018,7 +1018,7 @@ write_mkv(int infd, struct ctx *ctx)
     }
 
     errno = 0;
-    if (isatty(STDOUT_FILENO) == 1) {
+    if (isatty(SYS_STDOUT_FILENO) == 1) {
         res = -E_INVAL;
         errmsg = NULL;
         fputs("Standard output refers to a terminal device\n", stderr);
@@ -1077,7 +1077,7 @@ write_mkv(int infd, struct ctx *ctx)
     }
 
     cb.input_cb = &bitstream_cb;
-    args.fd = STDOUT_FILENO;
+    args.fd = SYS_STDOUT_FILENO;
     args.pathname = NULL;
     res = matroska_open(&hdl, NULL, NULL, &cb, 0, &args, ctx);
     if (res != 0)
@@ -1568,7 +1568,7 @@ main(int argc, char **argv)
     if (ret != 0)
         return ret == -2 ? EXIT_SUCCESS : EXIT_FAILURE;
 
-    ret = (op == MULTIPLEX ? write_mkv : separate_data)(STDIN_FILENO, &ctx);
+    ret = (op == MULTIPLEX ? write_mkv : separate_data)(SYS_STDIN_FILENO, &ctx);
 
     tmp = free_cb(&ctx.cb);
     if (tmp != 0)

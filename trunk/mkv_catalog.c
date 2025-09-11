@@ -2894,7 +2894,7 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
             err = -E_NOSYS;
             goto err1;
         }
-        infd = STDIN_FILENO;
+        infd = SYS_STDIN_FILENO;
         paths_from_stdin = 1;
     } else
         paths_from_stdin = 0;
@@ -3408,15 +3408,15 @@ main(int argc, char **argv)
 
     switch (op) {
     case INDEX_JSON:
-        ret = index_json(STDIN_FILENO, index_pathname, pathname);
+        ret = index_json(SYS_STDIN_FILENO, index_pathname, pathname);
         break;
     case OUTPUT_JSON:
-        ret = output_json(index_pathname, pathname, STDOUT_FILENO, verbose);
+        ret = output_json(index_pathname, pathname, SYS_STDOUT_FILENO, verbose);
         break;
     case DELETE_FROM_INDEX:
     case UPDATE_INDEX:
         ret = modify_index(index_pathname, pathname,
-                           op == DELETE_FROM_INDEX ? -1 : STDIN_FILENO,
+                           op == DELETE_FROM_INDEX ? -1 : SYS_STDIN_FILENO,
                            ops[op]);
         break;
     case LIST_INDEX_ENTRIES:
@@ -3426,7 +3426,7 @@ main(int argc, char **argv)
     case DUMP_INDEX:
         ret = output_index(index_pathname,
                            op == WALK_INDEX || op == DUMP_INDEX ? "" : pathname,
-                           STDOUT_FILENO, ops[op]);
+                           SYS_STDOUT_FILENO, ops[op]);
         break;
     default:
         abort();

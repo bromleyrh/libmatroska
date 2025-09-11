@@ -1020,7 +1020,7 @@ main(int argc, char **argv)
     xmlSchemaValidCtxtPtr vctx;
 
     if (strcmp(argv[1], "-p") == 0) {
-        return process_paths(STDIN_FILENO, STDOUT_FILENO) == 0
+        return process_paths(SYS_STDIN_FILENO, SYS_STDOUT_FILENO) == 0
                ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
