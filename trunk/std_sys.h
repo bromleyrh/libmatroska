@@ -23,6 +23,10 @@ enum {
 
 #define SYS_AT_FDCWD -128
 
+#define SYS_STDIN_FILENO sys_stdin_fileno()
+#define SYS_STDOUT_FILENO sys_stdout_fileno()
+#define SYS_STDERR_FILENO sys_stderr_fileno()
+
 #define SYS_O_RDONLY 1
 #define SYS_O_WRONLY 2
 
@@ -45,6 +49,10 @@ ssize_t sys_read_nocancel(int fd, void *buf, size_t count);
 ssize_t sys_write_nocancel(int fd, const void *buf, size_t count);
 
 int sys_fsync_nocancel(int fd);
+
+int sys_stdin_fileno(void);
+int sys_stdout_fileno(void);
+int sys_stderr_fileno(void);
 
 int sys_maperrn(void);
 

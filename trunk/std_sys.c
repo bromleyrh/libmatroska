@@ -441,6 +441,17 @@ DEF_SYS_CALL_NOCANCEL
 }
 #undef __SYS_CALL__
 
+#define DEF_SYS_FILENO(nm, val) \
+int \
+sys_std##nm##_fileno() \
+{ \
+    return STD##val##_FILENO; \
+}
+
+DEF_SYS_FILENO(in, IN)
+DEF_SYS_FILENO(out, OUT)
+DEF_SYS_FILENO(err, ERR)
+
 int
 sys_maperrn()
 {

@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include <sys/types.h>
 
@@ -462,7 +461,7 @@ main(int argc, char **argv)
     if (parse_cmdline(argc, argv, &ctx) != 0)
         return EXIT_FAILURE;
 
-    err = dump_mkv(STDIN_FILENO, STDOUT_FILENO, &ctx);
+    err = dump_mkv(SYS_STDIN_FILENO, SYS_STDOUT_FILENO, &ctx);
 
     tmp = free_tcb(ctx.tcb);
     if (tmp != 0)
