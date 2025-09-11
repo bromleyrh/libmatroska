@@ -835,7 +835,7 @@ bitstream_cb(uint64_t *trackno, void *buf, ssize_t *nbytes, int16_t *ts,
 
     off = ctxp->lastoff;
 
-    if (fseeko(f, off, SEEK_SET) == -1)
+    if (sys_fseek64(f, off, SEEK_SET) == -1)
         return MINUS_ERRNO;
 
     for (numread = 0; numread < toread; numread += ret) {

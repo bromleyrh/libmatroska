@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -407,6 +408,18 @@ DEF_SYS_CALL_RETV
     CALL_AND_RET_RETV;
 }
 #undef __SYS_CALL__
+
+int
+sys_fseek64(FILE *stream, off_t offset, int whence)
+{
+    return fseeko(stream, offset, whence);
+}
+
+off_t
+sys_ftell64(FILE *stream)
+{
+    return ftello(stream);
+}
 
 #define __SYS_CALL__(SYS_CALL, RETV, X1, X) \
 SYS_CALL(read) \
