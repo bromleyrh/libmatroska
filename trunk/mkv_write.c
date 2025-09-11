@@ -2,8 +2,6 @@
  * mkv_write.c
  */
 
-#define _FILE_OFFSET_BITS 64
-
 #include "config.h"
 
 #include "common.h"
@@ -821,7 +819,7 @@ bitstream_cb(uint64_t *trackno, void *buf, ssize_t *nbytes, int16_t *ts,
 {
     FILE *f;
     int err;
-    off_t off;
+    int64_t off;
     size_t numread, toread;
     size_t ret;
     struct ctx *ctxp = ctx;
