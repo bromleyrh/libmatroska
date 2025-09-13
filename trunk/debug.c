@@ -51,6 +51,8 @@ static _Thread_local struct err_data {
 #ifdef HAVE_ADDR2LINE
 static int close_pipe(int [2]);
 
+static int redir_fd(int, int);
+
 #endif
 static int err_info_cmp(const void *, const void *, void *);
 static int err_info_walk_cb(const void *, void *);
@@ -70,6 +72,17 @@ close_pipe(int pfd[2])
 
     err = close(pfd[0]) == -1 ? MINUS_ERRNO : 0;
     return close(pfd[1]) == -1 ? MINUS_ERRNO : err;
+}
+
+static int
+redir_fd(int newfd, int oldfd)
+{
+    while (dup2(oldfd, newfd) == -1) {
+        if (errno != EINTR)
+            return MINUS_ERRNO;
+    }
+
+    return 0;
 }
 
 #endif
@@ -140,8 +153,8 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
         close(inpfd[1]);
         close(outpfd[0]);
 
-        if (dup2(inpfd[0], STDIN_FILENO) != -1
-            && dup2(outpfd[1], STDOUT_FILENO) != -1)
+        if (redir_fd(STDIN_FILENO, inpfd[0]) != -1
+            && redir_fd(STDOUT_FILENO, outpfd[1]) != -1)
             execlp("addr2line", "addr2line", "-e", path, "-f", "-s", NULL);
 
         close(inpfd[0]);
