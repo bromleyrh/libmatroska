@@ -8,6 +8,7 @@
 #include "element.h"
 #include "radix_tree.h"
 #include "std_sys.h"
+#include "util.h"
 
 #include <avl_tree.h>
 #include <crypto.h>
@@ -67,8 +68,6 @@ struct ns_dump_ctx {
 #define EBML_ELEMENT_ID 0xa45dfa3
 #define EBML_ELEMENT_ID_WITH_MARKER 0x1a45dfa3
 
-static int syncf(FILE *);
-
 static int ns_key_cmp(const void *, const void *, void *);
 
 static int ns_key_output(const void *, void *);
@@ -110,23 +109,6 @@ static int _output_parser_data(enum op, xmlNode *, int, struct avl_tree *,
 static int output_parser_data(enum op, xmlDocPtr, const char *, const char *);
 
 static int process_paths(int, int);
-
-static int
-syncf(FILE *f)
-{
-    int err;
-
-    if (fflush(f) == EOF)
-        return MINUS_ERRNO;
-
-    if (sys_fsync_nocancel(fileno(f)) == -1) {
-        err = sys_errno;
-        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-            return -err;
-    }
-
-    return 0;
-}
 
 static int
 ns_key_cmp(const void *k1, const void *k2, void *ctx)

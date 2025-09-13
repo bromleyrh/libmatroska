@@ -130,10 +130,10 @@ mkv_join_DEPENDENCIES = libstdsys.a libutilities.a
 mkv_ls_SOURCES = mkv_ls.c
 mkv_ls_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@ @libutil_cppflags@
 mkv_ls_CFLAGS = $(AM_CFLAGS)
-mkv_ls_LDADD = libstdsys.a $(matroska_link) $(matroska_link_dep) \
-	@libjson_link_dep@ @libutil_link_dep@
+mkv_ls_LDADD = libstdsys.a libutilities.a $(matroska_link) \
+	$(matroska_link_dep) @libjson_link_dep@ @libutil_link_dep@
 mkv_ls_LDFLAGS = -rpath @abs_top_builddir@/.libs
-mkv_ls_DEPENDENCIES = libstdsys.a libmatroska.la
+mkv_ls_DEPENDENCIES = libstdsys.a libutilities.a libmatroska.la
 
 mkv_write_SOURCES = mkv_write.c strptime.c
 mkv_write_CPPFLAGS = $(AM_CPPFLAGS) -Iinclude @libjson_cppflags@ \

@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <time.h>
 
 #define UINT64_BIT (sizeof(uint64_t) * CHAR_BIT)
@@ -59,11 +60,11 @@ int al64(const char *a, long int *l);
 time_t _timegm(struct tm *timeptr);
 
 int syncfd(int fd);
+int syncf(FILE *f);
 
 char *_strptime(const char *s, const char *format, struct tm *tm);
 
 int strerror_rp(int errnum, char *strerrbuf, size_t buflen);
-
 char *strperror_r(int errnum, char *strerrbuf, size_t buflen);
 
 #endif
