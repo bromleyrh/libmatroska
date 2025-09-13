@@ -198,6 +198,27 @@ err:
 }
 
 int
+syncfd(int fd)
+{
+    int err;
+
+    static const int fsync_na_errs[] = {
+        [E_BADF]     = 1,
+        [E_INVAL]    = 1,
+        [E_NOTSUP]   = 1
+    };
+
+    if (sys_fsync_nocancel(fd) == -1) {
+        err = sys_errno;
+        if (err < 0 || err >= (int)ARRAY_SIZE(fsync_na_errs)
+            || !fsync_na_errs[err])
+            return -err;
+    }
+
+    return 0;
+}
+
+int
 strerror_rp(int errnum, char *strerrbuf, size_t buflen)
 {
     int err;

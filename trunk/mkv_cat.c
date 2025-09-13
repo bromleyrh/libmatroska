@@ -39,8 +39,6 @@ static int parse_track_spec(const char *, const char *, int, struct avl_tree *);
 
 static int parse_cmdline(int, char **, struct ctx *);
 
-static int syncfd(int);
-
 static int track_cb_cmp(const void *, const void *, void *);
 static int track_cb_free(const void *, void *);
 
@@ -134,20 +132,6 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
 err:
     free_tcb(trackcb);
     return err;
-}
-
-static int
-syncfd(int fd)
-{
-    int err;
-
-    if (sys_fsync_nocancel(fd) == -1) {
-        err = sys_errno;
-        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-            return -err;
-    }
-
-    return 0;
 }
 
 static int

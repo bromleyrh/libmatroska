@@ -82,8 +82,6 @@ static int parse_elem_spec(const char *, int, const char *, int, const char *,
 
 static int parse_cmdline(int, char **, struct ctx *);
 
-static int syncfd(int);
-
 static int free_cb(struct cb *);
 
 static int _cvt_utf8_to_string(json_value_t *, const char *, size_t);
@@ -263,20 +261,6 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
         ctx->export = strcmp(argv[1], "e") == 0;
 
     return err;
-}
-
-static int
-syncfd(int fd)
-{
-    int err;
-
-    if (sys_fsync_nocancel(fd) == -1) {
-        err = sys_errno;
-        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-            return -err;
-    }
-
-    return 0;
 }
 
 static int

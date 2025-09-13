@@ -58,6 +58,8 @@ int al64(const char *a, long int *l);
 
 time_t _timegm(struct tm *timeptr);
 
+int syncfd(int fd);
+
 char *_strptime(const char *s, const char *format, struct tm *tm);
 
 int strerror_rp(int errnum, char *strerrbuf, size_t buflen);

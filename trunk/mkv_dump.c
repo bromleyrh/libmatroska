@@ -183,20 +183,6 @@ err1:
 }
 
 static int
-syncfd(int fd)
-{
-    int err;
-
-    if (sys_fsync_nocancel(fd) == -1) {
-        err = sys_errno;
-        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-            return -err;
-    }
-
-    return 0;
-}
-
-static int
 track_cb_cmp(const void *k1, const void *k2, void *ctx)
 {
     const struct track_cb *tcb1 = k1;
