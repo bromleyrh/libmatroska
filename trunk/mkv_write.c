@@ -111,8 +111,6 @@ static int parse_cmdline(int, char **, enum op *, struct ctx *);
 
 static unsigned char from_hex(char);
 
-static int syncfd(int);
-
 static int free_cb(struct cb *);
 
 static size_t json_rd_cb(void *, size_t, size_t, void *);
@@ -333,20 +331,6 @@ static unsigned char
 from_hex(char c)
 {
     return c - (isdigit(c) ? '0' : 'a' - 10);
-}
-
-static int
-syncfd(int fd)
-{
-    int err;
-
-    if (sys_fsync_nocancel(fd) == -1) {
-        err = sys_errno;
-        if (err != E_BADF && err != E_INVAL && err != E_NOTSUP)
-            return -err;
-    }
-
-    return 0;
 }
 
 static int
