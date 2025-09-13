@@ -161,8 +161,6 @@ static int print_verbose(FILE *, const char *, ...);
 static char *strtok_unescape(const char *, const char *, const char *,
                              const char **);
 
-static int syncf(FILE *);
-
 static int print_err(int);
 static void clear_err(int);
 
@@ -529,30 +527,6 @@ strtok_unescape(const char *str, const char *delim, const char *escchar,
 
     *saveptr = endptr;
     return ret;
-}
-
-static int
-syncf(FILE *f)
-{
-    int err;
-
-    static const int fsync_na_errs[] = {
-        [E_BADF]     = 1,
-        [E_INVAL]    = 1,
-        [E_NOTSUP]   = 1
-    };
-
-    if (fflush(f) == EOF)
-        return MINUS_ERRNO;
-
-    if (sys_fsync_nocancel(fileno(f)) == -1) {
-        err = sys_errno;
-        if (err < 0 || err >= (int)ARRAY_SIZE(fsync_na_errs)
-            || !fsync_na_errs[err])
-            return -err;
-    }
-
-    return 0;
 }
 
 static int

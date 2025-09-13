@@ -7,6 +7,7 @@
 #include "matroska.h"
 #include "parser.h"
 #include "std_sys.h"
+#include "util.h"
 
 #include <checksums.h>
 

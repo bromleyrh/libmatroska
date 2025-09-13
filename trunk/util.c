@@ -219,6 +219,12 @@ syncfd(int fd)
 }
 
 int
+syncf(FILE *f)
+{
+    return fflush(f) == EOF ? MINUS_ERRNO : syncfd(fileno(f));
+}
+
+int
 strerror_rp(int errnum, char *strerrbuf, size_t buflen)
 {
     int err;
