@@ -82,7 +82,7 @@ static int parse_elem_spec(const char *, int, const char *, int, const char *,
 
 static int parse_cmdline(int, char **, struct ctx *);
 
-static int syncf(int);
+static int syncfd(int);
 
 static int free_cb(struct cb *);
 
@@ -266,7 +266,7 @@ parse_cmdline(int argc, char **argv, struct ctx *ctx)
 }
 
 static int
-syncf(int fd)
+syncfd(int fd)
 {
     int err;
 
@@ -285,7 +285,7 @@ free_cb(struct cb *cb)
     int err = 0, tmp;
 
     if (cb->tracef != NULL) {
-        err = syncf(fileno(cb->tracef));
+        err = syncfd(fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
             err = MINUS_ERRNO;
@@ -298,7 +298,7 @@ free_cb(struct cb *cb)
         free(cb->tracepath);
     }
 
-    tmp = syncf(fileno(cb->dataf));
+    tmp = syncfd(fileno(cb->dataf));
     if (tmp != 0)
         err = tmp;
 
@@ -310,7 +310,7 @@ free_cb(struct cb *cb)
 
     free(cb->datapath);
 
-    tmp = syncf(fileno(cb->f));
+    tmp = syncfd(fileno(cb->f));
     if (tmp != 0)
         err = tmp;
 
