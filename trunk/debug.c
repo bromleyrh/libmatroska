@@ -17,8 +17,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/wait.h>
-
 #if defined(__GLIBC__) || defined(__APPLE__)
 #define HAVE_BACKTRACE
 #endif
@@ -49,8 +47,6 @@ static _Thread_local struct err_data {
 } err_data;
 
 #ifdef HAVE_ADDR2LINE
-static pid_t wait_procid(pid_t, int *);
-
 static int close_pipe(int [2]);
 
 #endif
@@ -65,24 +61,6 @@ static int xlat_addr2line_bt(FILE *, const char *, char *, unsigned);
 #endif
 
 #ifdef HAVE_ADDR2LINE
-static pid_t
-wait_procid(pid_t pid, int *wstatus)
-{
-    int err;
-    pid_t ret;
-
-    for (;;) {
-        ret = waitpid(pid, wstatus, 0);
-        if (ret != -1)
-            break;
-        err = en;
-        if (err != E_INTR)
-            break;
-    }
-
-    return ret;
-}
-
 static int
 close_pipe(int pfd[2])
 {
@@ -142,7 +120,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
     FILE *inf, *outf;
     int err, res;
     int inpfd[2], outpfd[2];
-    pid_t pid;
+    procid_t pid;
     size_t len;
 
     if (pipe(inpfd) == -1)
@@ -155,18 +133,24 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
 
     inf = outf = NULL;
 
-    pid = fork();
+    pid = sys_fork();
     if (pid == 0) {
         sys_close(inpfd[1]);
         sys_close(outpfd[0]);
 
         if (sys_dup2_nocancel(inpfd[0], SYS_STDIN_FILENO) != -1
-            && sys_dup2_nocancel(outpfd[1], SYS_STDOUT_FILENO) != -1)
-            execlp("addr2line", "addr2line", "-e", path, "-f", "-s", NULL);
+            && sys_dup2_nocancel(outpfd[1], SYS_STDOUT_FILENO) != -1) {
+            static char *argv[] = {
+                "addr2line", "-e", NULL, "-f", "-s", NULL
+            };
+
+            argv[2] = path;
+            sys_execvp("addr2line", argv);
+        }
 
         sys_close(inpfd[0]);
         sys_close(outpfd[1]);
-        _exit(EXIT_FAILURE);
+        sys_exit_direct(EXIT_FAILURE);
     }
     sys_close(inpfd[0]);
     sys_close(outpfd[1]);
@@ -232,10 +216,10 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
         goto err1;
     }
 
-    if (wait_procid(pid, &res) == -1)
-        return MINUS_ERRNO;
+    if (sys_waitprocid_nocancel(pid, &res, 0) == -1)
+        return MINUS_ERRN;
 
-    return WIFEXITED(res) && WEXITSTATUS(res) == 0 ? 0 : -E_IO;
+    return sys_wifexited(res) && sys_wexitstatus(res) == 0 ? 0 : -E_IO;
 
 err3:
     err = MINUS_ERRNO;
@@ -250,7 +234,7 @@ err2:
         fclose(inf);
 err1:
     if (pid != -1)
-        wait_procid(pid, &res);
+        sys_waitprocid_nocancel(pid, &res, 0);
     return err;
 }
 

@@ -32,6 +32,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 _Thread_local int sys_errno;
 
@@ -58,6 +59,8 @@ static int call_sv_errno(int (*)(va_list), va_list);
 static int sys_call(int (*)(va_list), ...);
 
 static int _sys_call_nocancel(va_list);
+
+static int exit_direct(int);
 
 static int
 get_locale(locale_t *loc)
@@ -244,6 +247,13 @@ _sys_call_nocancel(va_list ap)
     return ret;
 }
 
+static int
+exit_direct(int status)
+{
+    _exit(status);
+    return -1;
+}
+
 #define _na(...)
 
 #define _sys_call_nocancel(...) sys_call(&_sys_call_nocancel, __VA_ARGS__)
@@ -352,6 +362,65 @@ _sys_##nm(va_list ap) \
 #define DEF_SYS_CALL_RETV _DEF_SYS_CALL_RETV(sys_call, _NAME_RETV, )
 #define DEF_SYS_CALL_RETV_NOCANCEL \
     _DEF_SYS_CALL_RETV(_sys_call_nocancel, _NAME_RETV, _nocancel)
+
+#define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
+SYS_CALL(fork) \
+    RETV_CVT(pid_t, procid_t)
+DEF_SYS_CALL_RETV
+{
+    CALL_AND_RET_RETV;
+}
+#undef __SYS_CALL__
+
+#define sys_waitpid_nocancel sys_waitprocid_nocancel
+#define waitprocid waitpid
+
+#define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
+SYS_CALL(waitprocid) \
+    RETV_CVT(pid_t, procid_t) \
+    X1(CVT(pid_t, procid_t), pid) \
+    X(                int *, wstatus) \
+    X(                  int, options)
+DEF_SYS_CALL_RETV_NOCANCEL
+{
+    CALL_AND_RET_RETV;
+}
+#undef __SYS_CALL__
+
+#define DEF_SYS_WMACRO(nm, macro) \
+int \
+sys_w##nm(int wstatus) \
+{ \
+    return W##macro(wstatus); \
+}
+
+DEF_SYS_WMACRO(ifexited, IFEXITED)
+DEF_SYS_WMACRO(ifsignaled, IFSIGNALED)
+DEF_SYS_WMACRO(ifstopped, IFSTOPPED)
+DEF_SYS_WMACRO(ifcontinued, IFCONTINUED)
+
+DEF_SYS_WMACRO(exitstatus, EXITSTATUS)
+DEF_SYS_WMACRO(termsig, TERMSIG)
+DEF_SYS_WMACRO(stopsig, STOPSIG)
+
+#define __SYS_CALL__(SYS_CALL, X1, X) \
+SYS_CALL(execvp) \
+    X1(const char *, file) \
+    X(char *const *, argv)
+DEF_SYS_CALL
+{
+    CALL_AND_RET;
+}
+#undef __SYS_CALL__
+
+#define __SYS_CALL__(SYS_CALL, X1, X) \
+SYS_CALL(exit_direct) \
+    X1(int, status)
+DEF_SYS_CALL
+{
+    CALL_AND_RET;
+}
+#undef __SYS_CALL__
 
 #define __SYS_CALL__(SYS_CALL, X1, X) \
 SYS_CALL(openat) \
