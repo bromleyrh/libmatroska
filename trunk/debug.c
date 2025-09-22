@@ -60,7 +60,7 @@ static int err_info_walk_cb(const void *, void *);
 static int init_err_data(struct err_data *);
 
 #ifdef HAVE_ADDR2LINE
-static int xlat_addr2line_bt(FILE *, const char *, const char *, unsigned);
+static int xlat_addr2line_bt(FILE *, const char *, char *, unsigned);
 
 #endif
 
@@ -136,7 +136,7 @@ init_err_data(struct err_data *err_data)
 
 #ifdef HAVE_ADDR2LINE
 static int
-xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
+xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
 {
     char *str1, *str2;
     FILE *inf, *outf;
