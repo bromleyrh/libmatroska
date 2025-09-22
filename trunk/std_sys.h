@@ -18,6 +18,8 @@ enum {
 #undef X
 };
 
+typedef intmax_t procid_t;
+
 #define SYS_AT_FDCWD -128
 
 #define SYS_STDIN_FILENO sys_stdin_fileno()
@@ -30,6 +32,23 @@ enum {
 #define SYS_O_CLOEXEC 4
 
 extern _Thread_local int sys_errno;
+
+procid_t sys_fork(void);
+
+procid_t sys_waitprocid_nocancel(procid_t pid, int *wstatus, int options);
+
+int sys_wifexited(int wstatus);
+int sys_wifsignaled(int wstatus);
+int sys_wifstopped(int wstatus);
+int sys_wifcontinued(int wstatus);
+
+int sys_wexitstatus(int wstatus);
+int sys_wtermsig(int wstatus);
+int sys_wstopsig(int wstatus);
+
+int sys_execvp(const char *file, char *const argv[]);
+
+int sys_exit_direct(int status);
 
 int sys_openat(int dirfd, const char *pathname, int flags);
 
