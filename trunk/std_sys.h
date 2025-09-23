@@ -33,6 +33,8 @@ extern _Thread_local int sys_errno;
 
 int sys_openat(int dirfd, const char *pathname, int flags);
 
+FILE *sys_fdopen(int fd, const char *mode);
+
 int sys_dup(int oldfd);
 int sys_dup2_nocancel(int oldfd, int newfd);
 
@@ -53,6 +55,8 @@ int sys_fsync_nocancel(int fd);
 int sys_stdin_fileno(void);
 int sys_stdout_fileno(void);
 int sys_stderr_fileno(void);
+
+int sys_fileno(FILE *stream);
 
 int sys_maperrn(void);
 

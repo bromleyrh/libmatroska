@@ -367,6 +367,12 @@ DEF_SYS_CALL
 }
 #undef __SYS_CALL__
 
+FILE *
+sys_fdopen(int fd, const char *mode)
+{
+    return fdopen(fd, mode);
+}
+
 #define __SYS_CALL__(SYS_CALL, X1, X) \
 SYS_CALL(dup) \
     X1(int, oldfd)
@@ -478,6 +484,12 @@ sys_std##nm##_fileno() \
 DEF_SYS_FILENO(in, IN)
 DEF_SYS_FILENO(out, OUT)
 DEF_SYS_FILENO(err, ERR)
+
+int
+sys_fileno(FILE *stream)
+{
+    return fileno(stream);
+}
 
 int
 sys_maperrn()
