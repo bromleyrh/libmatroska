@@ -153,14 +153,14 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
     if (pid == -1)
         goto err3;
 
-    inf = fdopen(inpfd[1], "w");
+    inf = sys_fdopen(inpfd[1], "w");
     if (inf == NULL)
         goto err3;
     if (setvbuf(inf, NULL, _IOLBF, 0) == EOF) {
         err = -E_NOMEM;
         goto err2;
     }
-    outf = fdopen(outpfd[0], "r");
+    outf = sys_fdopen(outpfd[0], "r");
     if (outf == NULL)
         goto err3;
 
