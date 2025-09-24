@@ -212,9 +212,10 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
         goto err1;
     }
 
-    return waitpid(pid, &res, 0) == -1
-           || !WIFEXITED(res) || WEXITSTATUS(res) != 0
-           ? MINUS_ERRNO : 0;
+    if (waitpid(pid, &res, 0) == -1)
+        return MINUS_ERRNO;
+
+    return WIFEXITED(res) && WEXITSTATUS(res) == 0 ? 0 : -E_IO;
 
 err3:
     err = MINUS_ERRNO;
