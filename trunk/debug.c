@@ -49,6 +49,8 @@ static _Thread_local struct err_data {
 } err_data;
 
 #ifdef HAVE_ADDR2LINE
+static pid_t wait_procid(pid_t, int *);
+
 static int close_pipe(int [2]);
 
 #endif
@@ -63,6 +65,24 @@ static int xlat_addr2line_bt(FILE *, const char *, const char *, unsigned);
 #endif
 
 #ifdef HAVE_ADDR2LINE
+static pid_t
+wait_procid(pid_t pid, int *wstatus)
+{
+    int err;
+    pid_t ret;
+
+    for (;;) {
+        ret = waitpid(pid, wstatus, 0);
+        if (ret != -1)
+            break;
+        err = en;
+        if (err != E_INTR)
+            break;
+    }
+
+    return ret;
+}
+
 static int
 close_pipe(int pfd[2])
 {
@@ -212,7 +232,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, const char *path, unsigned reloff)
         goto err1;
     }
 
-    if (waitpid(pid, &res, 0) == -1)
+    if (wait_procid(pid, &res) == -1)
         return MINUS_ERRNO;
 
     return WIFEXITED(res) && WEXITSTATUS(res) == 0 ? 0 : -E_IO;
@@ -230,7 +250,7 @@ err2:
         fclose(inf);
 err1:
     if (pid != -1)
-        waitpid(pid, &res, 0);
+        wait_procid(pid, &res);
     return err;
 }
 
