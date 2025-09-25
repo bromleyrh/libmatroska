@@ -142,8 +142,8 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
     FILE *inf, *outf;
     int err, res;
     int inpfd[2], outpfd[2];
-    size_t len;
     pid_t pid;
+    size_t len;
 
     if (pipe(inpfd) == -1)
         return MINUS_ERRNO;
