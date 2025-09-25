@@ -893,7 +893,7 @@ process_paths(int infd, int outfd)
     if (infd == -1)
         return MINUS_ERRN;
 
-    inf = fdopen(infd, "r");
+    inf = sys_fdopen(infd, "r");
     if (inf == NULL) {
         res = MINUS_ERRNO;
         sys_close(infd);
@@ -906,7 +906,7 @@ process_paths(int infd, int outfd)
         goto err1;
     }
 
-    outf = fdopen(outfd, "w");
+    outf = sys_fdopen(outfd, "w");
     if (outf == NULL) {
         res = MINUS_ERRNO;
         sys_close(outfd);

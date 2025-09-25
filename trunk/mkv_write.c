@@ -172,7 +172,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->datapath = NULL;
         cb->datafd = fd2;
 
-        cb->dataf = fdopen(cb->datafd, "r");
+        cb->dataf = sys_fdopen(cb->datafd, "r");
     }
     if (cb->dataf == NULL) {
         err = MINUS_ERRNO;
@@ -192,7 +192,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->tracepath = NULL;
         cb->tracefd = fd3;
 
-        cb->tracef = fdopen(cb->tracefd, "w");
+        cb->tracef = sys_fdopen(cb->tracefd, "w");
     } else {
         cb->tracepath = NULL;
         cb->tracefd = -1;
@@ -339,7 +339,7 @@ free_cb(struct cb *cb)
     int err = 0;
 
     if (cb->tracef != NULL) {
-        err = syncfd(fileno(cb->tracef));
+        err = syncfd(sys_fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
             err = MINUS_ERRNO;
@@ -1024,7 +1024,7 @@ write_mkv(int infd, struct ctx *ctx)
         goto err1;
     }
 
-    f = fdopen(infd, "r");
+    f = sys_fdopen(infd, "r");
     if (f == NULL) {
         res = MINUS_ERRNO;
         sys_close(infd);
@@ -1344,7 +1344,7 @@ separate_data(int infd, struct ctx *ctx)
         goto err1;
     }
 
-    f = fdopen(infd, "r");
+    f = sys_fdopen(infd, "r");
     if (f == NULL) {
         res = MINUS_ERRNO;
         sys_close(infd);

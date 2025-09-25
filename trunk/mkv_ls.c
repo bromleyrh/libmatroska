@@ -127,7 +127,7 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->path = NULL;
         cb->fd = fd1;
 
-        cb->f = fdopen(cb->fd, "w");
+        cb->f = sys_fdopen(cb->fd, "w");
     }
     if (cb->f == NULL) {
         err = MINUS_ERRNO;
@@ -147,7 +147,7 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->datapath = NULL;
         cb->datafd = fd2;
 
-        cb->dataf = fdopen(cb->datafd, "w");
+        cb->dataf = sys_fdopen(cb->datafd, "w");
     }
     if (cb->dataf == NULL) {
         err = MINUS_ERRNO;
@@ -167,7 +167,7 @@ parse_elem_spec(const char *path1, int fd1, const char *path2, int fd2,
         cb->tracepath = NULL;
         cb->tracefd = fd3;
 
-        cb->tracef = fdopen(cb->tracefd, "w");
+        cb->tracef = sys_fdopen(cb->tracefd, "w");
     } else {
         cb->tracepath = NULL;
         cb->tracefd = -1;
@@ -270,7 +270,7 @@ free_cb(struct cb *cb)
     int err = 0, tmp;
 
     if (cb->tracef != NULL) {
-        err = syncfd(fileno(cb->tracef));
+        err = syncfd(sys_fileno(cb->tracef));
 
         if (fclose(cb->tracef) == EOF)
             err = MINUS_ERRNO;
@@ -283,7 +283,7 @@ free_cb(struct cb *cb)
         free(cb->tracepath);
     }
 
-    tmp = syncfd(fileno(cb->dataf));
+    tmp = syncfd(sys_fileno(cb->dataf));
     if (tmp != 0)
         err = tmp;
 
@@ -295,7 +295,7 @@ free_cb(struct cb *cb)
 
     free(cb->datapath);
 
-    tmp = syncfd(fileno(cb->f));
+    tmp = syncfd(sys_fileno(cb->f));
     if (tmp != 0)
         err = tmp;
 
@@ -1096,7 +1096,7 @@ cvt_mkv(int infd, struct ctx *ctx)
     errmsg = "Error initializing";
 
     errno = 0;
-    if (isatty(fileno(ctx->cb.dataf)) == 1) {
+    if (isatty(sys_fileno(ctx->cb.dataf)) == 1) {
         res = -E_INVAL;
         errmsg = NULL;
         fputs("Standard output refers to a terminal device\n", stderr);
