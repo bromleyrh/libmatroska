@@ -199,7 +199,7 @@ track_cb_free(const void *keyval, void *ctx)
     const struct track_cb *tcb = keyval;
     int err = 0;
 
-    err = syncfd(fileno(tcb->f));
+    err = syncfd(sys_fileno(tcb->f));
 
     if (fclose(tcb->f) == EOF)
         err = MINUS_ERRNO;
@@ -232,7 +232,7 @@ elem_cb_free(const void *keyval, void *ctx)
     const struct elem_cb *ecb = keyval;
     int err = 0;
 
-    err = syncfd(fileno(ecb->f));
+    err = syncfd(sys_fileno(ecb->f));
 
     if (fclose(ecb->f) == EOF)
         err = MINUS_ERRNO;
@@ -387,7 +387,7 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
 
     errmsg = "Error opening output file";
 
-    f = fdopen(outfd, "w");
+    f = sys_fdopen(outfd, "w");
     if (f == NULL) {
         res = MINUS_ERRNO;
         goto err2;
@@ -403,7 +403,7 @@ dump_mkv(int infd, int outfd, struct ctx *ctx)
         goto err3;
     }
 
-    res = syncfd(fileno(f));
+    res = syncfd(sys_fileno(f));
     if (res != 0) {
         errmsg = "Error closing output file";
         goto err3;

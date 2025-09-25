@@ -2650,7 +2650,7 @@ index_json(int infd, const char *index_pathname, const char *filename)
         goto err1;
     }
 
-    f = fdopen(infd, "r");
+    f = sys_fdopen(infd, "r");
     if (f == NULL) {
         err = MINUS_ERRNO;
         sys_close(infd);
@@ -2772,7 +2772,7 @@ output_json(const char *index_pathname, const char *filename, int outfd,
         goto err1;
     }
 
-    f = fdopen(outfd, "w");
+    f = sys_fdopen(outfd, "w");
     if (f == NULL) {
         err = MINUS_ERRNO;
         sys_close(outfd);
@@ -2876,7 +2876,7 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
         goto err1;
     }
 
-    f = fdopen(infd, "r");
+    f = sys_fdopen(infd, "r");
     if (f == NULL) {
         err = MINUS_ERRNO;
         sys_close(infd);
@@ -2988,7 +2988,7 @@ output_index(const char *index_pathname, const char *pathname, int outfd,
         goto err1;
     }
 
-    f = fdopen(outfd, "w");
+    f = sys_fdopen(outfd, "w");
     if (f == NULL) {
         err = MINUS_ERRNO;
         sys_close(outfd);

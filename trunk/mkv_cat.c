@@ -59,7 +59,7 @@ parse_track_spec(const char *trackno, const char *path, int fd,
         e.path = NULL;
         e.fd = fd;
 
-        e.f = fdopen(e.fd, "w");
+        e.f = sys_fdopen(e.fd, "w");
     } else {
         e.path = strdup(path);
         if (e.path == NULL)
@@ -151,7 +151,7 @@ track_cb_free(const void *keyval, void *ctx)
     const struct track_cb *tcb = keyval;
     int err = 0;
 
-    err = syncfd(fileno(tcb->f));
+    err = syncfd(sys_fileno(tcb->f));
 
     if (fclose(tcb->f) == EOF)
         err = MINUS_ERRNO;
