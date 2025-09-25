@@ -71,6 +71,8 @@ int64_t sys_write_nocancel(int fd, const void *buf, size_t count);
 
 int sys_fsync_nocancel(int fd);
 
+int sys_pipe(int pipefd[2]);
+
 int sys_stdin_fileno(void);
 int sys_stdout_fileno(void);
 int sys_stderr_fileno(void);
