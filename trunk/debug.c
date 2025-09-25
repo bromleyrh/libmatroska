@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #if defined(__GLIBC__) || defined(__APPLE__)
 #define HAVE_BACKTRACE
@@ -123,10 +122,10 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
     procid_t pid;
     size_t len;
 
-    if (pipe(inpfd) == -1)
-        return MINUS_ERRNO;
-    if (pipe(outpfd) == -1) {
-        err = MINUS_ERRNO;
+    if (sys_pipe(inpfd) == -1)
+        return MINUS_ERRN;
+    if (sys_pipe(outpfd) == -1) {
+        err = MINUS_ERRN;
         close_pipe(inpfd);
         return err;
     }

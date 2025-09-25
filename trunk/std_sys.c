@@ -543,6 +543,15 @@ DEF_SYS_CALL_NOCANCEL
 }
 #undef __SYS_CALL__
 
+#define __SYS_CALL__(SYS_CALL, X1, X) \
+SYS_CALL(pipe) \
+    X1(int *, pipefd)
+DEF_SYS_CALL
+{
+    CALL_AND_RET;
+}
+#undef __SYS_CALL__
+
 #define DEF_SYS_FILENO(nm, val) \
 int \
 sys_std##nm##_fileno() \
