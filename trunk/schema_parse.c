@@ -155,15 +155,14 @@ ns_key_output(const void *k, void *ctx)
         dir_stk[len++] = key;
     }
 
-    --len;
     for (;;) {
+        --len;
         if (fprintf(f, "/%s", dir_stk[len]->name) < 0) {
             err = -E_IO;
             goto err;
         }
         if (len == 0)
             break;
-        --len;
     }
 
     free(dir_stk);
