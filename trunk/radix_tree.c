@@ -130,7 +130,7 @@ new_node(struct radix_tree *rt, struct radix_tree_node **node,
     if (label == NULL)
         ret->label = NULL;
     else {
-        ret->label = lenlabel < 0 ? strdup(label) : strndup(label, lenlabel);
+        ret->label = lenlabel < 0 ? salloc(label) : strndup(label, lenlabel);
         if (ret->label == NULL) {
             err = MINUS_ERRNO;
             free(ret);
@@ -211,7 +211,7 @@ split_edge(struct radix_tree *rt, struct radix_tree_node *src,
     branch_node->children[(unsigned char)str[0]] = info_node;
     branch_node->nchildren = 2;
 
-    newlabel = strdup(&edge->label[idx]);
+    newlabel = salloc(&edge->label[idx]);
     if (newlabel == NULL) {
         err = MINUS_ERRNO;
         free_node(branch_node);
