@@ -9,9 +9,10 @@
 #include "std_sys.h"
 #include "util.h"
 
-#include <checksums.h>
-
 #include <json.h>
+
+#include <checksums.h>
+#include <malloc_ext.h>
 
 #include <errno.h>
 #include <inttypes.h>
