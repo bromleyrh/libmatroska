@@ -727,7 +727,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
             goto err3;
         json_numeric_set(elm.v, hdrlen);
 
-        k = wcsdup(L"hdr_len");
+        k = walloc(L"hdr_len");
         if (k == NULL) {
             res = MINUS_ERRNO;
             goto err8;
@@ -747,7 +747,7 @@ metadata_cb(const char *id, matroska_metadata_t *val, size_t len, size_t hdrlen,
                 goto err3;
             json_numeric_set(elm.v, len);
 
-            k = wcsdup(L"data_len");
+            k = walloc(L"data_len");
             if (k == NULL) {
                 res = MINUS_ERRNO;
                 goto err8;
@@ -843,7 +843,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
             goto err1;
         json_boolean_set(elm.v, 1);
 
-        k = wcsdup(L"continued");
+        k = walloc(L"continued");
         if (k == NULL)
             goto err3;
         elm.k = k;
@@ -868,7 +868,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     json_numeric_set(elm.v, trackno);
 
-    k = wcsdup(L"trackno");
+    k = walloc(L"trackno");
     if (k == NULL)
         goto err3;
     elm.k = k;
@@ -883,7 +883,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     json_numeric_set(elm.v, ts);
 
-    k = wcsdup(L"ts");
+    k = walloc(L"ts");
     if (k == NULL)
         goto err3;
     elm.k = k;
@@ -898,7 +898,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     json_boolean_set(elm.v, keyframe);
 
-    k = wcsdup(L"keyframe");
+    k = walloc(L"keyframe");
     if (k == NULL)
         goto err3;
     elm.k = k;
@@ -913,7 +913,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     json_numeric_set(elm.v, ctxp->off);
 
-    k = wcsdup(L"data_offset");
+    k = walloc(L"data_offset");
     if (k == NULL)
         goto err3;
     elm.k = k;
@@ -928,7 +928,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     json_numeric_set(elm.v, hdrlen);
 
-    k = wcsdup(L"hdr_len");
+    k = walloc(L"hdr_len");
     if (k == NULL)
         goto err3;
     elm.k = k;
@@ -966,7 +966,7 @@ bitstream_cb(uint64_t trackno, const void *buf, size_t len, size_t framelen,
         goto err1;
     json_numeric_set(elm.v, framelen);
 
-    k = wcsdup(L"data_len");
+    k = walloc(L"data_len");
     if (k == NULL)
         goto err3;
     elm.k = k;
