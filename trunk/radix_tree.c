@@ -130,7 +130,7 @@ new_node(struct radix_tree *rt, struct radix_tree_node **node,
     if (label == NULL)
         ret->label = NULL;
     else {
-        ret->label = lenlabel < 0 ? salloc(label) : strndup(label, lenlabel);
+        ret->label = lenlabel < 0 ? salloc(label) : snalloc(label, lenlabel);
         if (ret->label == NULL) {
             err = MINUS_ERRNO;
             free(ret);
