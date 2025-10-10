@@ -1289,7 +1289,7 @@ create_xref_marker(json_value_t *jv, struct filter_state *state)
     if (err)
         return ERR_TAG(sys_maperror(-err));
 
-    k = wcsdup(L"xref_marker");
+    k = walloc(L"xref_marker");
     if (k == NULL) {
         err = ERR_TAG(en);
         goto err1;
