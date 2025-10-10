@@ -55,6 +55,8 @@ enum {
 
 int _fls(int i);
 
+char *_salloc(const char *ptr);
+
 int al64(const char *a, long int *l);
 
 time_t _timegm(struct tm *timeptr);

@@ -390,7 +390,7 @@ parse_cmdline(int argc, char **argv, enum op *op, char **index_pathname,
         switch (opt) {
         case 'f':
             free(*index_pathname);
-            *index_pathname = strdup(optarg);
+            *index_pathname = salloc(optarg);
             if (*index_pathname == NULL)
                 goto err1;
             break;

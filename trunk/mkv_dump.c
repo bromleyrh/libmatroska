@@ -66,7 +66,7 @@ parse_track_spec(const char *trackno, const char *path, struct avl_tree *tcb)
     int err;
     struct track_cb e;
 
-    e.path = strdup(path);
+    e.path = salloc(path);
     if (e.path == NULL)
         return MINUS_ERRNO;
 
@@ -100,7 +100,7 @@ parse_elem_spec(const char *elemno, const char *path, struct avl_tree *ecb)
     int err;
     struct elem_cb e;
 
-    e.path = strdup(path);
+    e.path = salloc(path);
     if (e.path == NULL)
         return MINUS_ERRNO;
 

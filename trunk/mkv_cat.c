@@ -61,7 +61,7 @@ parse_track_spec(const char *trackno, const char *path, int fd,
 
         e.f = sys_fdopen(e.fd, "w");
     } else {
-        e.path = strdup(path);
+        e.path = salloc(path);
         if (e.path == NULL)
             return MINUS_ERRNO;
         e.fd = -1;

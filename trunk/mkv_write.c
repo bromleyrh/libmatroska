@@ -15,6 +15,7 @@
 #include <json/scanner.h>
 
 #include <checksums.h>
+#include <malloc_ext.h>
 #include <strings_ext.h>
 
 #include <ctype.h>
@@ -145,7 +146,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
     int err;
 
     if (path1 != NULL) {
-        cb->path = strdup(path1);
+        cb->path = salloc(path1);
         if (cb->path == NULL)
             return MINUS_ERRNO;
 
@@ -160,7 +161,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
     }
 
     if (path2 != NULL) {
-        cb->datapath = strdup(path2);
+        cb->datapath = salloc(path2);
         if (cb->datapath == NULL) {
             err = MINUS_ERRNO;
             goto err2;
@@ -180,7 +181,7 @@ parse_file_spec(const char *path1, int fd1, const char *path2, int fd2,
     }
 
     if (path3 != NULL) {
-        cb->tracepath = strdup(path3);
+        cb->tracepath = salloc(path3);
         if (cb->tracepath == NULL) {
             err = MINUS_ERRNO;
             goto err4;
@@ -246,7 +247,7 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
             goto quit1;
         case 's':
             free(ctx->basenm);
-            ctx->basenm = strdup(optarg);
+            ctx->basenm = salloc(optarg);
             if (ctx->basenm == NULL)
                 return -1;
             /* fallthrough */

@@ -265,7 +265,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
     int res;
     struct ns_key k, *kp;
 
-    s = strdup(path);
+    s = _salloc(path);
     if (s == NULL)
         return MINUS_ERRNO;
 
@@ -313,7 +313,7 @@ ns_look_up(struct avl_tree *ns, const char *path, struct ns_key *retkey)
     }
 
     if (res == 0) {
-        k.name = strdup(k.name);
+        k.name = _salloc(k.name);
         if (k.name == NULL) {
             res = MINUS_ERRNO;
             goto err;
@@ -803,8 +803,8 @@ output_parser_data(enum op op, xmlDocPtr doc, const char *doctype,
                 goto err3;
             }
 
-            k.name = strdup(strcmp("matroska_semantics", doctype) == 0
-                            ? "EBMLSemantics" : "EBML");
+            k.name = _salloc(strcmp("matroska_semantics", doctype) == 0
+                             ? "EBMLSemantics" : "EBML");
             if (k.name == NULL) {
                 err = MINUS_ERRNO;
                 goto err3;

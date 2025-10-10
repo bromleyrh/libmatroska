@@ -7,6 +7,7 @@
 #include "common.h"
 #include "util.h"
 
+#include <malloc_ext.h>
 #include <strings_ext.h>
 
 #include <errno.h>
@@ -154,6 +155,12 @@ al64(const char *a, long int *l)
 }
 
 #undef BITS_PER_CHAR
+
+char *
+_salloc(const char *ptr)
+{
+    return salloc(ptr);
+}
 
 /*
  * Note: In this emulation of timegm(), the TZ environment variable may not be
