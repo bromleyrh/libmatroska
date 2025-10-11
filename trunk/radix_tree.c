@@ -341,7 +341,7 @@ concat_labels(const char *label1, const char *label2, char **newlabel)
     if (ret == NULL)
         return MINUS_ERRNO;
 
-    strcpy(stpcpy(ret, label1), label2);
+    strcpy(strpcpy(ret, label1), label2);
 
     *newlabel = ret;
     return 0;
