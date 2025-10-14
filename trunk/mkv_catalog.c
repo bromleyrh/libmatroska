@@ -14,6 +14,7 @@
 
 #include <dbm_high_level.h>
 #include <malloc_ext.h>
+#include <option_parsing.h>
 #include <packing.h>
 #include <strings_ext.h>
 
@@ -382,7 +383,7 @@ parse_cmdline(int argc, char **argv, enum op *op, char **index_pathname,
     };
 
     for (;;) {
-        int opt = getopt(argc, argv, "D:df:hi:L:l:o:P:u:vw");
+        int opt = get_opt(argc, argv, "D:df:hi:L:l:o:P:u:vw");
 
         if (opt == -1)
             break;
@@ -390,7 +391,7 @@ parse_cmdline(int argc, char **argv, enum op *op, char **index_pathname,
         switch (opt) {
         case 'f':
             free(*index_pathname);
-            *index_pathname = salloc(optarg);
+            *index_pathname = salloc(opt_arg);
             if (*index_pathname == NULL)
                 goto err1;
             break;
@@ -409,7 +410,7 @@ parse_cmdline(int argc, char **argv, enum op *op, char **index_pathname,
         case 'P':
         case 'u':
             free(*pathname);
-            if (unescape_pathname(pathname, optarg, "-") != 0)
+            if (unescape_pathname(pathname, opt_arg, "-") != 0)
                 goto err3;
             /* fallthrough */
         case 'd':
@@ -421,7 +422,7 @@ parse_cmdline(int argc, char **argv, enum op *op, char **index_pathname,
         }
     }
 
-    if (argc != optind) {
+    if (argc != opt_ind) {
         fputs("Unrecognized arguments\n", stderr);
         goto err2;
     }

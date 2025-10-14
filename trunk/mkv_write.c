@@ -16,6 +16,7 @@
 
 #include <checksums.h>
 #include <malloc_ext.h>
+#include <option_parsing.h>
 #include <strings_ext.h>
 
 #include <ctype.h>
@@ -236,7 +237,7 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
     };
 
     for (;;) {
-        int opt = getopt(argc, argv, "ms:V");
+        int opt = get_opt(argc, argv, "ms:V");
 
         if (opt == -1)
             break;
@@ -247,7 +248,7 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
             goto quit1;
         case 's':
             free(ctx->basenm);
-            ctx->basenm = salloc(optarg);
+            ctx->basenm = salloc(opt_arg);
             if (ctx->basenm == NULL)
                 return -1;
             /* fallthrough */
@@ -256,8 +257,8 @@ parse_cmdline(int argc, char **argv, enum op *op, struct ctx *ctx)
             break;
         }
     }
-    argc -= optind;
-    argv += optind;
+    argc -= opt_ind;
+    argv += opt_ind;
 
     if (argc != 1) {
         fprintf(stderr, "%s\n",
