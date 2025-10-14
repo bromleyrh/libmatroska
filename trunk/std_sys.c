@@ -422,6 +422,18 @@ DEF_SYS_CALL
 }
 #undef __SYS_CALL__
 
+int
+sys_setenv(const char *name, const char *value, int overwrite)
+{
+    return setenv(name, value, overwrite);
+}
+
+int
+sys_unsetenv(const char *name)
+{
+    return unsetenv(name);
+}
+
 #define __SYS_CALL__(SYS_CALL, X1, X) \
 SYS_CALL(openat) \
     X1(int,          dirfd) \

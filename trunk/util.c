@@ -165,9 +165,9 @@ _salloc(const char *ptr)
 
 /*
  * Note: In this emulation of timegm(), the TZ environment variable may not be
- * restored to its original value on error from unsetenv() or setenv(). It is
- * therefore necessary for the caller to check for a return value of (time_t)-1
- * from _timegm() and take an appropriate action in this case.
+ * restored to its original value on error from sys_unsetenv() or sys_setenv().
+ * It is therefore necessary for the caller to check for a return value of
+ * (time_t)-1 from _timegm() and take an appropriate action in this case.
  */
 time_t
 _timegm(struct tm *timeptr)
@@ -183,7 +183,7 @@ _timegm(struct tm *timeptr)
 
     if (!utc_env) {
         old_errno = errno;
-        tmp = setenv(TZ_ENV, TZ_ENV_VAL_UTC, 1);
+        tmp = sys_setenv(TZ_ENV, TZ_ENV_VAL_UTC, 1);
         errno = old_errno;
         if (tmp == -1)
             goto err;
@@ -193,7 +193,7 @@ _timegm(struct tm *timeptr)
 
     if (!utc_env) {
         old_errno = errno;
-        tmp = tz == NULL ? unsetenv(TZ_ENV) : setenv(TZ_ENV, tz, 1);
+        tmp = tz == NULL ? sys_unsetenv(TZ_ENV) : sys_setenv(TZ_ENV, tz, 1);
         errno = old_errno;
         if (tmp == -1)
             goto err;
