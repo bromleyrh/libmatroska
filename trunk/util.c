@@ -5,6 +5,7 @@
 #include "config.h"
 
 #include "common.h"
+#include "std_sys.h"
 #include "util.h"
 
 #include <malloc_ext.h>
