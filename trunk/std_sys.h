@@ -50,6 +50,9 @@ int sys_execvp(const char *file, char *const argv[]);
 
 int sys_exit_direct(int status);
 
+int sys_setenv(const char *name, const char *value, int overwrite);
+int sys_unsetenv(const char *name);
+
 int sys_openat(int dirfd, const char *pathname, int flags);
 
 FILE *sys_fdopen(int fd, const char *mode);
