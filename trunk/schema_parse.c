@@ -12,6 +12,7 @@
 
 #include <avl_tree.h>
 #include <crypto.h>
+#include <io_ext.h>
 #include <strings_ext.h>
 
 #include <files/util.h>
@@ -922,7 +923,7 @@ process_paths(int infd, int outfd)
         size_t len;
 
         errno = 0;
-        if (getline(&line, &linecap, inf) == -1) {
+        if (_getline(&line, &linecap, inf) == -1) {
             res = en;
             free(line);
             if (res != 0) {
