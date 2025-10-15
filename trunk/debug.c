@@ -2,12 +2,15 @@
  * debug.c
  */
 
+#define _WITH_GETLINE
+
 #include "common.h"
 #include "debug.h"
 #include "std_sys.h"
 #include "util.h"
 
 #include <avl_tree.h>
+#include <io_ext.h>
 
 #include <errno.h>
 #include <limits.h>
@@ -175,7 +178,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
     str1 = NULL;
     len = 0;
     errno = 0;
-    if (getline(&str1, &len, outf) == -1) {
+    if (_getline(&str1, &len, outf) == -1) {
         err = errno == 0 ? -E_IO : MINUS_ERRNO;
         goto err2;
     }
@@ -189,7 +192,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
     str2 = NULL;
     len = 0;
     errno = 0;
-    if (getline(&str2, &len, outf) == -1) {
+    if (_getline(&str2, &len, outf) == -1) {
         err = errno == 0 ? -E_IO : MINUS_ERRNO;
         free(str1);
         goto err2;
