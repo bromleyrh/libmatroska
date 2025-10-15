@@ -59,6 +59,10 @@ AX_CHECK_COMPILE_FLAG(
 
 AC_SUBST([warnings])
 
+sys_path_max=$(getconf _POSIX_PATH_MAX /)
+AC_DEFINE_UNQUOTED([_SYS_PATH_MAX], [$sys_path_max],
+                   [Define to the value of _POSIX_PATH_MAX.])
+
 AC_CHECK_PROGS([pkgcfg], [pkg-config pkgconf])
 
 AX_LD_VERSION_SCRIPT

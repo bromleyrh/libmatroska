@@ -5,6 +5,8 @@
 #ifndef _STD_SYS_H
 #define _STD_SYS_H
 
+#include "config.h"
+
 #include "util.h"
 
 #include <stddef.h>
@@ -30,6 +32,8 @@ typedef intmax_t procid_t;
 #define SYS_O_WRONLY 2
 
 #define SYS_O_CLOEXEC 4
+
+#define SYS_PATH_MAX _SYS_PATH_MAX
 
 extern _Thread_local int sys_errno;
 
