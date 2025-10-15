@@ -422,13 +422,13 @@ err_print(FILE *f, int *err)
 
     for (i = 1; i < info->len; i++) {
 #ifdef HAVE_ADDR2LINE
-        char buf[PATH_MAX];
+        char buf[SYS_PATH_MAX];
         unsigned off, reloff;
 
-        if (sscanf(info->bt[i], "%" STR(PATH_MAX) "[^(](+0x%x) [0x%x]",
+        if (sscanf(info->bt[i], "%" STR(SYS_PATH_MAX) "[^(](+0x%x) [0x%x]",
                    buf, &reloff, &off)
             == 3
-            || sscanf(info->bt[i], "%" STR(PATH_MAX) "[^(]() [0x%x]",
+            || sscanf(info->bt[i], "%" STR(SYS_PATH_MAX) "[^(]() [0x%x]",
                       buf, &reloff)
                == 2) {
             if (xlat_addr2line_bt(f, "%32s(), %s\n", buf, reloff) != 0)
