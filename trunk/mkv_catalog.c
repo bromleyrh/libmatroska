@@ -2,6 +2,8 @@
  * mkv_catalog.c
  */
 
+#define _WITH_GETLINE
+
 #include "common.h"
 #include "debug.h"
 #include "mkv_catalog_obj.h"
