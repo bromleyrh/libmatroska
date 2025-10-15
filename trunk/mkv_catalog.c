@@ -15,6 +15,7 @@
 #include <json/scanner.h>
 
 #include <dbm_high_level.h>
+#include <io_ext.h>
 #include <malloc_ext.h>
 #include <option_parsing.h>
 #include <packing.h>
@@ -2907,7 +2908,7 @@ modify_index(const char *index_pathname, const char *pathname, int infd,
         linecap = 0;
         for (;;) {
             errno = 0;
-            ret = getline(&line, &linecap, f);
+            ret = _getline(&line, &linecap, f);
             if (ret == -1) {
                 err = -en;
                 if (err != 0) {
@@ -3175,7 +3176,7 @@ update_index(struct index_ctx *ctx, const char *pathname, FILE *f,
     line = NULL;
     linecap = 0;
     errno = 0;
-    ret = getline(&line, &linecap, f);
+    ret = _getline(&line, &linecap, f);
     if (ret == -1) {
         res = -en;
         if (res != 0)
