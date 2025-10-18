@@ -1706,8 +1706,8 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
             --buflen;
             if (tmbuf[buflen] == '\n')
                 tmbuf[buflen] = '\0';
+            fprintf(stderr, "%s", tmbuf);
         }
-        fprintf(stderr, "%s", tmbuf);
         break;
     case ETYPE_MASTER:
         fprintf(stderr, "%zu byte%s", PL(*len));
