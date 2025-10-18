@@ -1693,7 +1693,10 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
         break;
     case ETYPE_DATE:
         tm = (struct tm)REFERENCE_TIME;
-        date = mktime(&tm) + val->integer / TIME_GRAN;
+        date = mktime(&tm);
+        if (date == (time_t)-1)
+            return ERR_TAG(en);
+        date += val->integer / TIME_GRAN;
         ctime_r(&date, tmbuf);
         buflen = strlen(tmbuf);
         if (buflen > 0) {
