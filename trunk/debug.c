@@ -452,7 +452,8 @@ err_print(FILE *f, int *err)
             goto end;
     }
 
-    if (fprintf(f, "%s\n", strperror_r(-*err, strerrbuf, sizeof(strerrbuf)))
+    if (fprintf(f, "%s\n",
+                strperror_r(sys_rmaperror(-*err), strerrbuf, sizeof(strerrbuf)))
         >= 0)
         ret = 0;
 
