@@ -34,14 +34,15 @@ static int strerror_lr(int, char *, size_t, locale_t);
 static int
 get_locale(locale_t *loc)
 {
+    const locale_t locz = (locale_t)0;
     locale_t ret;
 
-    ret = uselocale((locale_t)0);
-    if (ret == (locale_t)0)
+    ret = uselocale(locz);
+    if (ret == locz)
         return ERRNO;
 
     ret = duplocale(ret);
-    if (ret == (locale_t)0)
+    if (ret == locz)
         return ERRNO;
 
     *loc = ret;
