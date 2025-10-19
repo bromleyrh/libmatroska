@@ -1064,7 +1064,7 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
             res = edata_to_timespec(&val, &ts);
             if (res != 0)
                 return res;
-            if (localtime_r(&ts.tv_sec, &tm) == NULL)
+            if (sys_localtime_r(&ts.tv_sec, &tm) == NULL)
                 return ERR_TAG(en);
             res = strftime(buf, sizeof(buf), "%a %b %e %H:%M:%S %Y\n", &tm) != 0
                   ? fprintf(f, "%s", buf) : 0;
@@ -1701,7 +1701,7 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
         if (date == (time_t)-1)
             return ERR_TAG(en);
         date += val->integer / TIME_GRAN;
-        if (localtime_r(&date, &tm) == NULL)
+        if (sys_localtime_r(&date, &tm) == NULL)
             return ERR_TAG(en);
         buflen = strftime(tmbuf, sizeof(tmbuf), "%a %b %e %H:%M:%S %Y\n", &tm);
         if (buflen > 0) {

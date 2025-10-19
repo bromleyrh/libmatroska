@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 
 enum {
 #define X(nm, ...) \
@@ -56,6 +57,8 @@ int sys_exit_direct(int status);
 
 int sys_setenv(const char *name, const char *value, int overwrite);
 int sys_unsetenv(const char *name);
+
+struct tm *sys_localtime_r(const time_t *timep, struct tm *result);
 
 int sys_openat(int dirfd, const char *pathname, int flags);
 
