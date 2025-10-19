@@ -1016,7 +1016,8 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
     char valbuf[8];
     edata_t val;
     int res;
-    struct timespec tm;
+    struct timespec ts;
+    struct tm tm;
 
     if (elen > ETYPE_MAX_FIXED_WIDTH)
         return ERR_TAG(E_INVAL);
@@ -1060,12 +1061,13 @@ handle_fixed_width_value(char **sip, char **dip, size_t sz, enum etype etype,
                           val.dbl ? val.floatd : (double)val.floats);
             break;
         case ETYPE_DATE:
-            res = edata_to_timespec(&val, &tm);
+            res = edata_to_timespec(&val, &ts);
             if (res != 0)
                 return res;
-            if (ctime_r(&tm.tv_sec, buf) == NULL)
+            if (localtime_r(&ts.tv_sec, &tm) == NULL)
                 return ERR_TAG(en);
-            res = fprintf(f, "%s", buf);
+            res = strftime(buf, sizeof(buf), "%a %b %e %H:%M:%S %Y\n", &tm) != 0
+                  ? fprintf(f, "%s", buf) : 0;
             break;
         default:
             abort();
@@ -1699,9 +1701,9 @@ ebml_write(ebml_hdl_t hdl, const char *id, matroska_metadata_t *val,
         if (date == (time_t)-1)
             return ERR_TAG(en);
         date += val->integer / TIME_GRAN;
-        if (ctime_r(&date, tmbuf) == NULL)
+        if (localtime_r(&date, &tm) == NULL)
             return ERR_TAG(en);
-        buflen = strlen(tmbuf);
+        buflen = strftime(tmbuf, sizeof(tmbuf), "%a %b %e %H:%M:%S %Y\n", &tm);
         if (buflen > 0) {
             --buflen;
             if (tmbuf[buflen] == '\n')
