@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifdef __APPLE__
@@ -432,6 +433,12 @@ int
 sys_unsetenv(const char *name)
 {
     return unsetenv(name);
+}
+
+struct tm *
+sys_localtime_r(const time_t *timep, struct tm *result)
+{
+    return localtime_r(timep, result);
 }
 
 #define __SYS_CALL__(SYS_CALL, X1, X) \
