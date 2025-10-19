@@ -23,6 +23,8 @@ enum {
 
 typedef intmax_t procid_t;
 
+typedef void *loc_t;
+
 #define SYS_AT_FDCWD -128
 
 #define SYS_STDIN_FILENO sys_stdin_fileno()
@@ -36,7 +38,11 @@ typedef intmax_t procid_t;
 
 #define SYS_PATH_MAX _SYS_PATH_MAX
 
+#define SYS_LC_GLOBAL_LOCALE _sys_lc_global_locale
+
 extern _Thread_local int sys_errno;
+
+extern const loc_t _sys_lc_global_locale;
 
 procid_t sys_fork(void);
 
@@ -57,6 +63,10 @@ int sys_exit_direct(int status);
 
 int sys_setenv(const char *name, const char *value, int overwrite);
 int sys_unsetenv(const char *name);
+
+loc_t sys_uselocale(loc_t newloc);
+loc_t sys_duplocale(loc_t locobj);
+void sys_freelocale(loc_t locobj);
 
 struct tm *sys_localtime_r(const time_t *timep, struct tm *result);
 
@@ -98,6 +108,8 @@ int sys_rmaperror(int errnum);
 char *sys_strerror(int errnum);
 
 int sys_strerror_r(int errnum, char *strerrbuf, size_t buflen);
+
+char *sys_strerror_l(int errnum, loc_t locale);
 
 #endif
 
