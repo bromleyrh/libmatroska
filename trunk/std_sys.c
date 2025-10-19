@@ -37,6 +37,10 @@
 
 _Thread_local int sys_errno;
 
+static locale_t __sys_lc_global_locale = LC_GLOBAL_LOCALE;
+
+const loc_t _sys_lc_global_locale = &__sys_lc_global_locale;
+
 #define ERRNUM_DFL IO
 
 #define ___ERRNO_DFL(prefix, err) prefix##err
@@ -436,6 +440,61 @@ sys_unsetenv(const char *name)
     return unsetenv(name);
 }
 
+loc_t
+sys_uselocale(loc_t newloc)
+{
+    const locale_t locz = (locale_t)0;
+    locale_t loc;
+    locale_t res;
+    locale_t *ret;
+
+    ret = malloc(sizeof(*ret));
+    if (ret == NULL)
+        return NULL;
+
+    loc = newloc == NULL ? locz : *(locale_t *)newloc;
+
+    res = uselocale(loc);
+    if (res == locz)
+        return NULL;
+
+    *ret = res;
+    return ret;
+}
+
+loc_t
+sys_duplocale(loc_t locobj)
+{
+    locale_t loc;
+    locale_t res;
+    locale_t *ret;
+
+    ret = malloc(sizeof(*ret));
+    if (ret == NULL)
+        return NULL;
+
+    loc = *(locale_t *)locobj;
+
+    res = duplocale(loc);
+    if (res == (locale_t)0)
+        return NULL;
+
+    *ret = res;
+    return ret;
+}
+
+void
+sys_freelocale(loc_t locobj)
+{
+    locale_t loc;
+
+    loc = *(locale_t *)locobj;
+
+    freelocale(loc);
+
+    free(locobj);
+}
+
 struct tm *
 sys_localtime_r(const time_t *timep, struct tm *result)
 {
@@ -617,6 +676,24 @@ int
 sys_strerror_r(int errnum, char *strerrbuf, size_t buflen)
 {
     return map_errno(_strerror_rp(rmap_errno(errnum), strerrbuf, buflen));
+}
+
+char *
+sys_strerror_l(int errnum, loc_t locale)
+{
+#ifdef HAVE_STRERROR_L
+    locale_t loc;
+
+    loc = *(locale_t *)locale;
+
+    return strerror_l(rmap_errno(errnum), loc);
+#else
+    (void)errnum;
+    (void)locale;
+
+    errno = ENOTSUP;
+    return NULL;
+#endif
 }
 
 /* vi: set expandtab sw=4 ts=4: */

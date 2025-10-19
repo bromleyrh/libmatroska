@@ -12,45 +12,41 @@
 #include <strings_ext.h>
 
 #include <errno.h>
-#include <locale.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#ifdef __APPLE__
-#include <xlocale.h>
-#endif
-
 #define TZ_ENV "TZ"
 
 #define TZ_ENV_VAL_UTC "UTC"
 
-static int get_locale(locale_t *);
+static int get_locale(loc_t *);
 
-static int strerror_lr(int, char *, size_t, locale_t);
+static int strerror_lr(int, char *, size_t, loc_t);
 
 static int
-get_locale(locale_t *loc)
+get_locale(loc_t *loc)
 {
-    const locale_t locz = (locale_t)0;
-    locale_t ret;
+    loc_t res;
+    loc_t ret;
 
-    ret = uselocale(locz);
-    if (ret == locz)
-        return ERRNO;
+    res = sys_uselocale(NULL);
+    if (res == NULL)
+        return sys_errno;
 
-    ret = duplocale(ret);
-    if (ret == locz)
-        return ERRNO;
+    ret = sys_duplocale(res);
+    free(res);
+    if (ret == NULL)
+        return sys_errno;
 
     *loc = ret;
     return 0;
 }
 
 static int
-strerror_lr(int errnum, char *strerrbuf, size_t buflen, locale_t loc)
+strerror_lr(int errnum, char *strerrbuf, size_t buflen, loc_t loc)
 {
 #ifdef HAVE_STRERROR_L
     char *ret;
@@ -58,7 +54,7 @@ strerror_lr(int errnum, char *strerrbuf, size_t buflen, locale_t loc)
 
     old_errno = errno;
     errno = 0;
-    ret = strerror_l(errnum, loc);
+    ret = sys_strerror_l(errnum, loc);
     err = en;
     errno = old_errno;
     if (ret == NULL)
@@ -237,12 +233,12 @@ int
 strerror_rp(int errnum, char *strerrbuf, size_t buflen)
 {
     int err;
-    locale_t loc;
+    loc_t loc;
 
     err = get_locale(&loc);
     if (!err) {
         err = strerror_lr(errnum, strerrbuf, buflen, loc);
-        freelocale(loc);
+        sys_freelocale(loc);
     }
 
     return err;
@@ -254,7 +250,7 @@ strperror_r(int errnum, char *strerrbuf, size_t buflen)
 #ifdef HAVE_STRERROR_L
     char *ret;
     int err;
-    locale_t loc;
+    loc_t loc;
 
     static _Thread_local char buf[32];
 
@@ -264,13 +260,13 @@ strperror_r(int errnum, char *strerrbuf, size_t buflen)
     }
 
     err = strerror_lr(errnum, strerrbuf, buflen, loc);
-    ret = err ? strerror_l(errnum, loc) : strerrbuf;
-    freelocale(loc);
+    ret = err ? sys_strerror_l(errnum, loc) : strerrbuf;
+    sys_freelocale(loc);
     return ret;
 #else
     const char *fmt = "%d";
     int err;
-    locale_t loc;
+    loc_t loc;
 
     static _Thread_local char buf[32];
 
@@ -279,7 +275,7 @@ strperror_r(int errnum, char *strerrbuf, size_t buflen)
         goto err;
 
     err = strerror_lr(errnum, strerrbuf, buflen, loc);
-    freelocale(loc);
+    sys_freelocale(loc);
     if (err) {
         if (err == E_INVAL)
             fmt = "Unknown error %d";
