@@ -35,7 +35,6 @@
 #include <string.h>
 #include <wchar.h>
 
-#include <sys/resource.h>
 #include <sys/types.h>
 
 enum op {
@@ -302,13 +301,13 @@ enable_debugging_features()
 {
     int err;
 
-    static const struct rlimit rlim = {
-        .rlim_cur = RLIM_INFINITY,
-        .rlim_max = RLIM_INFINITY
+    static const struct reslimit rlim = {
+        .cur = SYS_RESVAL_INF,
+        .max = SYS_RESVAL_INF
     };
 
-    if (setrlimit(RLIMIT_CORE, &rlim) == -1) {
-        err = MINUS_ERRNO;
+    if (sys_setreslimit(SYS_RESLIMIT_CORE, &rlim) == -1) {
+        err = MINUS_ERRN;
         fprintf(stderr, "Couldn't set resource limit: %s\n",
                 sys_strerror(-err));
         return err;

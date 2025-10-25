@@ -31,6 +31,7 @@
 #include <xlocale.h>
 #endif
 
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -50,6 +51,8 @@ const loc_t _sys_lc_global_locale = &__sys_lc_global_locale;
 #define SYS_ERRNO_DFL _ERRNO_DFL(SYS_E)
 #define ERRNO_DFL _ERRNO_DFL(E)
 
+static void map_rlim(rlim_t *, const resval_t *);
+
 static int get_locale(locale_t *);
 
 static int strerror_lr(int, char *, size_t, locale_t);
@@ -66,6 +69,12 @@ static int sys_call(int (*)(va_list), ...);
 static int _sys_call_nocancel(va_list);
 
 static int exit_direct(int);
+
+static void
+map_rlim(rlim_t *dst, const resval_t *src)
+{
+    *dst = src->flags & _SYS_RESVAL_INF ? RLIM_INFINITY : src->val;
+}
 
 static int
 get_locale(locale_t *loc)
@@ -442,6 +451,32 @@ SYS_CALL(getpid) \
 DEF_SYS_CALL_RETV
 {
     CALL_AND_RET_RETV;
+}
+#undef __SYS_CALL__
+
+#define sys_setrlimit sys_setreslimit
+#define setreslimit setrlimit
+
+#define __SYS_CALL__(SYS_CALL, X1, X) \
+SYS_CALL(setreslimit) \
+    X1(                   int, resource) \
+    X(const struct reslimit *, rlim)
+DEF_SYS_CALL
+{
+    struct rlimit rl;
+
+    if (resource != SYS_RESLIMIT_CORE) {
+        errno = EINVAL;
+        return -1;
+    }
+    resource = RLIMIT_CORE;
+
+    map_rlim(&rl.rlim_cur, &rlim->cur);
+    map_rlim(&rl.rlim_max, &rlim->max);
+
+#define rlim &rl
+    CALL_AND_RET;
+#undef rlim
 }
 #undef __SYS_CALL__
 

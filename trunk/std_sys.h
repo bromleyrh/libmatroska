@@ -23,6 +23,24 @@ enum {
 
 typedef intmax_t procid_t;
 
+#define SYS_RESLIMIT_CORE 1
+
+#define _SYS_RESVAL_INF 1
+
+typedef struct {
+    uintmax_t   val;
+    int         flags;
+} resval_t;
+
+#define SYS_RESVAL(val) {val, 0}
+
+#define SYS_RESVAL_INF {0, _SYS_RESVAL_INF}
+
+struct reslimit {
+    resval_t cur;
+    resval_t max;
+};
+
 typedef void *loc_t;
 
 #define SYS_AT_FDCWD -128
@@ -64,6 +82,8 @@ int sys_exit_direct(int status);
 int sys_pause(void);
 
 procid_t sys_getpid(void);
+
+int sys_setreslimit(int resource, const struct reslimit *rlim);
 
 int sys_setenv(const char *name, const char *value, int overwrite);
 int sys_unsetenv(const char *name);
