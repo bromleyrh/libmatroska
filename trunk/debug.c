@@ -154,10 +154,11 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
         sys_close(outpfd[1]);
         sys_exit_direct(EXIT_FAILURE);
     }
+    err = -errno;
     sys_close(inpfd[0]);
     sys_close(outpfd[1]);
     if (pid == -1)
-        goto err3;
+        goto err2;
 
     inf = sys_fdopen(inpfd[1], "w");
     if (inf == NULL)
