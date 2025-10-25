@@ -329,9 +329,8 @@ static int
 set_up_signal_handlers()
 {
     int err;
-    struct sigaction sa = {.sa_handler = &pipe_handler};
 
-    if (sigaction(SIGPIPE, &sa, NULL) == -1) {
+    if (signal(SIGPIPE, &pipe_handler) == SIG_ERR) {
         err = MINUS_ERRNO;
         fprintf(stderr, "Couldn't set signal handler: %s\n",
                 sys_strerror(-err));
