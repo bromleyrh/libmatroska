@@ -32,7 +32,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 enum op {
     PROCESS_SCHEMA = 1,
@@ -1023,7 +1022,7 @@ main(int argc, char **argv)
     }
     doctype = argv[tmp++];
     if (argc == tmp)
-        seed = time(NULL) + getpid();
+        seed = time(NULL) + sys_getpid();
     else if (strcmp("-d", argv[tmp]) == 0)
         op = DUMP_PATHS;
     else

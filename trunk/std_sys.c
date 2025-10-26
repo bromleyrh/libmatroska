@@ -428,6 +428,15 @@ DEF_SYS_CALL
 }
 #undef __SYS_CALL__
 
+#define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
+SYS_CALL(getpid) \
+    RETV_CVT(pid_t, procid_t)
+DEF_SYS_CALL_RETV
+{
+    CALL_AND_RET_RETV;
+}
+#undef __SYS_CALL__
+
 int
 sys_setenv(const char *name, const char *value, int overwrite)
 {
