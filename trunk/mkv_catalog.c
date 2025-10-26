@@ -2243,7 +2243,7 @@ delete_from_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     if (type == TYPE_OBJECT || type == TYPE_ARRAY) {
         if (type == TYPE_OBJECT)
             fprintf(f, "%s", sval1);
-        else if (type == TYPE_ARRAY)
+        else
             fprintf(f, "[%" PRIu64 "]", nval1);
         fputs(" -> ", f);
     }
@@ -2333,7 +2333,7 @@ output_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype,
     if (type == TYPE_OBJECT || type == TYPE_ARRAY) {
         if (type == TYPE_OBJECT)
             print_verbose(f, "%s", sval1);
-        else if (type == TYPE_ARRAY)
+        else
             print_verbose(f, "[%" PRIu64 "]", nval1);
         print_verbose(f, " -> ");
     }
@@ -2449,7 +2449,7 @@ walk_index_cb(uint64_t type, uint64_t parent_id, uint64_t subtype, uint64_t id,
     if (type == TYPE_OBJECT || type == TYPE_ARRAY) {
         if (type == TYPE_OBJECT)
             fprintf(f, "%s", sval1);
-        else if (type == TYPE_ARRAY)
+        else
             fprintf(f, "[%" PRIu64 "]", nval1);
         fputs(" -> ", f);
     }
