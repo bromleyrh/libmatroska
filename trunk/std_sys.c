@@ -428,6 +428,14 @@ DEF_SYS_CALL
 }
 #undef __SYS_CALL__
 
+#define __SYS_CALL__(SYS_CALL, X1, X) \
+SYS_CALL(pause)
+DEF_SYS_CALL
+{
+    CALL_AND_RET;
+}
+#undef __SYS_CALL__
+
 #define __SYS_CALL__(SYS_CALL, RETV, RETV_CVT, X1, X, CVT) \
 SYS_CALL(getpid) \
     RETV_CVT(pid_t, procid_t)

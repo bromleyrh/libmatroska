@@ -61,6 +61,8 @@ int sys_execvp(const char *file, char *const argv[]);
 
 int sys_exit_direct(int status);
 
+int sys_pause(void);
+
 procid_t sys_getpid(void);
 
 int sys_setenv(const char *name, const char *value, int overwrite);

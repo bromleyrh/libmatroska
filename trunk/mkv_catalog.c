@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <wchar.h>
 
 #include <sys/resource.h>
@@ -3414,7 +3413,7 @@ end:
             return EXIT_FAILURE;
         raise(SIGPIPE);
         for (;;)
-            pause();
+            sys_pause();
     }
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
