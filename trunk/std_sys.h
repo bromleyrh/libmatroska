@@ -97,6 +97,8 @@ int sys_fsync_nocancel(int fd);
 
 int sys_pipe(int pipefd[2]);
 
+int sys_isatty(int fd);
+
 int sys_stdin_fileno(void);
 int sys_stdout_fileno(void);
 int sys_stderr_fileno(void);

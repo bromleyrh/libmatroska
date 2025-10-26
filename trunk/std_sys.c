@@ -648,6 +648,15 @@ DEF_SYS_CALL
 }
 #undef __SYS_CALL__
 
+#define __SYS_CALL__(SYS_CALL, X1, X) \
+SYS_CALL(isatty) \
+    X1(int, fd)
+DEF_SYS_CALL
+{
+    CALL_AND_RET;
+}
+#undef __SYS_CALL__
+
 #define DEF_SYS_FILENO(nm, val) \
 int \
 sys_std##nm##_fileno() \

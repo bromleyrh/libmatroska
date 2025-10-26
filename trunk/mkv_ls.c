@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 #include <wchar.h>
 
 struct cb {
@@ -1097,13 +1096,13 @@ cvt_mkv(int infd, struct ctx *ctx)
     errmsg = "Error initializing";
 
     errno = 0;
-    if (isatty(sys_fileno(ctx->cb.dataf)) == 1) {
+    if (sys_isatty(sys_fileno(ctx->cb.dataf)) == 1) {
         res = -E_INVAL;
         errmsg = NULL;
         fputs("Standard output refers to a terminal device\n", stderr);
         goto err1;
     }
-    res = en;
+    res = sys_errno;
     switch (res) {
     case E_NOTTY:
     case E_NOSYS:
