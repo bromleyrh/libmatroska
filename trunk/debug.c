@@ -154,7 +154,7 @@ xlat_addr2line_bt(FILE *f, const char *fmt, char *path, unsigned reloff)
         sys_close(outpfd[1]);
         sys_exit_direct(EXIT_FAILURE);
     }
-    err = -errno;
+    err = -sys_errno;
     sys_close(inpfd[0]);
     sys_close(outpfd[1]);
     if (pid == -1)
